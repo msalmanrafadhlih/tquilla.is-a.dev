@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "bruh",
+    "packages/desktop",
+    "packages/mobile",
+    "packages/ui",
+    "packages/web", "bruh",
+]
+resolver = "2"
+
+[workspace.dependencies.dioxus]
+version = "0.7.1"
+
+[workspace.dependencies.ui]
+path = "packages/ui"
