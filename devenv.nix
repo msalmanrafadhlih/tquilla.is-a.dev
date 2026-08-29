@@ -42,6 +42,8 @@ in
 
     pkg-config
     openssl
+    xdotool
+    binaryen
 
     # Runtime webview buat target desktop (dioxus-desktop pakai wry/tao,
     # dependency-nya sama persis dengan Tauri)
@@ -73,6 +75,8 @@ in
       at-spi2-atk
       glib
       openssl
+      xdotool
+      binaryen
 
       gdk-pixbuf
       cairo

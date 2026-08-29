@@ -10,11 +10,11 @@
       },
       "locked": {
         "dir": "android",
-        "lastModified": 1787985074,
-        "narHash": "sha256-AwuZDXYSKAC78dl/yxMBHLqqwkyV6izFtdars9hsMgs=",
+        "lastModified": 1787985814,
+        "narHash": "sha256-FgEN+KknzRPA17CDZt8PZm55lO+ud/nLHyME3OG99Ew=",
         "owner": "msalmanrafadhlih",
         "repo": "nixos-development-templates",
-        "rev": "14034f1c31accd9913ddf0e2148a85d12591b18b",
+        "rev": "61a8bb6fa24604235b02b3bf9a112a61c16a3e9f",
         "type": "github"
       },
       "original": {
@@ -770,11 +770,11 @@
       },
       "locked": {
         "dir": "rust",
-        "lastModified": 1787985074,
-        "narHash": "sha256-AwuZDXYSKAC78dl/yxMBHLqqwkyV6izFtdars9hsMgs=",
+        "lastModified": 1787985814,
+        "narHash": "sha256-FgEN+KknzRPA17CDZt8PZm55lO+ud/nLHyME3OG99Ew=",
         "owner": "msalmanrafadhlih",
         "repo": "nixos-development-templates",
-        "rev": "14034f1c31accd9913ddf0e2148a85d12591b18b",
+        "rev": "61a8bb6fa24604235b02b3bf9a112a61c16a3e9f",
         "type": "github"
       },
       "original": {

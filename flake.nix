@@ -45,6 +45,8 @@
           libsoup_3
           librsvg
           at-spi2-atk
+          xdotool
+          binaryen
           glib-networking
           gdk-pixbuf
           cairo

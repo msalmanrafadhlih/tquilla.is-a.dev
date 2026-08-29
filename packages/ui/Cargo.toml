@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 dioxus = { workspace = true }
+wasm-bindgen = { workspace = true }
 
