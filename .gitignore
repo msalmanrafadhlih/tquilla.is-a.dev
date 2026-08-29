@@ -1,4 +1,5 @@
 Cargo.lock
+flake.lock
 target/
 .vscode/
 .devenv/
