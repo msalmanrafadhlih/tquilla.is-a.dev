@@ -2,9 +2,8 @@
 resolver = "2"
 members = [
     "packages/ui",
-    "packages/web",
-    "packages/desktop",
-    "packages/mobile",
+    "packages/generation_1",
+    "packages/generation_2",
 ]
 
 [workspace.dependencies]

@@ -40,3 +40,12 @@
   text-align: center;
   margin-top: 20px;
 }
+
+#generation {
+  width: 400px;
+  text-align: left;
+  font-size: x-large;
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
