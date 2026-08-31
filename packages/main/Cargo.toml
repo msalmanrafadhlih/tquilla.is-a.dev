@@ -1,0 +1,14 @@
+[package]
+name = "main"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { workspace = true, features = [] }
+wasm-bindgen = { workspace = true }
+ui = { workspace = true }
+
+[features]
+default = ["web"]
+web = ["dioxus/web"]
+

@@ -15,7 +15,7 @@ pub fn GenerationMenu() -> Element {
         document::Link { rel: "stylesheet", href: GEN_CSS }
 
         div {
-            div { id: "links",
+            div { 
                 ul { 
                     li {
                         a { 
