@@ -6,9 +6,16 @@ edition = "2021"
 [dependencies]
 dioxus = { workspace = true, features = [] }
 wasm-bindgen = { workspace = true }
-ui = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+gloo-net = "0.6"
+gloo-timers = { version = "0.3", features = ["futures"] }
+js-sys = "0.3"
 
 [features]
 default = ["web"]
 web = ["dioxus/web"]
 
+[profile.release]
+opt-level = "z"
+lto = true

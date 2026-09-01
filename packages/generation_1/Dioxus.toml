@@ -1,7 +1,19 @@
-
 [web.wasm.opt]
 debug = false
 level = "z"
 
 [web.app]
+title = "The Typographic Journal"
 base_path = "tquilla.is-a.dev/generation_1"
+
+[application]
+name = "generation_1"
+default_platform = "web"
+
+[web.watcher]
+watch_path = ["src", "assets"]
+reload_html = true
+
+# [web.resource]
+# style = []
+# script = []
