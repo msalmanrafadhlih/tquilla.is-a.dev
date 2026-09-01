@@ -4,7 +4,7 @@ level = "z"
 
 [web.app]
 title = "The Typographic Journal"
-base_path = "tquilla.is-a.dev/generation_1"
+base_path = "tquilla.is-a.dev/journal-typographic"
 
 [application]
 name = "generation_1"
