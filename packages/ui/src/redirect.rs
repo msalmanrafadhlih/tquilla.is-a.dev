@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-const CSS: Asset = asset!("/assets/main.css");
+const CSS: Asset = asset!("/assets/redirect.css");
 
 /// One line of the simulated `systemd` boot log.
 ///

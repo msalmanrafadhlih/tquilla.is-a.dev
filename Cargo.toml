@@ -1,16 +1,17 @@
 [workspace]
-resolver = "2"
 members = [
-    "packages/ui",
-    "packages/main",
+    "packages/desktop",
     "packages/journal",
-    "packages/generation_2",
+    "packages/main",
+    "packages/ui",
 ]
+resolver = "2"
 
 [workspace.dependencies]
-dioxus = { version = "0.7.1" }
 wasm-bindgen = "=0.2.126"
 
-# workspace
-ui = { path = "packages/ui" }
+[workspace.dependencies.dioxus]
+version = "0.7.1"
 
+[workspace.dependencies.ui]
+path = "packages/ui"
