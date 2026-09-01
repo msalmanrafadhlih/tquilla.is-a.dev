@@ -3,11 +3,11 @@ debug = false
 level = "z"
 
 [web.app]
-title = "The Typographic Journal"
+# title = "The Typographic Journal"
 base_path = "tquilla.is-a.dev/journal-typographic"
 
 [application]
-name = "generation_1"
+name = "journal"
 default_platform = "web"
 
 [web.watcher]
