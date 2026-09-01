@@ -1,8 +1,6 @@
 //! This crate contains all shared UI for the workspace.
 
-mod hero;
-mod generations;
+mod redirect;
 
-pub use hero::Hero;
-pub use generations::GenerationMenu;
+pub use redirect::Booting;
 
