@@ -3,4 +3,4 @@ debug = false
 level = "z"
 
 [web.app]
-base_path = "tquilla.is-a.dev/generation_2"
+base_path = "tquilla.is-a.dev/deisktify.nix"

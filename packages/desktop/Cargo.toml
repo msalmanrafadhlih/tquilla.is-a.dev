@@ -1,11 +1,12 @@
 [package]
-name = "generation_2"
+name = "desktop"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 dioxus = { workspace = true, features = [] }
 wasm-bindgen = { workspace = true }
+gloo-timers = { version = "0.3", features = ["futures"] }
 ui = { workspace = true }
 
 [features]
