@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use serde::Deserialize;
+use gloo_timers::future::TimeoutFuture;
 
 // The generation list lives in its own JSON file so it can be edited without
 // touching any Rust code. It's embedded at compile time (no network fetch,
@@ -31,14 +32,36 @@ fn main() {
 pub fn App() -> Element {
     let generations: Vec<Generation> = serde_json::from_str(GENERATIONS_JSON).unwrap_or_default();
     let total = generations.len();
-
+    let mut number: f32 = 1.01;
     // Links pulled out separately so the keyboard handler can grab the
     // currently selected URL without borrowing `generations` across the
     // 'static closure boundary.
     let links: Vec<String> = generations.iter().map(|g| g.link.clone()).collect();
-
     let mut selected = use_signal(|| 0usize);
+    // Tracks which row the mouse is currently over, independent of
+    // keyboard `selected`, so the label swap only reacts to hover.
+    let mut hovered = use_signal(|| Option::<usize>::None);
 
+    let mut counting = use_signal(|| 10i32);
+    let last_link = links.first().cloned();
+    // Jalan sekali saat mount. Setiap 1 detik kurangi counting; begas 0,
+    // buka link generasi terakhir dan hentikan loop-nya.
+    use_effect(move || {
+        let last_link = last_link.clone();
+        spawn(async move {
+            loop {
+                TimeoutFuture::new(1000).await;
+                let remaining = counting() - 1;
+                counting.set(remaining);
+                if remaining <= 0 {
+                    if let Some(url) = &last_link {
+                        open_link(url);
+                    }
+                    break;
+                }
+            }
+        });
+    });
     let onkeydown = move |evt: KeyboardEvent| match evt.key() {
         Key::ArrowDown => {
             evt.prevent_default();
@@ -76,8 +99,8 @@ pub fn App() -> Element {
     };
 
     rsx! {
-        div {
-            tabindex: "0",
+        section {
+            tabindex: "{total}",
             class: "min-h-screen w-full bg-black text-neutral-200 font-mono flex flex-col items-center justify-center px-3 py-10 outline-none select-none",
             onkeydown,
             onmounted: move |evt| {
@@ -88,32 +111,48 @@ pub fn App() -> Element {
             },
 
             div {
-                class: "w-full max-w-3xl border border-neutral-700",
+                class: "w-full max-w-3xl",
                 ul {
                     class: "flex flex-col",
-                    for (idx , gen) in generations.iter().enumerate() {
+                    for (idx, gen) in generations.iter().enumerate() {
                         li {
                             key: "{gen.number}",
-                            onmouseenter: move |_| selected.set(idx),
+                            onmouseenter: move |_| {
+                                selected.set(idx);
+                                hovered.set(Some(idx));
+                            },
+                            onmouseleave: move |_| {
+                                if hovered() == Some(idx) {
+                                    hovered.set(None);
+                                }
+                            },
                             onclick: {
                                 let url = gen.link.clone();
                                 move |_| open_link(&url)
                             },
                             class: if selected() == idx {
-                                "bg-neutral-200 text-black px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75"
+                                "bg-neutral-200 text-black px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75 text-center"
                             } else {
-                                "bg-black text-neutral-200 px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75 hover:bg-neutral-800"
+                                "bg-black text-neutral-200 px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75 hover:bg-neutral-800 text-center"
                             },
-                            "NixOS (Generation {gen.number} {gen.label}, Linux Kernel {gen.kernel}, Built on {gen.date})"
+                            if hovered() == Some(idx) {
+                                "{gen.label}"
+                            } else {
+                                "NixOS (Generation {gen.number} 22.11.2979.47c003416{number}, Linux Kernel {gen.kernel}, Built on {gen.date})"
+                                { number += 0.01 }
+                            }
                         }
                     }
                 }
-                div {
+                p {
                     class: "text-center text-[11px] sm:text-sm py-2 border-t border-neutral-700 text-neutral-500",
                     "Reboot Into Firmware Interface"
                 }
             }
-
+            p {
+                class: "mt-6 text-center text-[10px] sm:text-xs text-neutral-600 max-w-md",
+                "Boot in {counting}s"
+            }
             p {
                 class: "mt-6 text-center text-[10px] sm:text-xs text-neutral-600 max-w-md",
                 "Navigasi pakai ↑ / ↓ atau j / k · Enter / klik untuk buka link"
