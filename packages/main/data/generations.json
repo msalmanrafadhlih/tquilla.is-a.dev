@@ -2,14 +2,14 @@
   {
     "number": 5,
     "label": "Go to Desktop",
-    "link": "https://msalmanrafadhlih.github.io/tquilla.is-a.dev/deisktify.nix",
+    "link": "/deisktify",
     "kernel": "6.12.7",
     "date": "2026-08-30"
   },
   {
     "number": 4,
     "label": "My Portofolio",
-    "link": "https://tquilla.is-a.dev",
+    "link": "/portofolio",
     "kernel": "6.12.5",
     "date": "2026-07-14"
   },
@@ -22,15 +22,15 @@
   },
   {
     "number": 2,
-    "label": "Github Profile",
+    "label": "Github",
     "link": "https://github.com/msalmanrafadhlih",
     "kernel": "6.10.4",
     "date": "2026-03-21"
   },
   {
     "number": 1,
-    "label": "Journal typographic",
-    "link": "https://msalmanrafadhlih.github.io/tquilla.is-a.dev/journal-typographic",
+    "label": "Github Jounal",
+    "link": "/profile",
     "kernel": "6.9.12",
     "date": "2026-01-10"
   }

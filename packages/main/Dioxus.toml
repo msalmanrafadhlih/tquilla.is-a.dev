@@ -2,5 +2,17 @@
 debug = false
 level = "z"
 
-[web.app]
-base_path = "tquilla.is-a.dev"
+# [web.app]
+# base_path = "/"
+
+[application]
+name = "NixOs Desktop"
+default_platform = "web"
+
+[web.watcher]
+watch_path = ["src", "assets"]
+reload_html = true
+
+# [web.resource]
+# style = []
+# script = []

@@ -1,10 +1,13 @@
+mod journal;
+mod desktop;
+
+use journal::JournalPage;
+use desktop::DesktopPage;
+
 use dioxus::prelude::*;
 use serde::Deserialize;
 use gloo_timers::future::TimeoutFuture;
 
-// The generation list lives in its own JSON file so it can be edited without
-// touching any Rust code. It's embedded at compile time (no network fetch,
-// no loading state, works offline once built).
 const GENERATIONS_JSON: &str = include_str!("../data/generations.json");
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -14,6 +17,16 @@ struct Generation {
     link: String,
     kernel: String,
     date: String,
+}
+
+#[derive(Routable, Clone, PartialEq)]
+enum Route {
+    #[route("/")]
+    Home {},
+    #[route("/profile")]
+    JournalPage {},
+    #[route("/deisktify")]
+    DesktopPage {},
 }
 
 /// Open a link the same way a browser "open in new tab" would, so visitors
@@ -30,6 +43,13 @@ fn main() {
 
 #[component]
 pub fn App() -> Element {
+    rsx! {
+        Router::<Route> {}
+    }
+}
+
+#[component]
+pub fn Home() -> Element {
     let generations: Vec<Generation> = serde_json::from_str(GENERATIONS_JSON).unwrap_or_default();
     let total = generations.len();
     let mut number: f32 = 1.01;
@@ -99,6 +119,8 @@ pub fn App() -> Element {
     };
 
     rsx! {
+        document::Title { "Generation Menu" }
+
         section {
             tabindex: "{total}",
             class: "min-h-screen w-full bg-black text-neutral-200 font-mono flex flex-col items-center justify-center px-3 py-10 outline-none select-none",
