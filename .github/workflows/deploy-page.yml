@@ -1,0 +1,64 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # biar bisa di-trigger manual dari tab Actions
+
+permissions:
+  contents: read
+  pages: write # dibutuhkan actions/deploy-pages
+  id-token: write # dibutuhkan actions/deploy-pages (OIDC)
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust + target wasm32
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Install dioxus-cli (dx)
+        # pin versi biar SAMA PERSIS dengan versi `dioxus` di Cargo.toml (0.7.1).
+        # ini penting buat kamu spesifik: versi dx yang beda dari versi crate
+        # `dioxus` bisa bikin wasm-opt/binaryen bundled-nya mismatch, mirip kasus
+        # yang pernah kamu debug di Nix devshell.
+        run: cargo binstall dioxus-cli@0.7.1 --force -y
+
+      - name: Build (release, web)
+        run: dx build --package main --platform web --release
+
+      - name: Tambahkan CNAME untuk custom domain
+        # tanpa file ini, custom domain "tquilla.is-a.dev" yang kamu set di
+        # Settings > Pages bisa ke-reset tiap kali deployment mengganti isi output
+        run: echo "tquilla.is-a.dev" > target/dx/main/release/web/public/CNAME
+
+      - name: Upload artifact ke Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: target/dx/main/release/web/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy ke GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
