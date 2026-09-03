@@ -171,7 +171,12 @@ pub fn PinnedSection(pinned: Vec<Repo>) -> Element {
 #[component]
 pub fn ChronicleSection(chronicle: Chronicle) -> Element {
     let stack = chronicle.stack.clone().unwrap_or_else(|| {
-        vec!["Linux".into(), "Neovim".into(), "Arch".into(), "Hyprland".into()]
+        vec![
+            "Linux".into(),
+            "Neovim".into(),
+            "Arch".into(),
+            "Hyprland".into(),
+        ]
     });
     let months = build_month_labels(&chronicle.stats.timeline);
     let chart_svg = build_chart_svg(&chronicle);

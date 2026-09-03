@@ -44,9 +44,7 @@ pub fn build_chart_svg(chronicle: &Chronicle) -> String {
         let (p1x, p1y) = pair[1];
         let cp1x = p0x + (p1x - p0x) / 2.0;
         let cp2x = cp1x;
-        d_path.push_str(&format!(
-            " C {cp1x},{p0y} {cp2x},{p1y} {p1x},{p1y}"
-        ));
+        d_path.push_str(&format!(" C {cp1x},{p0y} {cp2x},{p1y} {p1x},{p1y}"));
     }
 
     let area_path = format!("{d_path} L {WIDTH},{HEIGHT} L 0,{HEIGHT} Z");
