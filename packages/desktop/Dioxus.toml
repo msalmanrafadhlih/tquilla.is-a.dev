@@ -1,6 +1,0 @@
-[web.wasm.opt]
-debug = false
-level = "z"
-
-[web.app]
-base_path = "tquilla.is-a.dev/deisktify.nix"
