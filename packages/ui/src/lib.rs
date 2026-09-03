@@ -3,4 +3,3 @@
 mod redirect;
 
 pub use redirect::Booting;
-
