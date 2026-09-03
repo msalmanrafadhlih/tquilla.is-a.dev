@@ -1,12 +1,6 @@
 use dioxus::prelude::*;
 use serde::Deserialize;
 
-const MAIN_CSS: Asset = asset!("/assets/main.css");
-// Tailwind Play CDN — fastest way to get Tailwind utility classes without a
-// build step. Swap this for `dx`'s built-in Tailwind pipeline (a compiled
-// tailwind.css asset) once the project is ready to leave prototyping.
-const TAILWIND_CDN: &str = "https://cdn.tailwindcss.com";
-
 // The generation list lives in its own JSON file so it can be edited without
 // touching any Rust code. It's embedded at compile time (no network fetch,
 // no loading state, works offline once built).
@@ -35,8 +29,7 @@ fn main() {
 
 #[component]
 pub fn App() -> Element {
-    let generations: Vec<Generation> =
-        serde_json::from_str(GENERATIONS_JSON).unwrap_or_default();
+    let generations: Vec<Generation> = serde_json::from_str(GENERATIONS_JSON).unwrap_or_default();
     let total = generations.len();
 
     // Links pulled out separately so the keyboard handler can grab the
@@ -83,10 +76,6 @@ pub fn App() -> Element {
     };
 
     rsx! {
-        document::Script { src: TAILWIND_CDN }
-        document::Link { rel: "stylesheet", href: MAIN_CSS }
-        document::Title { "tquilla — pilih link" }
-
         div {
             tabindex: "0",
             class: "min-h-screen w-full bg-black text-neutral-200 font-mono flex flex-col items-center justify-center px-3 py-10 outline-none select-none",
