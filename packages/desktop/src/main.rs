@@ -16,7 +16,7 @@ fn App() -> Element {
 
     use_effect(move || {
         spawn(async move {
-            TimeoutFuture::new(5500).await;
+            TimeoutFuture::new(7000).await;
             is_booting.set(false);
         });
     });
