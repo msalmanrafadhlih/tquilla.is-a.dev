@@ -10,6 +10,7 @@ permissions:
   pages: write # dibutuhkan actions/deploy-pages
   id-token: write # dibutuhkan actions/deploy-pages (OIDC)
 
+# cegah dua deployment jalan bersamaan / numpuk di antrian
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -46,6 +47,15 @@ jobs:
         # tanpa file ini, custom domain "tquilla.is-a.dev" yang kamu set di
         # Settings > Pages bisa ke-reset tiap kali deployment mengganti isi output
         run: echo "tquilla.is-a.dev" > target/dx/main/release/web/public/CNAME
+
+      - name: Tambahkan 404.html untuk client-side routing
+        # GitHub Pages itu static file server: /profile atau /deisktify dicari
+        # sebagai path fisik, nggak ketemu, jadi dia serve 404.html bawaan Pages.
+        # Router Dioxus butuh index.html dulu ke-load biar JS-nya bisa ambil alih
+        # routing. Trik standarnya: bikin 404.html isinya sama persis dengan
+        # index.html, jadi GitHub Pages tetap serve app-nya untuk path apapun,
+        # lalu Dioxus Router baca window.location dan render route yang benar.
+        run: cp target/dx/main/release/web/public/index.html target/dx/main/release/web/public/404.html
 
       - name: Upload artifact ke Pages
         uses: actions/upload-pages-artifact@v4
