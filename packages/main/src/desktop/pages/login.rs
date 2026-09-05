@@ -55,7 +55,7 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                     style: if unlocking() { "opacity: 0; pointer-events: none;" } else { "opacity: 1;" },
 
                     img {
-                        src: "https://avatars.githubusercontent.com/u/141149698?v=4",
+                        src: "https://avatars.githubusercontent.com/u/141149698",
                         alt: "Profile",
                         class: "w-20 h-20 sm:w-24 sm:h-24 outline outline-2 outline-white/90",
                     }
