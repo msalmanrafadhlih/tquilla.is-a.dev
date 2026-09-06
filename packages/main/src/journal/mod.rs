@@ -12,7 +12,7 @@ use data::AppData;
 /// even before `/data.json` is being served (e.g. by a GitHub Actions cron
 /// job, the way the github-readme-card project generates its stats).
 const SAMPLE_DATA: &str = include_str!("../../data/journal.sample.json");
-const FAVICON: Asset = asset!("https://avatars.githubusercontent.com/u/141149698");
+const FAVICON: &str = "https://avatars.githubusercontent.com/u/141149698";
 
 async fn load_data() -> Result<AppData, String> {
     if let Ok(resp) = gloo_net::http::Request::get("/data.json").send().await {

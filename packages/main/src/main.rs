@@ -9,7 +9,7 @@ use serde::Deserialize;
 use gloo_timers::future::TimeoutFuture;
 
 const GENERATIONS_JSON: &str = include_str!("../data/generations.json");
-const FAVICON: Asset = asset!("https://avatars.githubusercontent.com/u/141149698");
+const FAVICON: &str = "https://avatars.githubusercontent.com/u/141149698";
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 struct Generation {
