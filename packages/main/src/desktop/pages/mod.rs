@@ -57,7 +57,11 @@ pub fn MainPage() -> Element {
 
         div {
             class: "transition-opacity duration-[250ms] ease-out",
-            style: if switching() { "opacity: 0; pointer-events: none;" } else { "opacity: 1;" },
+            style: if switching() {
+                "opacity: 0; pointer-events: none;"
+            } else {
+                "opacity: 1; pointer-events: auto;"
+            },
 
             if mode() == Mode::Terminal {
                 TerminalMode { on_toggle: move |_| toggle_mode() }
