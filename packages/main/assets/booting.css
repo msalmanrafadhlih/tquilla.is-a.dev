@@ -2,6 +2,7 @@
 /* Boot splash screen (simulated Linux / systemd boot log)          */
 /* ---------------------------------------------------------------- */
 
+
 #boot-screen {
   position: fixed;
   inset: 0;
@@ -19,7 +20,24 @@
   -webkit-font-smoothing: antialiased;
 }
 
-#boot-screen::before {
+#eclipse {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  background: #000000;
+  color: #d3ddd4;
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", Consolas,
+    "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  padding: 10px;
+  display: flex;
+  justify-content: flex-start;
+  -webkit-font-smoothing: antialiased;
+}
+
+#eclipse::before {
   content: "";
   position: absolute;
   inset: 0;

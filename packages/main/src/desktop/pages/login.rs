@@ -14,6 +14,7 @@ enum TypingMode {
 
 #[component]
 pub fn Login(on_unlocked: EventHandler<()>) -> Element {
+    let mut loaded = use_signal(|| false);
     let mut value = use_signal(String::new);
     let mut mode = use_signal(|| TypingMode::Auto);
     let mut focused = use_signal(|| false);
@@ -44,8 +45,19 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: CSS }
 
-        main {
-            class: "relative min-h-screen w-full bg-black text-white font-mono antialiased overflow-hidden selection:bg-green-500/30",
+        main { 
+            class: "relative min-h-screen w-full bg-black text-white font-mono antialiased overflow-hidden selection:bg-green-500/30 transition-opacity duration-500 ease-in",
+            class: if loaded() { "opacity-100" } else { "opacity-0" },
+            onmounted: move |_| {
+                spawn(async move {
+                    // beri browser 1 frame untuk render state awal (opacity-0)
+                    // sebelum transisi di-trigger, mirip double-rAF di JS
+                    document::eval(
+                        "await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));"
+                    ).await.ok();
+                    loaded.set(true);
+                });
+            },
 
             section { class: "relative min-h-screen w-full flex flex-col items-center justify-center gap-6 sm:gap-7 px-6 py-16",
 

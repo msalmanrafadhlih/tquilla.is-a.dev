@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
 
 #[component]
-pub fn MainPage() -> Element {
+pub fn DesktopMode() -> Element {
     let mut loaded = use_signal(|| false);
 
     rsx! {
-        main {
+        main { id: "eclipse",
             class: "min-h-screen w-full bg-black text-white font-mono flex flex-col items-center justify-center gap-3 px-6 transition-opacity duration-500 ease-in",
             class: if loaded() { "opacity-100" } else { "opacity-0" },
             onmounted: move |_| {
@@ -18,8 +18,8 @@ pub fn MainPage() -> Element {
                     loaded.set(true);
                 });
             },
-            p { class: "text-lg tracking-wide", "Welcome back, Tquilla." }
-            p { class: "text-white/40 text-sm", "MainPage is just a stub for now." }
+
+            h1 { class: "text-lg tracking-wide", "This is a Desktop Mode." }
         }
     }
 }
