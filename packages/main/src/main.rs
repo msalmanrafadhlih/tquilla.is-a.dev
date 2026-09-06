@@ -9,6 +9,7 @@ use serde::Deserialize;
 use gloo_timers::future::TimeoutFuture;
 
 const GENERATIONS_JSON: &str = include_str!("../data/generations.json");
+const FAVICON: Asset = asset!("https://avatars.githubusercontent.com/u/141149698");
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 struct Generation {
@@ -119,6 +120,7 @@ pub fn Home() -> Element {
     };
 
     rsx! {
+        document::Link { rel: "icon", href: FAVICON }
         document::Title { "Generation Menu" }
 
         section {

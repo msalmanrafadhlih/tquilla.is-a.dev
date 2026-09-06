@@ -5,7 +5,7 @@ use gloo_timers::future::TimeoutFuture;
 
 use pages::*;
 
-const FAVICON: Asset = asset!("/assets/favicon.ico");
+const FAVICON: Asset = asset!("https://avatars.githubusercontent.com/u/141149698");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 #[component]

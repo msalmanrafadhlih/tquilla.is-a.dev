@@ -12,6 +12,7 @@ use data::AppData;
 /// even before `/data.json` is being served (e.g. by a GitHub Actions cron
 /// job, the way the github-readme-card project generates its stats).
 const SAMPLE_DATA: &str = include_str!("../../data/journal.sample.json");
+const FAVICON: Asset = asset!("https://avatars.githubusercontent.com/u/141149698");
 
 async fn load_data() -> Result<AppData, String> {
     if let Ok(resp) = gloo_net::http::Request::get("/data.json").send().await {
@@ -63,6 +64,7 @@ fn Page(data: AppData) -> Element {
 
     rsx! {
         document::Title { "Github Journal" }
+        document::Link { rel: "icon", href: FAVICON }
         div { class: "bg-paper text-primary font-sans antialiased flex flex-col selection:bg-accent selection:text-paper overflow-x-hidden",
             Hero { hero: data.hero.clone(), date_label, build_number }
             PinnedSection { pinned: data.pinned.clone() }
