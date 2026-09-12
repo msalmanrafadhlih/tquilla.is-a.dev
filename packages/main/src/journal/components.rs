@@ -79,7 +79,7 @@ pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element
 #[component]
 pub fn ArticleCard(repo: Option<Repo>, class: String) -> Element {
     rsx! {
-        article { class: "{class}",
+        article { class: "{class}", "data-reveal": "true",
             if let Some(repo) = repo {
                 div { class: "flex justify-between items-start mb-4",
                     span { class: "font-sans font-bold uppercase text-sm tracking-[0.15em] text-ink/40",
@@ -117,7 +117,9 @@ pub fn PinnedSection(pinned: Vec<Repo>) -> Element {
                 }
                 section { class: "flex-1 w-full h-full flex flex-col",
                     div { class: "grid grid-cols-1 lg:grid-cols-12 h-2/3 border-b border-line",
-                        div { class: "lg:col-span-8 border-b lg:border-b-0 lg:border-r border-line p-8 md:p-12 lg:p-16 flex flex-col justify-between relative",
+                        div {
+                            class: "lg:col-span-8 border-b lg:border-b-0 lg:border-r border-line p-8 md:p-12 lg:p-16 flex flex-col justify-between relative",
+                            "data-reveal": "true",
                             if let Some(repo) = &feat {
                                 div { class: "flex justify-between items-start mb-8",
                                     span { class: "font-sans font-bold uppercase tracking-[0.15em] text-ink/60",
@@ -197,7 +199,9 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
         section { class: "w-full bg-paper border-b border-line",
             div { class: "max-w-[1400px] mx-auto border-l border-r border-line py-24 px-6 md:px-16 flex flex-col items-center",
                 div { class: "flex flex-col w-full",
-                    div { class: "flex flex-col md:flex-row md:items-end justify-between border-b border-line pb-8 mb-12",
+                    div {
+                        class: "flex flex-col md:flex-row md:items-end justify-between border-b border-line pb-8 mb-12",
+                        "data-reveal": "true",
                         div { class: "max-w-2xl",
                             span { class: "block text-accent font-mono text-sm mb-4", "03. — SECTION" }
                             h1 { class: "text-primary font-serif text-5xl md:text-8xl italic font-bold leading-tight mb-4",
@@ -217,7 +221,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                         }
                     }
                     div { class: "grid grid-cols-1 lg:grid-cols-3 gap-0 lg:divide-x divide-line min-h-[600px] border-b border-line",
-                        div { class: "p-0 lg:pr-12 pb-12 lg:pb-0",
+                        div { class: "p-0 lg:pr-12 pb-12 lg:pb-0", "data-reveal": "true",
                             div { class: "flex items-center gap-3 mb-10",
                                 span { class: "material-symbols-outlined text-accent text-xl", "code" }
                                 h3 { class: "font-serif text-3xl text-primary italic", "Dialects." }
@@ -252,7 +256,9 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                                 }
                             }
                         }
-                        div { class: "col-span-1 lg:col-span-2 lg:pl-12 pt-12 lg:pt-0 flex flex-col",
+                        div {
+                            class: "col-span-1 lg:col-span-2 lg:pl-12 pt-12 lg:pt-0 flex flex-col",
+                            "data-reveal": "true",
                             div { class: "flex items-center justify-between mb-10",
                                 div { class: "flex items-center gap-3",
                                     span { class: "material-symbols-outlined text-accent text-xl", "timeline" }
@@ -285,7 +291,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                                 }
                             }
                             div { class: "grid grid-cols-1 md:grid-cols-2 gap-8 mt-12",
-                                div { class: "p-6 bg-white border border-line",
+                                div { class: "p-6 bg-white border border-line", "data-reveal": "true",
                                     h4 { class: "font-serif italic text-2xl mb-2 text-primary", "Monthly Focus" }
                                     if let Some(html) = &focus_html {
                                         p { class: "text-sm leading-relaxed text-primary/70", dangerous_inner_html: "{html}" }
@@ -293,7 +299,9 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                                         p { class: "text-sm leading-relaxed text-primary/70", "Current heavy activity detected in {focus_text}." }
                                     }
                                 }
-                                div { class: "p-6 bg-white border border-line flex flex-col justify-between",
+                                div {
+                                    class: "p-6 bg-white border border-line flex flex-col justify-between",
+                                    "data-reveal": "true",
                                     div { class: "flex justify-between items-start mb-4",
                                         h4 { class: "font-serif italic text-2xl text-primary", "Most Productive" }
                                         span { class: "material-symbols-outlined text-accent", "bolt" }
@@ -318,7 +326,7 @@ pub fn Footer(year: i32) -> Element {
         footer { class: "w-full relative border-t border-line mt-auto bg-paper",
             div { class: "absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-primary rotate-45" }
             div { class: "max-w-[1400px] mx-auto py-16 px-4 md:px-12 border-l border-r border-line",
-                div { class: "flex flex-col items-center justify-center text-center space-y-12",
+                div { class: "flex flex-col items-center justify-center text-center space-y-12", "data-reveal": "true",
                     div { class: "space-y-4",
                         span { class: "material-symbols-outlined text-primary text-3xl mb-2", "public" }
                         h4 { class: "font-display text-sm md:text-sm font-bold tracking-[0.2em] uppercase text-muted",
@@ -332,7 +340,7 @@ pub fn Footer(year: i32) -> Element {
                     }
                     div { class: "pt-12 mt-4 w-full flex flex-col md:flex-row justify-between items-center border-t border-line/30 gap-6",
                         div { class: "flex items-center gap-3",
-                            span { class: "font-mono text-muted uppercase tracking-tight", "Built with Bun, Tailwind & HTML" }
+                            span { class: "font-mono text-muted uppercase tracking-tight", "Built with Rust, Dioxus & TailwindCSS" }
                             span { class: "h-px w-8 bg-line" }
                             span { class: "font-mono text-muted uppercase tracking-tight", "v1.0.1" }
                         }
