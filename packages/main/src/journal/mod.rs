@@ -27,10 +27,6 @@ const FAVICON: &str = "https://avatars.githubusercontent.com/u/141149698";
 /// `wrangler deploy` in `worker/`.
 const STATS_API_URL: &str = "https://github-journal-stats.msalmanrafadhlih.workers.dev/api/stats";
 
-fn main() {
-    dioxus::launch(App);
-}
-
 async fn load_data() -> Result<AppData, String> {
     if let Ok(resp) = gloo_net::http::Request::get(STATS_API_URL).send().await {
         if resp.ok() {
@@ -45,7 +41,7 @@ async fn load_data() -> Result<AppData, String> {
 }
 
 #[component]
-pub fn App() -> Element {
+pub fn JournalPage() -> Element {
     let mut data: Signal<Option<AppData>> = use_signal(|| None);
     let mut load_error: Signal<Option<String>> = use_signal(|| None);
 
