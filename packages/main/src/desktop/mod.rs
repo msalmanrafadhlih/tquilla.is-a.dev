@@ -1,5 +1,5 @@
 mod pages;
-mod gui;
+// mod gui;
 
 use dioxus::prelude::*;
 use gloo_timers::future::TimeoutFuture;
