@@ -49,6 +49,15 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
     let open_windows: Signal<Vec<OpenWindow>> = use_signal(Vec::new);
     let next_z = use_signal(|| 1i32);
     let (time, date) = use_live_clock();
+    let brightness = use_signal(|| 0u8);
+
+    let dim_class = if brightness() == 0 {
+        "pointer-events-none absolute inset-0 z-30 bg-black opacity-0 transition-opacity duration-300"
+    } else if brightness() == 1 {
+        "pointer-events-none absolute inset-0 z-30 bg-black opacity-30 transition-opacity duration-300"
+    } else {
+        "pointer-events-none absolute inset-0 z-30 bg-black opacity-60 transition-opacity duration-300"
+    };
 
     rsx! {
         main {
@@ -66,7 +75,7 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
                 });
             },
 
-            Navbar { time, date, on_toggle }
+            Navbar { time, date, on_toggle, brightness }
 
             div { class: "relative flex-1 min-h-0",
                 for ow in open_windows() {

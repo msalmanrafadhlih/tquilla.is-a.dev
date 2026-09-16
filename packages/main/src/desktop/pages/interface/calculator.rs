@@ -46,7 +46,11 @@ fn format_result(value: f64) -> String {
 fn input_digit(mut state: CalcState, d: &str) {
     let mut current = (state.display)();
     if (state.fresh_entry)() || current == "0" {
-        current = if d == "." { "0.".to_string() } else { d.to_string() };
+        current = if d == "." {
+            "0.".to_string()
+        } else {
+            d.to_string()
+        };
         state.fresh_entry.set(false);
     } else if d == "." && current.contains('.') {
         // ignore a second decimal point
@@ -102,12 +106,17 @@ pub fn Calculator() -> Element {
     let stored = use_signal(|| Option::<f64>::None);
     let pending_op = use_signal(|| Option::<Op>::None);
     let fresh_entry = use_signal(|| true);
-    let state = CalcState { display, stored, pending_op, fresh_entry };
+    let state = CalcState {
+        display,
+        stored,
+        pending_op,
+        fresh_entry,
+    };
 
     rsx! {
-        div { class: "flex flex-col h-full bg-black text-white font-mono",
-            div { class: "flex-1 flex items-end justify-end px-4 py-3 text-3xl truncate", "{display}" }
-            div { class: "grid grid-cols-4 gap-px bg-white/10 text-sm shrink-0",
+        div { class: "flex flex-col h-fit bg-black gap-2 text-white font-mono",
+            div { class: "flex-1 flex border border-white/15 items-end justify-end px-4 py-3 text-3xl truncate", "{display}" }
+            div { class: "grid grid-cols-4 gap-2 bg-white/10 text-sm shrink-0",
                 CalcKey { label: "C", onclick: move |_| clear_all(state) }
                 CalcKey { label: "±", onclick: move |_| toggle_sign(state) }
                 CalcKey { label: "%", onclick: move |_| percent(state) }
