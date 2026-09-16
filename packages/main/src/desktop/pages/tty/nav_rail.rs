@@ -28,7 +28,7 @@ pub fn NavRail(on_toggle: EventHandler<()>, vertical: bool) -> Element {
     let wrapper_class = if vertical {
         "flex flex-col pl-2 items-center justify-between h-full py-0 w-max border-l border-white/10 shrink-0 gap-2"
     } else {
-        "flex items-center justify-between w-full px-4 py-2.5 shrink-0 gap-2"
+        "flex items-center justify-between w-full shrink-0 gap-2"
     };
 
     rsx! {

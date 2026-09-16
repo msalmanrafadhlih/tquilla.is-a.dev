@@ -78,8 +78,8 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
             }
 
             // ---------------- Mobile layout (below lg) ----------------
-            div { class: "flex lg:hidden flex-col h-full w-full",
-                div { class: "flex-1 min-h-0 border-b border-white/15",
+            div { class: "flex lg:hidden gap-2 px-2 py-2 flex-col h-full w-full",
+                div { class: "flex-1 min-h-0 border border-white/15",
                     ShellPanel {
                         history,
                         cwd,
@@ -99,7 +99,7 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                         ComingSoonPanel { label: "SHELL 5" }
                     }
                 }
-                div { class: "flex shrink-0 border-b border-white/15",
+                div { class: "flex shrink-0 border border-white/15",
                     for (label , tab) in [
                         ("SHELL 2", MobileTab::Shell2),
                         ("SHELL 3", MobileTab::Shell3),
