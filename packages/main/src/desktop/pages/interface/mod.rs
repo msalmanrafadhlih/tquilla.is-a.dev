@@ -1,31 +1,25 @@
 use dioxus::prelude::*;
 
-mod ai_assistant;
-mod audio;
-mod browser;
-mod calculator;
 mod dock;
-mod embience;
-mod file_manager;
-mod js_util;
-mod live_chat;
 mod navbar;
-mod radio;
-mod system_info;
-mod window_frame;
+mod window;
 
-use ai_assistant::AiAssistantWindowContent;
-use audio::AUDIO_JS;
-use browser::BrowserWindowContent;
-use calculator::Calculator;
 use dock::Dock;
-use embience::EmbienceWindowContent;
-use file_manager::FileManagerWindowContent;
-use live_chat::LiveChatWindowContent;
 use navbar::Navbar;
-use radio::RadioWindowContent;
-use system_info::{AboutWindowContent, SettingsWindowContent};
-use window_frame::{AppId, OpenWindow, WindowFrame, WINDOW_MANAGER_JS};
+use window::{AppId, OpenWindow, WindowFrame, WINDOW_MANAGER_JS};
+
+use crate::desktop::gui::{
+    AiAssistantWindowContent,
+    AUDIO_JS,
+    BrowserWindowContent,
+    Calculator,
+    EmbienceWindowContent,
+    FileManagerWindowContent,
+    LiveChatWindowContent,
+    RadioWindowContent,
+    AboutWindowContent,
+    SettingsWindowContent
+};
 
 use crate::desktop::clock::use_live_clock;
 
@@ -94,6 +88,7 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
             onmounted: move |_| {
                 spawn(async move {
                     document::eval(WINDOW_MANAGER_JS).await.ok();
+                    document::eval(AUDIO_JS).await.ok();
                     document::eval(
                             "await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));",
                         )

@@ -3,9 +3,9 @@ use js_sys::Date;
 use serde::Deserialize;
 use wasm_bindgen::JsValue;
 
-use super::js_util::eval_js;
+use crate::desktop::js_util::eval_js;
 
-const CHAT_JSON: &str = include_str!("../../../../data/chat_sample.json");
+const CHAT_JSON: &str = include_str!("../../../data/chat_sample.json");
 
 const AVATAR_1: Asset = asset!("/assets/profile_default_1.svg");
 const AVATAR_2: Asset = asset!("/assets/profile_default_2.svg");
@@ -17,24 +17,38 @@ const AVATAR_5: Asset = asset!("/assets/profile_default_5.svg");
 struct SeedMessage {
     message_id: u32,
     username: String,
+    img_profile: Option<String>,
     message: String,
-    // Source JSON spells this "timestanp" (typo for timestamp).
-    timestanp: String,
+    timestamp: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 struct ChatMessage {
     id: u32,
     username: String,
+    img: Option<String>,
     message: String,
     timestamp: String,
 }
 
 fn load_seed_messages() -> Vec<ChatMessage> {
-    let seeds: Vec<SeedMessage> = serde_json::from_str(CHAT_JSON).unwrap_or_default();
+    // Jaga-jaga kalau file JSON-nya dikasih baris komentar `//` di awal,
+    // sama kayak pola di loader embience.json.
+    let cleaned: String = CHAT_JSON
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("//"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let seeds: Vec<SeedMessage> = serde_json::from_str(&cleaned).unwrap_or_default();
     seeds
         .into_iter()
-        .map(|s| ChatMessage { id: s.message_id, username: s.username, message: s.message, timestamp: s.timestanp })
+        .map(|s| ChatMessage {
+            id: s.message_id,
+            username: s.username,
+            img: s.img_profile,
+            message: s.message,
+            timestamp: s.timestamp,
+        })
         .collect()
 }
 
@@ -109,7 +123,7 @@ fn send_message(
     let id = next_id();
     next_id.set(id + 1);
     let mut list = messages();
-    list.push(ChatMessage { id, username, message: text, timestamp: now });
+    list.push(ChatMessage { id, username, img: None, message: text, timestamp: now });
     messages.set(list);
     draft.set(String::new());
     eval_js(
@@ -133,7 +147,7 @@ pub fn LiveChatWindowContent() -> Element {
                 for msg in messages() {
                     div { key: "{msg.id}", class: "flex items-start gap-2",
                         img {
-                            src: avatar_for(msg.id),
+                            src: if let Some(path) = &msg.img { path.clone() } else { avatar_for(msg.id).to_string() },
                             alt: "",
                             class: "w-7 h-7 shrink-0 rounded-full border border-white/15",
                         }

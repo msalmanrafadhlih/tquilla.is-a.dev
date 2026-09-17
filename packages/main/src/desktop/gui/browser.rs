@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use serde::Deserialize;
 
-const BOOKMARKS_JSON: &str = include_str!("../../../../data/browser.json");
+const BOOKMARKS_JSON: &str = include_str!("../../../data/browser.json");
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 struct Bookmark {

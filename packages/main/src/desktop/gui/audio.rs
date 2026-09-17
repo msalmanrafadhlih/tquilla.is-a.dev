@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::js_util::{eval_js, js_string_escape};
+use crate::desktop::js_util::{eval_js, js_string_escape};
 
 /// Persistent audio-control utility, `eval`'d once (idempotent) from
 /// DesktopMode's mount. `.m3u8` sources are routed through hls.js (loaded

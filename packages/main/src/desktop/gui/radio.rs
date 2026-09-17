@@ -2,9 +2,9 @@ use dioxus::prelude::*;
 use serde::Deserialize;
 
 use super::audio::{load_and_play, pause_audio, resume_audio, set_audio_volume};
-use super::js_util::{eval_js, js_string_escape};
+use crate::desktop::js_util::{eval_js, js_string_escape};
 
-const RADIO_JSON: &str = include_str!("../../../../data/radio.json");
+const RADIO_JSON: &str = include_str!("../../../data/radio.json");
 const AUDIO_ID: &str = "radio-audio";
 const SKIP_BACK_ICON: Asset = asset!("/assets/skip-back.svg");
 const SKIP_FORWARD_ICON: Asset = asset!("/assets/skip-forward.svg");

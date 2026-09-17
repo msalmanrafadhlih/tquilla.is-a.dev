@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::window_frame::{open_or_focus, AppId, OpenWindow};
+use super::window::{open_or_focus, AppId, OpenWindow};
 
 const GITHUB_ICON: Asset = asset!("/assets/Github.svg");
 const DISCORD_ICON: Asset = asset!("/assets/Discord.svg");

@@ -1,6 +1,7 @@
 mod clock;
 mod pages;
-// mod gui;
+mod gui;
+mod js_util;
 
 use dioxus::prelude::*;
 use gloo_timers::future::TimeoutFuture;
