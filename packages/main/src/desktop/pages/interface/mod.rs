@@ -1,16 +1,29 @@
 use dioxus::prelude::*;
 
+mod ai_assistant;
+mod audio;
+mod browser;
 mod calculator;
 mod dock;
+mod embience;
 mod file_manager;
+mod js_util;
+mod live_chat;
 mod navbar;
+mod radio;
 mod system_info;
 mod window_frame;
 
+use ai_assistant::AiAssistantWindowContent;
+use audio::AUDIO_JS;
+use browser::BrowserWindowContent;
 use calculator::Calculator;
 use dock::Dock;
+use embience::EmbienceWindowContent;
 use file_manager::FileManagerWindowContent;
+use live_chat::LiveChatWindowContent;
 use navbar::Navbar;
+use radio::RadioWindowContent;
 use system_info::{AboutWindowContent, SettingsWindowContent};
 use window_frame::{AppId, OpenWindow, WindowFrame, WINDOW_MANAGER_JS};
 
@@ -34,6 +47,21 @@ fn AppContent(id: AppId) -> Element {
         },
         AppId::FileManager => rsx! {
             FileManagerWindowContent {}
+        },
+        AppId::Radio => rsx! {
+            RadioWindowContent {}
+        },
+        AppId::Embience => rsx! {
+            EmbienceWindowContent {}
+        },
+        AppId::LiveChat => rsx! {
+            LiveChatWindowContent {}
+        },
+        AppId::Browser => rsx! {
+            BrowserWindowContent {}
+        },
+        AppId::AiAssistant => rsx! {
+            AiAssistantWindowContent {}
         },
         _ => rsx! {
             div { class: "flex items-center justify-center h-full text-white/30 text-sm", "Coming soon." }
