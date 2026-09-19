@@ -7,11 +7,11 @@ use crate::desktop::js_util::eval_js;
 
 const CHAT_JSON: &str = include_str!("../../../data/chat_sample.json");
 
-const AVATAR_1: Asset = asset!("/assets/profile_default_1.svg");
-const AVATAR_2: Asset = asset!("/assets/profile_default_2.svg");
-const AVATAR_3: Asset = asset!("/assets/profile_default_3.svg");
-const AVATAR_4: Asset = asset!("/assets/profile_default_4.svg");
-const AVATAR_5: Asset = asset!("/assets/profile_default_5.svg");
+const AVATAR_1: Asset = asset!("/assets/profile_default_01.svg");
+const AVATAR_2: Asset = asset!("/assets/profile_default_02.svg");
+const AVATAR_3: Asset = asset!("/assets/profile_default_03.svg");
+const AVATAR_4: Asset = asset!("/assets/profile_default_04.svg");
+const AVATAR_5: Asset = asset!("/assets/profile_default_05.svg");
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 struct SeedMessage {

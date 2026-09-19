@@ -9,8 +9,6 @@ use gloo_timers::future::TimeoutFuture;
 use pages::*;
 
 const FAVICON: &str = "https://avatars.githubusercontent.com/u/141149698";
-const MAIN_CSS: Asset = asset!("/assets/main.css");
-
 #[component]
 pub fn DesktopPage() -> Element {
     let mut is_booting = use_signal(|| true);
@@ -26,7 +24,6 @@ pub fn DesktopPage() -> Element {
     rsx! {
         // Global app resources
         document::Link { rel: "icon", href: FAVICON }
-        document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Title { "Deisktify" }
 
         // Login { on_unlocked: move |_| is_logged_in.set(true) }

@@ -1,13 +1,13 @@
 use dioxus::prelude::*;
 use gloo_timers::future::TimeoutFuture;
 
-const NIXOS_ICON: Asset = asset!("/assets/Icon-Nixos.svg");
-const WIFI_ICON: Asset = asset!("/assets/button-wifi.svg");
-const VOLUME_ICON: Asset = asset!("/assets/button-volume.svg");
-const BRIGHTNESS_ICON: Asset = asset!("/assets/button-brightness.svg");
-const BATTERY_ICON: Asset = asset!("/assets/button-battery.svg");
-const NOTIFICATION_ICON: Asset = asset!("/assets/button-Notification.svg");
-const TERMINAL_ICON: Asset = asset!("/assets/button-terminal.svg");
+const NIXOS_ICON: Asset = asset!("/assets/Icon-nixos.svg");
+const WIFI_ICON: Asset = asset!("/assets/icon-wifi.svg");
+const VOLUME_ICON: Asset = asset!("/assets/icon-volume.svg");
+const BRIGHTNESS_ICON: Asset = asset!("/assets/icon-color-scheme.svg");
+const BATTERY_ICON: Asset = asset!("/assets/icon-battery.svg");
+const NOTIFICATION_ICON: Asset = asset!("/assets/icon-notification.svg");
+const TERMINAL_ICON: Asset = asset!("/assets/icon-terminal.svg");
 
 // Decorative only for now — a real dropdown per item is more than this
 // pass covers, matching classic desktop chrome without the behavior.

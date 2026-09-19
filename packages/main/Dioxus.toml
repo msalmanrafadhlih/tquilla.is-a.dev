@@ -14,5 +14,5 @@ watch_path = ["src", "assets"]
 reload_html = true
 
 # [web.resource]
-# style = []
+# style = [ "/assets/booting.css", "/assets/main.css", "/assets/login.css", "/assets/globals.css", "/assets/styleguide.css" ]
 # script = []

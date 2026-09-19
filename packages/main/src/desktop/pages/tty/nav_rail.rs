@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
 
-const GITHUB_ICON: Asset = asset!("/assets/Github.svg");
-const GITHUB_ICON_HOVER: Asset = asset!("/assets/Github_2.svg");
-const LINKEDIN_ICON: Asset = asset!("/assets/LinkedIn.svg");
-const LINKEDIN_ICON_HOVER: Asset = asset!("/assets/Linkedin_2.svg");
-const DISCORD_ICON: Asset = asset!("/assets/Discord.svg");
-const DISCORD_ICON_HOVER: Asset = asset!("/assets/Discord_2.svg");
+const GITHUB_ICON: Asset = asset!("/assets/icon-github-2.svg");
+const GITHUB_ICON_HOVER: Asset = asset!("/assets/icon-github.svg");
+const LINKEDIN_ICON: Asset = asset!("/assets/icon-linkedin-2.svg");
+const LINKEDIN_ICON_HOVER: Asset = asset!("/assets/icon-linkedin.svg");
+const DISCORD_ICON: Asset = asset!("/assets/icon-discord-2.svg");
+const DISCORD_ICON_HOVER: Asset = asset!("/assets/icon-discord.svg");
 
 // TODO(moch): swap in the real LinkedIn / Discord profile URLs — the
 // Github one is confirmed from data/browser.json, the other two are

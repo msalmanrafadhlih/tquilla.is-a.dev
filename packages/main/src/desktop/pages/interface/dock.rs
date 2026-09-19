@@ -2,21 +2,19 @@ use dioxus::prelude::*;
 
 use super::window::{open_or_focus, AppId, OpenWindow};
 
-const GITHUB_ICON: Asset = asset!("/assets/Github.svg");
-const DISCORD_ICON: Asset = asset!("/assets/Discord.svg");
-const LINKEDIN_ICON: Asset = asset!("/assets/LinkedIn.svg");
-const SETTINGS_ICON: Asset = asset!("/assets/button-Settings.svg");
-const FILE_MANAGER_ICON: Asset = asset!("/assets/button-FileManager.svg");
-const DVD_ICON: Asset = asset!("/assets/button-DVD.svg");
-const EMBIENCE_ICON: Asset = asset!("/assets/button-Embience.svg");
-const BROWSER_ICON: Asset = asset!("/assets/button-Browser.svg");
-const AI_ICON: Asset = asset!("/assets/button-Ai-Assistent.svg");
-const CALCULATOR_ICON: Asset = asset!("/assets/button-calculator.svg");
-const NIXOS_ICON: Asset = asset!("/assets/Nixos_Logo.svg");
-const LIVE_CHAT_ICON: Asset = asset!("/assets/button-live chat.svg");
+const GITHUB_ICON: Asset = asset!("/assets/icon-github.svg");
+const DISCORD_ICON: Asset = asset!("/assets/icon-discord.svg");
+const LINKEDIN_ICON: Asset = asset!("/assets/icon-linkedin.svg");
+const SETTINGS_ICON: Asset = asset!("/assets/logo-Settings.svg");
+const FILE_MANAGER_ICON: Asset = asset!("/assets/logo-FileManager.svg");
+const DVD_ICON: Asset = asset!("/assets/logo-radio.svg");
+const EMBIENCE_ICON: Asset = asset!("/assets/logo-Embience.svg");
+const BROWSER_ICON: Asset = asset!("/assets/logo-Browser.svg");
+const AI_ICON: Asset = asset!("/assets/logo-Ai-Assistent.svg");
+const CALCULATOR_ICON: Asset = asset!("/assets/logo-calculator.svg");
+const NIXOS_ICON: Asset = asset!("/assets/Icon-nixos.svg");
+const LIVE_CHAT_ICON: Asset = asset!("/assets/logo-livechat.svg");
 
-// TODO(moch): same placeholder gap as the Terminal nav rail — swap in the
-// real LinkedIn / Discord URLs whenever you're ready, Github is confirmed.
 const GITHUB_URL: &str = "https://github.com/msalmanrafadhlih";
 const LINKEDIN_URL: &str = "https://www.linkedin.com/feed";
 const DISCORD_URL: &str = "https://discord.com/invite/motionime";

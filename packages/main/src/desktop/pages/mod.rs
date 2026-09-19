@@ -11,8 +11,6 @@ pub use booting::Booting;
 pub use tty::TerminalMode;
 pub use interface::DesktopMode;
 
-const CSS: Asset = asset!("/assets/booting.css");
-
 /// Which interface `MainPage` currently shows. Flipped by the small "Mode"
 /// badge (`#toggle`) that lives in the corner of both `TerminalMode` and
 /// `DesktopMode`.
@@ -53,8 +51,6 @@ pub fn MainPage() -> Element {
     };
 
     rsx! {
-        document::Link { rel: "stylesheet", href: CSS }
-
         div {
             class: "transition-opacity duration-[250ms] ease-out",
             style: if switching() {

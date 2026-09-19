@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-const NIXOS_ICON: Asset = asset!("/assets/Icon-Nixos.svg");
+const NIXOS_ICON: Asset = asset!("/assets/logo-nixos.svg");
 
 const SYSTEM_INFO: [(&str, &str); 10] = [
     ("Version", "NixOS 26.11 (Zakar)"),

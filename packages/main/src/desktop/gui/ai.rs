@@ -2,8 +2,12 @@ use dioxus::prelude::*;
 use gloo_net::http::Request;
 use serde::{Deserialize, Serialize};
 
+const GEMINI_31_FLASHLITE: &str = "Gemini 3.1 Flash-Lite";
+const GEMINI_35_FLASHLITE: &str = "gemini-3.5-flash-lite";
 const GEMINI_35_FLASH: &str = "gemini-3.5-flash";
+const GEMINI_36_FLASH: &str = "gemini-3.6-flash";
 const GEMINI_37_FLASH: &str = "gemini-3.7-flash";
+const GEMINI_38_FLASH: &str = "gemini-3.8-flash";
 
 #[derive(Clone, Copy, PartialEq)]
 enum Role {
