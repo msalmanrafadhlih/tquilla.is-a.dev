@@ -45,7 +45,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
     let is_open = move |app_id: AppId| open_windows().iter().any(|w| w.id == app_id && !w.minimized);
 
     rsx! {
-        footer { class: "relative flex w-full flex-none items-center justify-center gap-2.5 px-2.5 z-[999] rounded-3xl border-b-[0.5px] border-white backdrop-blur-sm [background:linear-gradient(180deg,transparent_50%,rgba(37,37,37,1)_100%)]",
+        footer { class: "relative flex w-full flex-none items-center justify-center gap-2.5 px-2.5 pb-2.5 md:pb-0 z-[999] rounded-3xl border-b-[0.5px] border-white backdrop-blur-sm [background:linear-gradient(180deg,transparent_50%,rgba(37,37,37,1)_100%)]",
 
             // LEFT DOCK — social links. jika button `Open social menu` di klick, maka akan memunculkan tag list anchor diatasnya
             section {
@@ -97,7 +97,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
             // MIDDLE DOCK — app launcher. Always a single row; the icon
             // strip scrolls horizontally instead of wrapping.
             nav {
-                class: "flex w-full min-w-0 flex-1 items-center justify-center gap-5 self-stretch px-2.5 pb-2.5 md:w-fit md:flex-none",
+                class: "flex w-full min-w-0 flex-1 items-center justify-center gap-2 md:gap-5 self-stretch px-2.5 md:pb-2.5 md:w-fit md:flex-none",
                 "aria-label": "Application dock",
 
                 button {
@@ -110,7 +110,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
 
                 div { class: "h-[31.5px] w-px flex-none bg-[#555]" }
 
-                div { class: "scrollbar-hide flex min-w-0 flex-1 items-center gap-5 overflow-x-scroll overflow-y-hidden border-x border-[#555] px-5 pt-2.5 md:w-fit md:flex-none md:border-0",
+                div { class: "scrollbar-hide flex min-w-0 flex-1 items-center gap-5 overflow-x-scroll overflow-y-hidden border-x border-[#555] px-2 md:px-0 py-1 md:w-fit md:flex-none md:border-0",
                     for (icon , app_id) in apps {
                         button {
                             key: "{app_id.key()}",

@@ -8,6 +8,7 @@ const BATTERY_ICON: Asset = asset!("/assets/icon-battery.svg");
 const NOTIFICATION_ICON: Asset = asset!("/assets/icon-notification.svg");
 const NOTIFICATION_ICON_SILENT: Asset = asset!("/assets/icon-notification-silent.svg");
 const TOGGLE_ICON: Asset = asset!("/assets/icon-toggle-popup.svg");
+const ICON_CLOSE: Asset = asset!("/assets/icon-close.svg");
 
 /// Decorative only for now — a real dropdown per item is more than this
 /// pass covers, matching classic desktop chrome without the behavior.
@@ -60,7 +61,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
         if active {
             "w-full border-b border-white bg-white/10 px-2 py-2 text-left text-xs text-white transition-colors duration-150 font-['JetBrains_Mono'] lg:w-auto lg:rounded-sm lg:border-b-0 lg:px-2 lg:py-1"
         } else {
-            "w-full border-b border-white px-2 py-2 text-left text-xs text-white/70 transition-colors duration-150 ease-out hover:bg-white/5 hover:text-white font-['JetBrains_Mono'] lg:w-auto lg:rounded-sm lg:border-b-0 lg:px-2 lg:py-1"
+            "w-full border-b border-white px-2 py-2 text-left text-xs text-white/70 transition-colors duration-150 ease-out hover:bg-white/5 hover:text-white font-['JetBrains_Mono'] xl:w-auto xl:rounded-sm xl:border-b-0 xl:px-2 xl:py-1"
         }
     };
 
@@ -70,11 +71,11 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
             // Centered clock — always visible; only the date line drops below `sm`.
             div { class: "absolute left-1/2 top-1/2 z-[4] flex -translate-x-1/2 -translate-y-1/2 select-none flex-col items-center gap-1",
                 span { class: "text-center text-sm font-light", "{time}" }
-                span { class: "hidden text-[12px] text-white/40 sm:block", "{date}" }
+                span { class: "hidden text-[12px] text-white/40 min-[500px]:block", "{date}" }
             }
 
             // LEFT — logo + title + menu bar. jika button `NIXOS_ICON` di klik, maka akan memunculkan tag nav/list button di bawahnya!
-            div { class: "flex min-w-0 flex-col items-start gap-3 h-[35px] lg:flex-row lg:items-center",
+            div { class: "flex min-w-0 flex-col items-start gap-3 h-[35px] xl:flex-row lg:items-center",
                 button {
                     r#type: "button",
                     class: "group relative flex shrink-0 items-center gap-2 rounded-md px-1 py-1 transition-colors duration-150 ease-out hover:bg-white/5 active:scale-95",
@@ -86,19 +87,19 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                     },
                     img { src: NIXOS_ICON, alt: "NixDesktop logo", class: "h-[26px] w-[26px]" }
                     span { class: "hidden text-sm font-normal lg:inline", "NixDesktop" }
-                    span { class: "text-sm font-normal lg:hidden", "NixMobile" }
+                    span { class: "max-[370px]:hidden text-sm font-normal lg:hidden", "NixMobile" }
                     div { class: about_class, "Desktop simulasi pribadi milik Moch." }
                 }
 
                 div {
                     class: if nav_menu_open() {
-                        "grid grid-rows-[1fr] transition-[grid-template-rows] w-full duration-300 ease-out overflow-hidden shrink-0 lg:flex lg:overflow-visible"
+                        "grid grid-rows-[1fr] transition-[grid-template-rows] w-full duration-300 ease-out overflow-hidden shrink-0 xl:flex xl:overflow-visible"
                     } else {
-                        "grid grid-rows-[0fr] transition-[grid-template-rows] w-full duration-300 ease-out overflow-hidden shrink-0 lg:flex lg:overflow-visible"
+                        "grid grid-rows-[0fr] transition-[grid-template-rows] w-full duration-300 ease-out overflow-hidden shrink-0 xl:flex xl:overflow-visible"
                     },
-                    div { class: "overflow-hidden lg:overflow-visible",
+                    div { class: "overflow-hidden xl:overflow-visible",
                         nav {
-                            class: "relative flex w-full flex-col items-stretch gap-0.5 lg:w-auto lg:flex-row",
+                            class: "relative flex w-full flex-col items-stretch gap-0.5 xl:w-auto xl:flex-row",
                             "aria-label": "Main navigation",
                             for (i , label) in MENU_ITEMS.into_iter().enumerate() {
                                 button {
@@ -126,15 +127,15 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                     r#type: "button",
                     "aria-label": "Open status menu",
                     "aria-expanded": if status_menu_open() { "true" } else { "false" },
-                    class: "border-0 bg-transparent p-0 sm:hidden",
+                    class: "border-0 bg-transparent pt-1 sm:hidden",
                     onclick: move |_| status_menu_open.set(!status_menu_open()),
                     img {
-                        src: TOGGLE_ICON,
+                        src: if status_menu_open() { ICON_CLOSE } else { TOGGLE_ICON },
                         alt: "Toggle",
                         class: if status_menu_open() {
-                            "w-[20px] cursor-pointer rotate-180 transition-transform duration-300 ease-out"
+                            "w-[10px] pt-0.5 cursor-pointer transition-transform duration-300 ease-out"
                         } else {
-                            "w-[20px] cursor-pointer transition-transform duration-300 ease-out"
+                            "w-[15px] cursor-pointer rotate-180 transition-transform duration-300 ease-out"
                         }
                     }
                 }
@@ -146,7 +147,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                         "grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
                     },
                     div { class: "overflow-hidden sm:overflow-visible",
-                        div { class: "flex flex-col items-center gap-3 md:flex-row", "aria-label": "System status",
+                        div { class: "flex flex-col items-center gap-3 sm:flex-row", "aria-label": "System status",
                             button {
                                 r#type: "button",
                                 class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
