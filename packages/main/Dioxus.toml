@@ -13,6 +13,12 @@ default_platform = "web"
 watch_path = ["src", "assets"]
 reload_html = true
 
-# [web.resource]
-# style = [ "/assets/booting.css", "/assets/main.css", "/assets/login.css", "/assets/globals.css", "/assets/styleguide.css" ]
-# script = []
+[web.resource]
+style = [
+  "/assets/globals.css",
+  "/assets/styleguide.css",
+  "/assets/booting.css",
+  "/assets/login.css",
+]
+
+[web.resource.dev]

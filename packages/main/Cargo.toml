@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ui = { workspace = true }
-
 dioxus = { version = "0.7.1", features = [ "web", "router" ] }
 gloo-timers = { version = "0.3", features = ["futures"] }
 serde = { version = "1", features = ["derive"] }

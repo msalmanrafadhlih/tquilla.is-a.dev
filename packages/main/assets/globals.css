@@ -16,6 +16,16 @@ button:focus-visible {
 a {
   text-decoration: none;
 }
+/* Used on the DesktopMode dock's horizontally-scrolling app strip —
+   Tailwind's CDN build doesn't ship a scrollbar-hiding plugin, so this
+   is a plain-CSS stand-in for the `scrollbar-hide` utility class. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 /* @FONTWARNING[{"type": "restricted", "family": "JetBrains Mono-Light", "weight": "300", "style": "normal", "allowsCrossOrigin": false}] */
 
 @font-face {
