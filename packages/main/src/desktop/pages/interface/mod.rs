@@ -83,7 +83,7 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
 
     rsx! {
         main {
-            class: "relative h-screen w-full overflow-hidden bg-black text-white font-mono flex flex-col transition-opacity duration-500 ease-in",
+            class: "relative h-screen w-full items-start overflow-hidden bg-black text-white font-mono flex flex-col gap-2.5 p-2.5 transition-opacity duration-500 ease-in",
             class: if loaded() { "opacity-100" } else { "opacity-0" },
             onmounted: move |_| {
                 spawn(async move {
@@ -100,7 +100,7 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
 
             Navbar { time, date, on_toggle, brightness }
 
-            div { class: "relative flex-1 min-h-0",
+            div { class: "relative w-full flex-1 min-h-0", "aria-label": "Desktop workspace",
                 for ow in open_windows() {
                     WindowFrame {
                         key: "{ow.id.key()}",

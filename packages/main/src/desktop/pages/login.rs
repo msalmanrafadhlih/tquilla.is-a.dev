@@ -1,8 +1,6 @@
 use dioxus::prelude::*;
 use gloo_timers::future::TimeoutFuture;
 
-const CSS: Asset = asset!("/assets/login.css");
-
 const TYPE_DELAY_MS: u32 = 150;
 const DEMO_PASSWORD: &str = "msalmanrafadhlih";
 
@@ -43,8 +41,6 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
     });
 
     rsx! {
-        document::Link { rel: "stylesheet", href: CSS }
-
         main { 
             class: "relative min-h-screen w-full bg-black text-white font-mono antialiased overflow-hidden selection:bg-green-500/30 transition-opacity duration-500 ease-in",
             class: if loaded() { "opacity-100" } else { "opacity-0" },

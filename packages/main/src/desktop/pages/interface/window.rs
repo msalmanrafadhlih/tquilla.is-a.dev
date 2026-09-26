@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::desktop::js_util::eval_js;
+
 /// Which app a window instance represents — also the stable identity used
 /// by the open-window registry (open/close/focus/minimize/maximize).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -139,44 +141,83 @@ pub const WINDOW_MANAGER_JS: &str = r#"
     var win = document.getElementById(windowId);
     if (!handle || !win) return;
     var sx = 0, sy = 0, sl = 0, st = 0, dragging = false;
-    handle.addEventListener('mousedown', function (e) {
-      if (e.target.closest('[data-no-drag]')) return;
+    function start(x, y, target) {
+      if (target && target.closest && target.closest('[data-no-drag]')) return;
       dragging = true;
-      sx = e.clientX; sy = e.clientY;
+      sx = x; sy = y;
       var rect = win.getBoundingClientRect();
       var parent = win.offsetParent ? win.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
       sl = rect.left - parent.left;
       st = rect.top - parent.top;
-      e.preventDefault();
-    });
-    document.addEventListener('mousemove', function (e) {
+    }
+    function move(x, y) {
       if (!dragging) return;
-      var nl = sl + (e.clientX - sx);
-      var nt = Math.max(0, st + (e.clientY - sy));
+      var nl = sl + (x - sx);
+      var nt = Math.max(0, st + (y - sy));
       win.style.left = nl + 'px';
       win.style.top = nt + 'px';
+    }
+    function stop() { dragging = false; }
+    // Mouse
+    handle.addEventListener('mousedown', function (e) {
+      start(e.clientX, e.clientY, e.target);
+      if (dragging) e.preventDefault();
     });
-    document.addEventListener('mouseup', function () { dragging = false; });
+    document.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stop);
+    // Touch — same start/move/stop, driven by the first touch point.
+    handle.addEventListener('touchstart', function (e) {
+      var t = e.touches[0];
+      start(t.clientX, t.clientY, e.target);
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!dragging) return;
+      var t = e.touches[0];
+      move(t.clientX, t.clientY);
+      e.preventDefault(); // stop the page from scrolling while dragging
+    }, { passive: false });
+    document.addEventListener('touchend', stop);
+    document.addEventListener('touchcancel', stop);
   }
   function makeResizable(handleId, windowId) {
     var handle = document.getElementById(handleId);
     var win = document.getElementById(windowId);
     if (!handle || !win) return;
     var sx = 0, sy = 0, sw = 0, sh = 0, resizing = false;
-    handle.addEventListener('mousedown', function (e) {
+    function start(x, y) {
       resizing = true;
-      sx = e.clientX; sy = e.clientY;
+      sx = x; sy = y;
       var rect = win.getBoundingClientRect();
       sw = rect.width; sh = rect.height;
+    }
+    function move(x, y) {
+      if (!resizing) return;
+      win.style.width = Math.max(260, sw + (x - sx)) + 'px';
+      win.style.height = Math.max(180, sh + (y - sy)) + 'px';
+    }
+    function stop() { resizing = false; }
+    // Mouse
+    handle.addEventListener('mousedown', function (e) {
+      start(e.clientX, e.clientY);
       e.preventDefault();
       e.stopPropagation();
     });
-    document.addEventListener('mousemove', function (e) {
+    document.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stop);
+    // Touch
+    handle.addEventListener('touchstart', function (e) {
+      var t = e.touches[0];
+      start(t.clientX, t.clientY);
+      e.stopPropagation();
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
       if (!resizing) return;
-      win.style.width = Math.max(260, sw + (e.clientX - sx)) + 'px';
-      win.style.height = Math.max(180, sh + (e.clientY - sy)) + 'px';
-    });
-    document.addEventListener('mouseup', function () { resizing = false; });
+      var t = e.touches[0];
+      move(t.clientX, t.clientY);
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', stop);
+    document.addEventListener('touchcancel', stop);
   }
   window.__wm = { makeDraggable: makeDraggable, makeResizable: makeResizable };
 })();
@@ -203,7 +244,17 @@ pub fn WindowFrame(
     let position_style = if maximized {
         "inset: 12px;".to_string()
     } else {
-        format!("left:{x}px; top:{y}px; width:{w}px; height:{h}px;")
+        // `--win-w`/`--win-h` hold the size *after* it's capped to the
+        // viewport, so `left`/`top` clamp against the size the window
+        // will actually render at — not its uncapped Figma default —
+        // which keeps it fully reachable even on a phone-width screen.
+        format!(
+            "--win-w: min({w}px, calc(100vw - 24px)); \
+             --win-h: min({h}px, calc(100vh - 140px)); \
+             width: var(--win-w); height: var(--win-h); \
+             left: clamp(12px, {x}px, calc(100vw - var(--win-w) - 12px)); \
+             top: clamp(12px, {y}px, calc(100vh - var(--win-h) - 100px));"
+        )
     };
     let style = format!("{position_style} z-index:{z};");
 
@@ -224,17 +275,9 @@ pub fn WindowFrame(
                 id: "{handle_id}",
                 class: "flex items-center justify-between px-3 py-2 border-b border-white/15 cursor-move select-none shrink-0",
                 onmounted: move |_| {
-                    let handle_js = handle_mount_id.clone();
-                    let win_js = handle_mount_win.clone();
-                    spawn(async move {
-                        document::eval(
-                                &format!(
-                                    "window.__wm && window.__wm.makeDraggable('{handle_js}', '{win_js}');",
-                                ),
-                            )
-                            .await
-                            .ok();
-                    });
+                    eval_js(format!(
+                        "window.__wm && window.__wm.makeDraggable('{handle_mount_id}', '{handle_mount_win}');",
+                    ));
                 },
                 span { class: "text-xs text-white/80 truncate", "{id.title()}" }
                 div {
@@ -268,17 +311,9 @@ pub fn WindowFrame(
                     id: "{resize_id}",
                     class: "absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize",
                     onmounted: move |_| {
-                        let resize_js = resize_mount_id.clone();
-                        let win_js = resize_mount_win.clone();
-                        spawn(async move {
-                            document::eval(
-                                    &format!(
-                                        "window.__wm && window.__wm.makeResizable('{resize_js}', '{win_js}');",
-                                    ),
-                                )
-                                .await
-                                .ok();
-                        });
+                        eval_js(format!(
+                            "window.__wm && window.__wm.makeResizable('{resize_mount_id}', '{resize_mount_win}');",
+                        ));
                     },
                 }
             }

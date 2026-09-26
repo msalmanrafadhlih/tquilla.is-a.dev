@@ -1,7 +1,5 @@
 use dioxus::prelude::*;
 
-const CSS: Asset = asset!("/assets/booting.css");
-
 /// One line of the simulated `systemd` boot log.
 ///
 /// `status` is `"OK"` for a green `[ OK ]` tag, or `""` for a bare
@@ -110,8 +108,6 @@ pub fn Booting() -> Element {
     let cursor_delay = elapsed + 150;
 
     rsx! {
-        document::Link { rel: "stylesheet", href: CSS }
-
         section { id: "boot-screen",
             div { class: "boot-scanlines" }
 
