@@ -57,7 +57,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                     } else {
                         "grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 md:flex md:overflow-visible"
                     },
-                    div { class: "flex flex-col gap-5 md:flex-row md:gap-0 overflow-hidden md:overflow-visible",
+                    div { class: "flex flex-col gap-5 w-max md:flex-row md:gap-0 overflow-hidden md:overflow-visible",
                         for (icon , label , href) in socials {
                             a {
                                 key: "{label}",
@@ -140,11 +140,11 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                 "aria-label": "Chat",
                 div {
                     class: if chat_menu_open() {
-                        "grid grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 md:flex md:overflow-visible"
+                        "grid grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out shrink-0 md:flex overflow-hidden md:overflow-visible"
                     } else {
-                        "grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 md:flex md:overflow-visible"
+                        "grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out shrink-0 md:flex overflow-hidden md:overflow-visible"
                     },
-                    div { class: "overflow-hidden md:overflow-visible",
+                    div { class: "w-max overflow-hidden md:overflow-visible",
                         button {
                             r#type: "button",
                             class: "group inline-flex w-max items-center gap-2.5 relative flex-[0_0_auto] z-[3] px-2 py-1 rounded-xl hover:bg-white transition-colors duration-300 ease-out",
