@@ -4,6 +4,3 @@ members = [
     "packages/sudoku"
 ]
 resolver = "2"
-
-[workspace.dependencies]
-ui = { path = "packages/ui" }
