@@ -54,10 +54,6 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
         "pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap rounded-md border border-white/30 bg-black px-2 py-1 text-[10px] text-white/70 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
     };
 
-    // Every item gets the same mobile row-border (`border-b border-white`,
-    // matching the reference's stacked list); `lg` drops the border and
-    // switches to the compact pill treatment, with `active` layered on
-    // top either way.
     let menu_item_class = |active: bool| -> &'static str {
         if active {
             "w-full border-b border-white bg-white/10 px-2 py-2 text-left text-xs text-white transition-colors duration-150 font-['JetBrains_Mono'] lg:w-auto lg:rounded-sm lg:border-b-0 lg:px-2 lg:py-1"
@@ -67,7 +63,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
     };
 
     rsx! {
-        header { class: "relative z-[999] flex w-full shrink-0 items-center justify-center gap-2.5 px-[15px] py-2 text-xs",
+        header { class: "relative z-[999] flex w-full shrink-0 items-center justify-center gap-2.5 px-[15px] py-2 text-xs rounded-3xl border-t-[0.5px] border-x border-white backdrop-blur-sm [background:linear-gradient(180deg,rgba(37,37,37,1)_10%,transparent_100%)]",
 
             // Centered clock — always visible; only the date line drops below `sm`.
             div { class: "absolute left-1/2 top-1/2 z-[4] flex -translate-x-1/2 -translate-y-1/2 select-none flex-col items-center gap-1",
@@ -109,8 +105,8 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
             div { class: "h-[30px] flex-1", "aria-hidden": "true" }
 
             // RIGHT — system-status icons.
-            div { class: "flex flex-none flex-col h-[20px] items-center gap-[25px] pt-1 md:flex-row",
-                img { src: TOGGLE_ICON, alt: "Toggle", class: "h-[18px] w-[18px] cursor-pointer sm:hidden" }
+            div { class: "flex flex-none flex-col h-[20px] items-center gap-[25px] md:flex-row",
+                img { src: TOGGLE_ICON, alt: "Toggle", class: "w-[20px] cursor-pointer sm:hidden" }
 
                 div { class: "flex flex-col items-center gap-3 md:flex-row", "aria-label": "System status",
                     button {
@@ -187,17 +183,17 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
             // Terminal-mode switch — icon-only on mobile, label from `sm` up.
             button {
                 r#type: "button",
-                class: "group flex flex-none items-center gap-1 pt-1 transition-colors duration-150 hover:bg-white hover:text-black sm:h-full sm:px-2",
+                class: "group flex flex-none items-center gap-1",
                 onclick: move |_| on_toggle.call(()),
                 svg {
-                    class: "sm:hidden group-hover:invert",
+                    class: "sm:hidden transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
                     width: "20", height: "20", view_box: "0 0 100 100", fill: "none", xmlns: "http://www.w3.org/2000/svg",
                     path {
                         d: "M61.375 73.1875H38.4583M17.7083 17.5C15.4982 17.5 13.3786 18.378 11.8158 19.9408C10.253 21.5036 9.375 23.6232 9.375 25.8333V74.1667C9.375 76.3768 10.253 78.4964 11.8158 80.0592C13.3786 81.622 15.4982 82.5 17.7083 82.5H82.2917C84.5018 82.5 86.6214 81.622 88.1842 80.0592C89.747 78.4964 90.625 76.3768 90.625 74.1667V25.8333C90.625 23.6232 89.747 21.5036 88.1842 19.9408C86.6214 18.378 84.5018 17.5 82.2917 17.5H17.7083ZM18.75 48.25L34.8333 60.75L18.75 73.1875V48.1875V48.25Z",
                         stroke: "white", stroke_width: "5", stroke_linecap: "round", stroke_linejoin: "round",
                     }
                 }
-                span { class: "hidden text-[12px] text-center sm:block",
+                span { class: "hidden text-[10px] text-center sm:block transition-transform duration-150 ease-out hover:scale-110 active:scale-90 sm:h-full sm:px-2",
                     "Switch "
                     p { "TTY" }
                 }

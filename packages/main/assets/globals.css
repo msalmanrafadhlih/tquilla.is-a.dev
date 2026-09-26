@@ -44,3 +44,15 @@ a {
   font-family: "Inter";
   src: local("Inter");
 }
+
+/* Elemen dasar (default) */
+.group img {
+  transform: scale(1);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  /* Hapus atau jangan gunakan properti opacity/fade di sini */
+}
+
+/* Elemen saat di-hover */
+.group:hover img {
+  transform: scale(1.15); /* Membesar 15% secara mulus */
+}
