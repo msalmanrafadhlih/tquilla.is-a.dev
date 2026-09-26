@@ -66,7 +66,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
     };
 
     rsx! {
-        header { class: "relative z-[999] flex w-full shrink-0 items-center justify-center gap-2.5 px-[15px] py-2 text-xs rounded-3xl border-t-[0.5px] border-x border-white backdrop-blur-sm [background:linear-gradient(180deg,rgba(37,37,37,1)_10%,transparent_100%)]",
+        header { class: "relative z-[999] flex w-full shrink-0 items-center justify-center gap-2.5 px-[15px] py-2 text-xs rounded-3xl border-t-[0.5px] border-white backdrop-blur-sm [background:linear-gradient(180deg,rgba(37,37,37,1)_10%,transparent_100%)]",
 
             // Centered clock — always visible; only the date line drops below `sm`.
             div { class: "absolute left-1/2 top-1/2 z-[4] flex -translate-x-1/2 -translate-y-1/2 select-none flex-col items-center gap-1",

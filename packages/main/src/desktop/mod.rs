@@ -26,16 +26,14 @@ pub fn DesktopPage() -> Element {
         document::Link { rel: "icon", href: FAVICON }
         document::Title { "Deisktify" }
 
-        // Login { on_unlocked: move |_| is_logged_in.set(true) }
+        // MainPage {}
 
-        MainPage {}
-
-        // if is_booting() {
-        //     Booting {}
-        // } else if is_logged_in() {
-        //     MainPage {}
-        // } else {
-        //     Login { on_unlocked: move |_| is_logged_in.set(true) }
-        // }
+        if is_booting() {
+            Booting {}
+        } else if is_logged_in() {
+            MainPage {}
+        } else {
+            Login { on_unlocked: move |_| is_logged_in.set(true) }
+        }
     }
 }
