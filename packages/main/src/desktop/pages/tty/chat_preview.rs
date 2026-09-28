@@ -14,9 +14,7 @@ pub struct ChatMessage {
     #[allow(dead_code)]
     pub img_profile: Option<String>,
     pub message: String,
-    // NOTE: the source data file spells this field "timestanp" (typo for
-    // "timestamp") — kept as-is so serde matches the real key.
-    pub timestanp: String,
+    pub timestamp: String,
 }
 
 fn load_messages() -> Vec<ChatMessage> {
@@ -100,7 +98,7 @@ pub fn ChatPreviewPanel(index: Signal<usize>) -> Element {
     let username = current.as_ref().map(|m| m.username.clone()).unwrap_or_default();
     let relative = current
         .as_ref()
-        .map(|m| relative_time(&m.timestanp))
+        .map(|m| relative_time(&m.timestamp))
         .unwrap_or_default();
     let message_text = current
         .as_ref()

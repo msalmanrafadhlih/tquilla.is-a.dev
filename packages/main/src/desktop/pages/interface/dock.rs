@@ -97,7 +97,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
             // MIDDLE DOCK — app launcher. Always a single row; the icon
             // strip scrolls horizontally instead of wrapping.
             nav {
-                class: "flex w-full min-w-0 flex-1 items-center justify-center gap-2 md:gap-5 self-stretch px-2.5 md:pb-2.5 md:w-fit md:flex-none",
+                class: "flex w-full min-w-0 flex-1 items-center justify-center gap-2 sm:gap-5 self-stretch px-2.5 md:pb-2.5 md:w-fit md:flex-none",
                 "aria-label": "Application dock",
 
                 button {

@@ -1,3 +1,4 @@
+// mod.rs
 use dioxus::prelude::*;
 
 mod dock;
@@ -100,7 +101,7 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
 
             Navbar { time, date, on_toggle, brightness }
 
-            div { class: "relative w-full flex-1 min-h-0", "aria-label": "Desktop workspace",
+            section { class: "flex flex-col items-center gap-2.5 relative flex-1 self-stretch w-full h-full grow", "aria-label": "Desktop workspace",
                 for ow in open_windows() {
                     WindowFrame {
                         key: "{ow.id.key()}",

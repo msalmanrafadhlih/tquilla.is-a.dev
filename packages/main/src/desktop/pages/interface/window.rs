@@ -32,6 +32,20 @@ impl AppId {
         }
     }
 
+    pub fn window_icon(self) -> &'static str {
+        match self {
+            AppId::Calculator => "/assets/logo-calculator.svg",
+            AppId::About => "/assets/Icon-nixos.svg",
+            AppId::Settings => "/assets/logo-Settings.svg",
+            AppId::FileManager => "/assets/logo-FileManager.svg",
+            AppId::Radio => "/assets/logo-radio.svg",
+            AppId::Browser => "/assets/logo-Browser.svg",
+            AppId::Embience => "/assets/logo-Embience.svg",
+            AppId::LiveChat => "/assets/logo-livechat.svg",
+            AppId::AiAssistant => "/assets/logo-Ai-Assistent.svg",
+        }
+    }
+
     /// Stable lowercase key — used for DOM ids and rsx `key`s, kept
     /// separate from `title()` so renaming a window's display text never
     /// touches its DOM identity.
@@ -262,49 +276,64 @@ pub fn WindowFrame(
     let handle_mount_win = dom_id.clone();
     let resize_mount_id = resize_id.clone();
     let resize_mount_win = dom_id.clone();
+    let icon = id.window_icon();
 
     rsx! {
         div {
             id: "{dom_id}",
-            class: "window-pop-in absolute bg-black border border-white/20 flex flex-col shadow-2xl text-white font-mono",
+            class: "absolute flex flex-col items-start gap-5 bg-black w-full h-full md:max-w-full md:max-h-full px-5 md:p-5 overflow-hidden border-x md:border-y rounded-[10px] border-solid border-white",
             class: if minimized { "hidden" } else { "" },
             style: "{style}",
             onmousedown: move |_| focus_window(open_windows, next_z, id),
 
-            div {
+            // TOP BAR
+            header {
                 id: "{handle_id}",
-                class: "flex items-center justify-between px-3 py-2 border-b border-white/15 cursor-move select-none shrink-0",
+                class: "flex items-center justify-center gap-2.5 relative self-stretch w-full flex-[0_0_auto]",
                 onmounted: move |_| {
                     eval_js(format!(
                         "window.__wm && window.__wm.makeDraggable('{handle_mount_id}', '{handle_mount_win}');",
                     ));
                 },
-                span { class: "text-xs text-white/80 truncate", "{id.title()}" }
+
+                // window 
+                div { class: "flex items-center gap-2.5 relative flex-1 grow",
+                    img { class: "relative w-5 h-5 aspect-[1]",
+                        src: "../../../../assets/logo-radio.svg",
+                        alt: "{id.title()}",
+                        "aria-hidden": "true",
+                    }
+                    h1 { class: "relative flex items-center justify-center w-max mt-[-1.00px] [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-variable-collection-fg-main text-[12px] md:text-lg text-center tracking-[0] leading-[normal]",
+                        "{id.title()}"
+                    }
+                }
+
                 div {
                     "data-no-drag": "true",
-                    class: "flex items-center gap-1.5",
+                    class: "inline-flex items-center justify-end gap-2.5 relative flex-[0_0_auto] grow",
                     button {
                         r#type: "button",
                         title: "Minimize",
-                        class: "w-2.5 h-2.5 rounded-full bg-yellow-400 hover:brightness-110",
+                        class: "relative w-3 h-3 bg-yellow-500 rounded-[6.5px] aspect-[1] border-0 p-0",
                         onclick: move |_| minimize_window(open_windows, id),
                     }
                     button {
                         r#type: "button",
                         title: "Maximize",
-                        class: "w-2.5 h-2.5 rounded-full bg-green-500 hover:brightness-110",
+                        class: "hidden md:block relative w-3 h-3 bg-green-500 rounded-[6.5px] aspect-[1] border-0 p-0",
                         onclick: move |_| toggle_maximize(open_windows, id),
                     }
                     button {
                         r#type: "button",
                         title: "Close",
-                        class: "w-2.5 h-2.5 rounded-full bg-red-500 hover:brightness-110",
+                        class: "relative w-3 h-3 bg-red-500 rounded-[6.5px] aspect-[1] border-0 p-0",
                         onclick: move |_| close_window(open_windows, id),
                     }
                 }
             }
 
-            div { class: "flex-1 min-h-0 overflow-auto", {children} }
+            // MAIN CONTENT
+            div { class: "flex-1 min-h-0 w-full overflow-auto", {children} }
 
             if !maximized {
                 div {
