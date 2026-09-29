@@ -1,4 +1,3 @@
-// mod.rs
 use dioxus::prelude::*;
 
 mod dock;
@@ -7,7 +6,7 @@ mod window;
 
 use dock::Dock;
 use navbar::Navbar;
-use window::{AppId, OpenWindow, WindowFrame, WINDOW_MANAGER_JS};
+use window::{AppId, OpenWindow, WindowFrame, WINDOW_FRAME_CSS, WINDOW_MANAGER_JS};
 
 use crate::desktop::gui::{
     AiAssistantWindowContent,
@@ -99,16 +98,18 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
                 });
             },
 
+            // Mounted once for the whole desktop — handles the
+            // mobile-fullscreen vs. desktop-popup switch for every
+            // WindowFrame below, driven by the CSS vars each one sets.
+            style { "{WINDOW_FRAME_CSS}" }
+
             Navbar { time, date, on_toggle, brightness }
 
-            section { class: "flex flex-col items-center gap-2.5 relative flex-1 self-stretch w-full h-full grow", "aria-label": "Desktop workspace",
+            section { class: "relative overflow-hidden flex flex-col items-center gap-2.5 relative flex-1 self-stretch w-full h-full grow", "aria-label": "Desktop workspace",
                 for ow in open_windows() {
                     WindowFrame {
                         key: "{ow.id.key()}",
-                        id: ow.id,
-                        z: ow.z,
-                        maximized: ow.maximized,
-                        minimized: ow.minimized,
+                        window: ow.clone(),
                         open_windows,
                         next_z,
                         AppContent { id: ow.id }
