@@ -60,21 +60,28 @@
           fileset = lib.fileset.unions [
             ./Cargo.toml
             ./Cargo.lock
-            (lib.fileset.maybeMissing ./Dioxus.toml)
-            ./src
-            ./assets
+            ./packages/components
+            ./packages/web
+            ./packages/desktop
+            ./packages/mobile
           ];
         };
 
-        inherit (craneLib.crateNameFromCargoToml { inherit src; }) pname version;
+        # Root Cargo.toml is workspace-only ([workspace], no [package]), so
+        # pname/version have to come from the member we're actually
+        # building, not from `src`.
+        inherit (craneLib.crateNameFromCargoToml { cargoToml = ./packages/desktop/Cargo.toml; }) pname version;
 
         commonArgs = {
           inherit src pname version;
           strictDeps = true;
+          # Cuma build package `desktop` — `web` dan `mobile` butuh target
+          # (wasm32 / android) yang beda dan nggak ikut `nix build`.
+          cargoExtraArgs = "-p desktop";
           nativeBuildInputs = with pkgs; [
             pkg-config
             makeWrapper
-            tailwindcss
+            tailwindcss_4
           ];
           buildInputs = with pkgs; [ openssl ] ++ desktopRuntimeLibs;
         };
@@ -88,10 +95,9 @@
 
             # `asset!()` di Dioxus butuh file CSS-nya udah ada pas compile time,
             # jadi Tailwind di-generate dulu sebelum `cargo build`.
-            # Sesuaikan path -i/-o dan nama feature "desktop" di bawah dengan
-            # struktur project & Cargo.toml kamu (hasil `dx init`/`dx new`).
             preBuild = ''
-              tailwindcss -i ./assets/tailwind.css -o ./assets/tailwind_output.css --minify
+              mkdir -p ./packages/desktop/assets
+              tailwindcss -i ./packages/desktop/tailwind.css -o ./packages/desktop/assets/tailwind.css --minify
             '';
 
             postInstall = ''

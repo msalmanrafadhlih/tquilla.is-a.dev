@@ -1,3 +1,3 @@
-[web.wasm.opt]
+[web.wasm_opt]
 debug = false
 level = "z"

@@ -40,13 +40,29 @@ jobs:
         # yang pernah kamu debug di Nix devshell.
         run: cargo binstall dioxus-cli@0.7.1 --force -y
 
-      - name: Build (release, web)
-        run: dx build --package main --platform web --release
+      - name: Build Tailwind CSS
+        # `asset!("/assets/tailwind.css")` butuh file-nya ada saat compile,
+        # jadi di CI kita generate dulu secara eksplisit (dx juga akan
+        # menimpanya). Pakai standalone CLI v4 (tailwind.css pakai sintaks v4),
+        # versi di-pin biar build nggak berubah diam-diam saat ada major baru.
+        run: |
+          curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.11/tailwindcss-linux-x64
+          chmod +x tailwindcss-linux-x64
+          ./tailwindcss-linux-x64 \
+            -i ./packages/web/tailwind.css \
+            -o ./packages/web/assets/tailwind.css \
+            --minify
+
+      - name: Build & bundle (release, web)
+        # dx bundle, bukan dx build — dx build cuma wrapper `cargo build`,
+        # sedangkan dx bundle yang menjalankan pipeline produksi Dioxus
+        # (kompresi wasm, minifikasi, dst).
+        run: dx bundle --package web --platform web --release
 
       - name: Tambahkan CNAME untuk custom domain
         # tanpa file ini, custom domain "tquilla.is-a.dev" yang kamu set di
         # Settings > Pages bisa ke-reset tiap kali deployment mengganti isi output
-        run: echo "tquilla.is-a.dev" > target/dx/main/release/web/public/CNAME
+        run: echo "tquilla.is-a.dev" > target/dx/web/release/web/public/CNAME
 
       - name: Tambahkan 404.html untuk client-side routing
         # GitHub Pages itu static file server: /profile atau /deisktify dicari
@@ -55,12 +71,12 @@ jobs:
         # routing. Trik standarnya: bikin 404.html isinya sama persis dengan
         # index.html, jadi GitHub Pages tetap serve app-nya untuk path apapun,
         # lalu Dioxus Router baca window.location dan render route yang benar.
-        run: cp target/dx/main/release/web/public/index.html target/dx/main/release/web/public/404.html
+        run: cp target/dx/web/release/web/public/index.html target/dx/web/release/web/public/404.html
 
       - name: Upload artifact ke Pages
         uses: actions/upload-pages-artifact@v4
         with:
-          path: target/dx/main/release/web/public
+          path: target/dx/web/release/web/public
 
   deploy:
     needs: build

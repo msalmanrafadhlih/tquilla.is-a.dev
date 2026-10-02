@@ -37,7 +37,9 @@ in
 
   packages = with pkgs; [
     dioxus-cli # `dx`
-    tailwindcss # standalone CLI, tanpa Node/npm
+    # HARUS v4: tailwind.css pakai sintaks v4 (@import "tailwindcss", @theme, ...).
+    # Attr `tailwindcss` polos di nixpkgs = v3 -> "Failed to find 'tailwindcss'".
+    tailwindcss_4
     git # dipakai `dx new`/`dx init` buat clone template
 
     pkg-config
@@ -90,14 +92,18 @@ in
   scripts = {
     dioxus-init.exec = "dx init";
 
-    desktop-dev.exec = "dx serve --platform desktop";
-    desktop-build.exec = "dx bundle --platform desktop";
+    # Workspace: packages/{components,web,desktop,mobile}. `components` itu
+    # library UI bersama; web/desktop/mobile cuma entry point per platform.
+    # dx otomatis jalanin Tailwind (packages/<pkg>/tailwind.css ->
+    # packages/<pkg>/assets/tailwind.css), jadi nggak perlu script manual.
+    web-dev.exec = "dx serve --package web --platform web";
+    web-build.exec = "dx bundle --package web --platform web --release";
 
-    web-dev.exec = "dx serve --platform web";
-    web-build.exec = "dx bundle --platform web";
+    desktop-dev.exec = "dx serve --package desktop --platform desktop";
+    desktop-build.exec = "dx bundle --package desktop --platform desktop --release";
 
-    android-dev.exec = "dx serve --platform android";
-    android-build.exec = "dx bundle --platform android";
+    android-dev.exec = "dx serve --package mobile --platform android";
+    android-build.exec = "dx bundle --package mobile --platform android --release";
 
     make-avd.exec = ''
       avdmanager create avd --force \
@@ -105,13 +111,11 @@ in
         --package 'system-images;android-34;google_apis_playstore;x86_64'
     '';
 
-    # Sesuaikan path -i/-o dengan struktur project (cek assets/ & Dioxus.toml
-    # setelah `dioxus-init`, path default template Dioxus biasanya assets/tailwind.css).
-    tailwind-watch.exec = ''
-      tailwindcss -i ./assets/tailwind.css -o ./assets/tailwind_output.css --watch
-    '';
+    # Cuma buat `nix build` (crane nggak lewat dx) atau debugging CSS.
     tailwind-build.exec = ''
-      tailwindcss -i ./assets/tailwind.css -o ./assets/tailwind_output.css --minify
+      for pkg in web desktop mobile; do
+        tailwindcss -i ./packages/$pkg/tailwind.css -o ./packages/$pkg/assets/tailwind.css --minify
+      done
     '';
   };
 
@@ -123,12 +127,14 @@ in
       echo ""
       echo "Panduan Inisialisasi Cepat:"
       echo "  1. Run: dioxus-init      (dx init, setup project Dioxus di folder ini)"
-      echo "  2. Run: tailwind-watch   (compile Tailwind, jalankan di terminal terpisah)"
       echo ""
       echo "  Dev per platform:"
       echo "    desktop-dev / desktop-build"
-      echo "    web-dev     / web-build"
+      echo "    web-dev     / web-build   (dx compile Tailwind sendiri)"
       echo "    android-dev / android-build"
+      echo ""
+      echo "  tailwind-build cuma perlu dijalankan manual untuk 'nix build'"
+      echo "  (target desktop) — dx serve/bundle sudah otomatis."
       echo ""
       echo "  Android emulator (opsional, [emulator = true]):"
       echo "     Run: make-avd   (bikin emulator AVD sekali saja)"
