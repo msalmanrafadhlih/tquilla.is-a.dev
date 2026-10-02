@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "../components/theme.css";
+
+/* Tailwind has to scan the shared UI crate too, not just this package. */
+@source "../components/src/**/*.{rs,html,css}";
+@source "./src/**/*.rs";
+
