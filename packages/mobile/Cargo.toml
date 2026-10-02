@@ -1,0 +1,12 @@
+[package]
+name = "mobile"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+dioxus = { workspace = true }
+components = { workspace = true }
+
+[features]
+default = ["mobile"]
+mobile = ["dioxus/mobile"]

@@ -1,0 +1,3 @@
+[application]
+name = "NixOS Desktop"
+default_platform = "android"
