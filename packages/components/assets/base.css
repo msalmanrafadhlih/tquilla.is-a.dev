@@ -1,0 +1,37 @@
+/* Global styles that used to live in a <style> block in index.html.
+   Moved here so web, desktop and mobile all get them. */
+
+.editorial-text {
+  font-family: "Playfair Display", serif;
+}
+
+.mono-text {
+  font-family: "JetBrains Mono", monospace;
+}
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Desktop/mobile webviews have no <body class="bg-black"> from index.html. */
+html,
+body {
+  background: #000;
+}

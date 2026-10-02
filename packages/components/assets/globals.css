@@ -1,0 +1,67 @@
+/* NOTE: the old `@import` of meyer-reset.css was dropped on purpose.
+   Tailwind v4 puts its styles in cascade layers, and un-layered CSS beats
+   layered CSS regardless of specificity, so an un-layered reset would
+   override utilities like `p-4`, `border` or `text-xl` on every element.
+   Tailwind's own preflight already does the reset.
+
+   The element-level rules below are wrapped in `@layer base` for the same
+   reason: so utilities (e.g. `underline`) can still override them. */
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0px;
+    min-height: 100%;
+  }
+  /* a blue color as a generic focus style */
+  button:focus-visible {
+    outline: 2px solid #4a90e2 !important;
+    outline: -webkit-focus-ring-color auto 5px !important;
+  }
+  a {
+    text-decoration: none;
+  }
+}
+/* Used on the DesktopMode dock's horizontally-scrolling app strip —
+   Tailwind's CDN build doesn't ship a scrollbar-hiding plugin, so this
+   is a plain-CSS stand-in for the `scrollbar-hide` utility class. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+/* @FONTWARNING[{"type": "restricted", "family": "JetBrains Mono-Light", "weight": "300", "style": "normal", "allowsCrossOrigin": false}] */
+
+@font-face {
+  font-family: "JetBrains Mono-Light";
+  src: local("JetBrains Mono-Light");
+}
+/* @FONTWARNING[{"type": "restricted", "family": "JetBrains Mono-Regular", "weight": "400", "style": "normal", "allowsCrossOrigin": false}] */
+
+@font-face {
+  font-family: "JetBrains Mono-Regular";
+  src: local("JetBrains Mono-Regular");
+}
+/* @FONTWARNING[{"type": "restricted", "family": "Inter", "weight": "var(--body-base-font-weight)", "style": "normal", "allowsCrossOrigin": false}] */
+
+@font-face {
+  font-family: "Inter";
+  src: local("Inter");
+}
+
+/* Elemen dasar (default) */
+.group img {
+  transform: scale(1);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  /* Hapus atau jangan gunakan properti opacity/fade di sini */
+}
+
+/* Elemen saat di-hover */
+.group:hover img {
+  transform: scale(1.15); /* Membesar 15% secara mulus */
+}

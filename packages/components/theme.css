@@ -1,0 +1,47 @@
+/* Tailwind v4 theme shared by every platform package.
+   Each package's tailwind.css does:
+     @import "tailwindcss";
+     @import "../components/theme.css";
+     @source ... */
+
+/* The old config used darkMode: "class" (toggled by a .dark ancestor, not
+   prefers-color-scheme). Only one `dark:` usage exists today
+   (journal/components.rs), but this keeps it working the same way. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Ported 1:1 from the tailwind.config object that used to live inline
+     in index.html — same names, same values, so no class in the app
+     (border-line, text-primary, bg-paper, ... ~100 call sites) changes. */
+  --color-primary: #1a1a1a;
+  --color-paper: #f4f1ea;
+  --color-paper-dark: #eae6dd;
+  --color-accent: #c94b28;
+  --color-line: #d1cdc5;
+  --color-muted: #8c8c8c;
+  --color-ink: #1a1a1a;
+
+  --font-sans: Inter, sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Unused by any class in src/ today (checked), but kept for parity with
+     the old config in case something already depends on it elsewhere. */
+  --spacing-128: 32rem;
+}
+
+/* Old config set borderRadius.DEFAULT to 0px — the square-corner look this
+   UI uses (4 call sites: bare `rounded`, e.g. dock.rs). @utility overrides
+   the class directly so this doesn't depend on guessing the exact v4
+   theme-variable name for the "no suffix" case. */
+@utility rounded {
+  border-radius: 0px;
+}
+
+/* NOTE: the CDN script also loaded the forms and container-queries
+   plugins (`?plugins=forms,container-queries`). Neither form-input-style
+   classes nor @container/@sm:-style classes appear anywhere in src/, so
+   they're left out here. If you start using them, add:
+     @plugin "@tailwindcss/forms";
+     @plugin "@tailwindcss/container-queries";
+*/
