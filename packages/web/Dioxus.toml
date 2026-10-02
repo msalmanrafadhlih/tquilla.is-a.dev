@@ -1,0 +1,10 @@
+[application]
+name = "NixOS Desktop"
+default_platform = "web"
+
+[web.app]
+title = "NixOS Desktop"
+
+[web.wasm_opt]
+debug = false
+level = "z"
