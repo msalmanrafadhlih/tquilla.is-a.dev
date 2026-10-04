@@ -69,14 +69,14 @@ impl AppId {
     pub fn default_geometry(self) -> (f64, f64, f64, f64) {
         match self {
             AppId::Calculator => (640.0, 240.0, 300.0, 440.0),
-            AppId::About => (520.0, 160.0, 380.0, 420.0),
-            AppId::Settings => (460.0, 130.0, 560.0, 440.0),
-            AppId::FileManager => (340.0, 170.0, 620.0, 420.0),
-            AppId::Radio => (300.0, 210.0, 560.0, 360.0),
-            AppId::Browser => (240.0, 110.0, 700.0, 480.0),
-            AppId::Embience => (360.0, 150.0, 520.0, 420.0),
-            AppId::LiveChat => (700.0, 130.0, 380.0, 520.0),
-            AppId::AiAssistant => (220.0, 90.0, 520.0, 560.0),
+            AppId::About => (460.0, 0.0, 375.0, 530.0),
+            AppId::Settings => (340.0, 120.0, 620.0, 545.0),
+            AppId::FileManager => (0.0, 0.0, 905.0, 565.0),
+            AppId::Radio => (114.0, 45.0, 425.0, 755.0),
+            AppId::Browser => (0.0, 0.0, 1250.0, 820.0),
+            AppId::Embience => (670.0, 110.0, 525.0, 550.0),
+            AppId::LiveChat => (1315.0, 0.0, 505.0, 820.0),
+            AppId::AiAssistant => (0.0, 0.0, 505.0, 820.0),
         }
     }
 }
@@ -588,7 +588,7 @@ pub fn WindowFrame(
                         alt: "{id.title()}",
                         "aria-hidden": "true",
                     }
-                    h1 { class: "relative flex items-center justify-center w-max mt-[-1.00px] [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-variable-collection-fg-main text-sm text-start tracking-[0] leading-[normal]",
+                    h1 { class: "relative flex items-center justify-center w-max [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-variable-collection-fg-main text-[12px] text-start tracking-[0] leading-[normal] whitespace-nowrap",
                         "{id.title()}"
                     }
                 }
@@ -618,7 +618,7 @@ pub fn WindowFrame(
             }
 
             // MAIN CONTENT
-            div { class: "flex-1 min-h-0 w-full overflow-auto", {children} }
+            div { class: "@container flex-1 min-h-0 w-full overflow-auto", {children} }
 
             // Always mounted (so the pointer listener bound in JS only
             // ever attaches once) — visibility is handled purely by CSS.
