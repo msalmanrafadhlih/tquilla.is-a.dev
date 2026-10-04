@@ -123,7 +123,7 @@ pub fn RadioWindowContent() -> Element {
                 div {
                     p { class: "text-sm text-white font-semibold", "{current.label}" }
                     p { class: "text-white/30 text-[10px] mt-1",
-                        "Radio Indonesia - {current.label}"
+                        "Radio Indonesia - {current.slogan}"
                     }
                 }
 
