@@ -78,7 +78,7 @@ pub fn RadioWindowContent() -> Element {
 
     rsx! {
         // MAIN CONTENTS : RADIO
-        div { class: "flex h-full w-full flex-col @sm:flex-row items-center justify-center gap-2.5 relative overflow-hidden",
+        div { class: "flex h-full w-full flex-col @min-[643px]:flex-row items-center justify-center gap-2.5 relative overflow-hidden",
             audio {
                 id: AUDIO_ID,
                 onmounted: move |_| prime_station(AUDIO_ID, &initial_url),
@@ -86,7 +86,7 @@ pub fn RadioWindowContent() -> Element {
 
             // SIDE PANEL
             nav {
-                class: "flex items-center @sm:flex-col justify-start @sm:p-0 p-2 relative self-stretch w-full h-max @sm:max-w-max max-w-full @sm:h-full overflow-scroll scrollbar-hide border-b-[0.5px] @sm:border-0 @sm:border-r-[0.5px] border-solid border-white/30",
+                class: "flex items-center @min-[643px]:flex-col justify-start @min-[643px]:p-0 p-2 relative self-stretch w-full h-max @min-[643px]:max-w-max max-w-full @min-[643px]:h-full overflow-scroll scrollbar-hide border-b-[0.5px] @min-[643px]:border-0 @min-[643px]:border-r-[0.5px] border-solid border-white/30",
                 "aria-label": "Radio stations",
                 for (idx , station) in station_list.iter().enumerate() {
                     {
@@ -97,15 +97,15 @@ pub fn RadioWindowContent() -> Element {
                             button {
                                 key: "{idx}",
                                 r#type: "button",
-                                class: "w-full max-w-[300px] flex flex-col @sm:flex-row items-center gap-2 px-3 py-2 text-left border-0",
+                                class: "w-full max-w-[300px] flex flex-col @min-[643px]:flex-row items-center gap-2 px-3 py-2 text-left border-0",
                                 class: if is_selected { "bg-white text-black" } else { "bg-transparent text-white/30 hover:text-white hover:bg-variable-collection-conic-gradient" },
                                 onclick: move |_| play_station(idx),
                                 img {
                                     src: "{image}",
                                     alt: "",
-                                    class: "@sm:w-6 @sm:h-6 w-[70px] h-[70px] object-cover shrink-0",
+                                    class: "@min-[643px]:w-6 @min-[643px]:h-6 w-[70px] h-[70px] object-cover shrink-0",
                                 }
-                                span { class: "max-w-[70px] truncate", "{label}" }
+                                span { class: "w-[70px] @min-[643px]:w-full text-center @min-[643px]:text-left truncate", "{label}" }
                             }
                         }
                     }
@@ -113,7 +113,7 @@ pub fn RadioWindowContent() -> Element {
             }
 
             // CONTROL PLAYER
-            div { class: "@container flex-1 w-full h-full min-w-0 flex flex-col items-center justify-start @sm:justify-center gap-4 px-6 py-6 text-center overflow-scroll",
+            div { class: "@container flex-1 w-full h-full min-w-0 flex flex-col items-center justify-start @min-[643px]:justify-center gap-4 px-6 py-6 text-center overflow-scroll",
                 img {
                     src: "{current.image}",
                     alt: "{current.label}",
@@ -139,7 +139,7 @@ pub fn RadioWindowContent() -> Element {
                         }
 
                         section {
-                            class: "flex flex-col @sm:flex-row w-[284px] items-center justify-center gap-5 relative flex-[0_0_auto]",
+                            class: "flex flex-col @min-[643px]:flex-row w-[284px] items-center justify-center gap-5 relative flex-[0_0_auto]",
                             "aria-label": "Audio player controls",
 
                             // PLAYBACK CONTROLS
