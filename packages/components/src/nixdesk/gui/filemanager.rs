@@ -1,19 +1,36 @@
 use dioxus::prelude::*;
 
-const FOLDER_NAMES: [&str; 5] = ["Documents", "Downloads", "Musics", "Pictures", "Videos"];
+const IMG: Asset = asset!("/assets/logo-FileManager.svg");
+const FOLDER_NAMES: [&str; 5] = [
+    "Documents",
+    "Downloads",
+    "Musics",
+    "Pictures",
+    "Videos"
+];
+
 
 #[component]
 pub fn FileManagerWindowContent() -> Element {
+    const NAV_BUTTON_CLASS: &str = "relative flex items-end justify-center w-fit mt-[-1.00px] appearance-none border-0 bg-transparent p-0 cursor-pointer [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-variable-collection-fg-main text-xs text-center tracking-[0] leading-[normal]";
     let mut current = use_signal(|| Option::<&'static str>::None);
-    let breadcrumb_suffix = current().unwrap_or("");
+    let selected = current();
+    let breadcrumb_suffix = selected.unwrap_or("");
 
     rsx! {
-        div { class: "flex h-full text-[11px]",
-            div { class: "w-32 shrink-0 border-r border-white/15 py-2",
+        section {
+            "aria-label": "File browser",
+            class: "flex flex-row w-full h-full items-start justify-start flex relative overflow-hidden",
+
+            // side panel
+            aside {
+                "aria-label": "Places",
+                class: "inline-flex flex-col w-[30%] h-full min-w-max max-w-[150px] items-center relative border-r border-solid border-[var(--variable-collection-fg-secondary)] ",
+
                 button {
                     r#type: "button",
-                    class: "w-full text-left px-3 py-1.5",
-                    class: if current().is_none() { "bg-white text-black" } else { "text-white/60 hover:text-white" },
+                    class: nav_item_class(selected.is_none()),
+                    "aria-current": if selected.is_none() { "page" } else { "false" },
                     onclick: move |_| current.set(None),
                     "Desktops"
                 }
@@ -21,35 +38,94 @@ pub fn FileManagerWindowContent() -> Element {
                     button {
                         key: "{name}",
                         r#type: "button",
-                        class: "w-full text-left px-3 py-1.5",
-                        class: if current() == Some(name) { "bg-white text-black" } else { "text-white/60 hover:text-white" },
+                        class: nav_item_class(selected == Some(name)),
+                        "aria-current": if selected == Some(name) { "page" } else { "false" },
                         onclick: move |_| current.set(Some(name)),
                         "{name}"
                     }
                 }
             }
-            div { class: "flex-1 min-w-0 flex flex-col",
-                div { class: "px-3 py-1.5 border-b border-white/15 text-white/40 truncate",
-                    "home/tquilla/{breadcrumb_suffix}"
+
+            // current directory
+            section {
+                class: "flex-col items-start gap-2.5 flex-1 self-stretch grow flex relative",
+                "aria-label": "Current directory",
+
+                // top bar: navigation + breadcrumb
+                header {
+                    class: "flex items-start gap-2.5 px-2.5 pb-2.5 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[var(--variable-collection-fg-secondary)]",
+
+                    button {
+                        r#type: "button",
+                        class: NAV_BUTTON_CLASS,
+                        "aria-label": "Go back",
+                        title: "Go back",
+                        "<"
+                    }
+                    button {
+                        r#type: "button",
+                        class: NAV_BUTTON_CLASS,
+                        "aria-label": "Go forward",
+                        title: "Go forward",
+                        ">"
+                    }
+
+                    div {
+                        class: "items-center gap-2.5 flex-1 self-stretch grow flex relative",
+                        p {
+                            class: "items-end justify-center w-fit [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--variable-collection-fg-secondary)]  text-xs text-center tracking-[0] leading-[normal] flex relative whitespace-nowrap",
+                            title: "home/tquilla/{breadcrumb_suffix}",
+                            "home/tquilla/{breadcrumb_suffix}"
+                        }
+                    }
                 }
-                div { class: "flex-1 min-h-0 overflow-y-auto p-4",
-                    if current().is_none() {
-                        div { class: "grid grid-cols-3 gap-4",
-                            for name in FOLDER_NAMES {
-                                div {
-                                    key: "{name}",
-                                    class: "flex flex-col items-center gap-1.5 cursor-pointer hover:opacity-70",
-                                    onclick: move |_| current.set(Some(name)),
-                                    div { class: "w-10 h-8 border border-white/30" }
-                                    span { class: "text-white/70", "{name}" }
+
+                // workspace
+                div {
+                    role: "list",
+                    "aria-label": "Folder contents",
+                    class: "flex flex-col min-[400px]:grid min-[400px]:grid-cols-[repeat(auto-fill,minmax(90px,max-content))] justify-start content-start items-start gap-[25px] p-5 w-full h-full max-h-full overflow-y-auto min-h-[200px] relative",
+
+                    if selected.is_none() {
+                        for name in FOLDER_NAMES {
+                            button {
+                                key: "{name}",
+                                r#type: "button",
+                                role: "listitem",
+                                class: "flex flex-col shrink-0 items-center gap-1.5 p-0 cursor-pointer hover:opacity-50 border-0 bg-transparent w-[90px] opacity-70",
+                                onclick: move |_| current.set(Some(name)),
+                                img {
+                                    src: IMG,
+                                    alt: name,
+                                    class: "hidden min-[400px]:block w-full",
+                                }
+                                span {
+                                    class: "text-[var(--variable-collection-fg-main)] text-left min-[400px]:text-center text-xs w-full break-words",
+                                    "{name}"
                                 }
                             }
                         }
                     } else {
-                        p { class: "text-white/30", "(empty)" }
+                        p {
+                            class: "text-variable-collection-fg-secondary",
+                            "(empty)"
+                        }
                     }
                 }
             }
         }
     }
 }
+
+fn nav_item_class(active: bool) -> String {
+    const NAV_ITEM_BASE: &str = "w-full p-2 border-0 cursor-pointer [font:'JetBrains_Mono-ExtraLight',Helvetica] font-normal text-xs text-left tracking-[0] leading-[normal] flex relative";
+
+    if active {
+        format!("{NAV_ITEM_BASE} text-[var(--variable-collection-bg-main)] bg-[var(--variable-collection-fg-main)]")
+    } else {
+        format!(
+            "{NAV_ITEM_BASE} bg-transparent text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)]"
+        )
+    }
+}
+
