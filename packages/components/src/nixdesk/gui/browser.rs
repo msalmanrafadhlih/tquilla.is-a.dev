@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use serde::Deserialize;
 
 const BOOKMARKS_JSON: &str = include_str!("../../../data/browser.json");
+const ICON_LINK: Asset = asset!("/assets/icon-url.svg");
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 struct Bookmark {
@@ -35,6 +36,27 @@ fn add_bookmark(
     new_url.set(String::new());
 }
 
+const SIDEBAR_CLASS: &str = "w-full h-max @md:h-full @md:max-w-[200px] max-w-full shrink-0 border-r border-solid gap-2 p-2 items-center justify-between border-[var(--variable-collection-fg-main)] flex flex-row @md:flex-col";
+const TAB_LIST_CLASS: &str = "flex gap-1 min-h-0 h-max w-full @md:max-w-full overflow-y-auto flex-row @md:flex-col";
+const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--variable-collection-fg-main)] text-xs text-[var(--variable-collection-bg-main)] border-0";
+const TAB_INACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-[var(--variable-collection-fg-secondary)] text-xs hover:text-white bg-transparent border-0";
+const INPUT_SECTION_CLASS: &str = "w-max @md:w-full h-max pr-3 border-[var(--variable-collection-fg-secondary)] flex flex-col gap-2";
+const INPUT_LABEL_CLASS: &str = "hidden @md:block bg-transparent outline-none border-0 border-b border-[var(--variable-collection-fg-secondary)] text-[var(--variable-collection-fg-main)] placeholder-[var(--variable-collection-fg-secondary)] text-xs";
+const INPUT_URL_CLASS: &str = "hidden @md:block w-max flex-1 min-w-0 bg-transparent outline-none border-0 border-b border-[var(--variable-collection-fg-secondary)] text-[var(--variable-collection-fg-main)] placeholder-[var(--variable-collection-fg-secondary)] text-xs";
+const ADD_BUTTON_CLASS: &str = "text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] shrink-0 bg-transparent border-0";
+const URL_BAR_CLASS: &str = "flex shrink-0 items-center border-b border-solid border-[var(--variable-collection-fg-secondary)] px-3 pb-2 truncate text-[var(--variable-collection-fg-secondary)] gap-2 text-xs";
+const IFRAME_WRAPPER_CLASS: &str = "flex-1 min-h-0 bg-white/[0.02]";
+const FOOTER_CLASS: &str = "shrink-0 border-t border-solid border-[var(--variable-collection-fg-secondary)] px-3 pt-2 flex justify-end";
+const LINK_CLASS: &str = "text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] transition-colors duration-150 text-xs";
+
+fn tab_class(active: bool) -> &'static str {
+    if active {
+        TAB_ACTIVE_CLASS
+    } else {
+        TAB_INACTIVE_CLASS
+    }
+}
+
 #[component]
 pub fn BrowserWindowContent() -> Element {
     let bookmarks = use_signal(load_bookmarks);
@@ -49,39 +71,42 @@ pub fn BrowserWindowContent() -> Element {
         .unwrap_or(Bookmark { placeholder: String::new(), url: String::new() });
 
     rsx! {
-        div { class: "flex h-full text-[11px]",
-            div { class: "w-40 shrink-0 border-r border-white/15 flex flex-col",
-                div { class: "flex-1 min-h-0 overflow-y-auto py-2",
-                    for (idx , bm) in list.iter().enumerate() {
-                        {
-                            let is_selected = selected() == idx;
-                            let label = bm.placeholder.clone();
-                            rsx! {
-                                button {
-                                    key: "{label}-{idx}",
-                                    r#type: "button",
-                                    class: "w-full text-left px-3 py-1.5 truncate",
-                                    class: if is_selected { "bg-white text-black" } else { "text-white/70 hover:text-white" },
-                                    onclick: move |_| selected.set(idx),
-                                    "{label}"
-                                }
-                            }
+        div {
+            class: "flex flex-col @md:flex-row min-h-0 h-full w-full overflow-auto",
+
+            // sidebar: tabs + input
+            section {
+                class: SIDEBAR_CLASS,
+
+                // list tabs
+                div {
+                    class: TAB_LIST_CLASS,
+                    for (idx, bm) in list.iter().enumerate() {
+                        button {
+                            key: "{bm.placeholder}-{idx}",
+                            r#type: "button",
+                            class: tab_class(selected() == idx),
+                            onclick: move |_| selected.set(idx),
+                            "{bm.placeholder}"
                         }
                     }
                 }
-                div { class: "shrink-0 border-t border-white/15 p-2 flex flex-col gap-1",
+
+                div {
+                    class: INPUT_SECTION_CLASS,
                     input {
                         r#type: "text",
                         placeholder: "placeholder...",
-                        class: "bg-transparent outline-none border-b border-white/10 text-white placeholder-white/30 text-[10px] pb-1",
+                        class: INPUT_LABEL_CLASS,
                         value: "{new_label}",
                         oninput: move |evt: FormEvent| new_label.set(evt.value()),
                     }
-                    div { class: "flex items-center gap-1",
+                    div {
+                        class: "flex items-center gap-2",
                         input {
                             r#type: "text",
                             placeholder: "https://...",
-                            class: "flex-1 min-w-0 bg-transparent outline-none border-b border-white/10 text-white placeholder-white/30 text-[10px] pb-1",
+                            class: INPUT_URL_CLASS,
                             value: "{new_url}",
                             onkeydown: move |evt: KeyboardEvent| match evt.key() {
                                 Key::Enter => {
@@ -94,24 +119,44 @@ pub fn BrowserWindowContent() -> Element {
                         }
                         button {
                             r#type: "button",
-                            class: "text-white/50 hover:text-white shrink-0",
+                            class: ADD_BUTTON_CLASS,
                             onclick: move |_| add_bookmark(bookmarks, selected, new_label, new_url),
                             "+"
                         }
                     }
                 }
             }
-            div { class: "flex-1 min-w-0 flex flex-col",
-                div { class: "shrink-0 border-b border-white/15 px-3 py-1.5 truncate text-white/50", "{current.url}" }
-                div { class: "flex-1 min-h-0 bg-white/[0.02]",
-                    iframe { src: "{current.url}", class: "w-full h-full border-0", title: "{current.placeholder}" }
+
+            // main content: url bar + iframe + footer link
+            section {
+                class: "flex-1 min-w-0 flex gap-2 flex-col p-2",
+
+                div {
+                    class: URL_BAR_CLASS,
+                    img {
+                        src: ICON_LINK,
+                        alt: "link",
+                        class: "h-4",
+                    }
+                    "{current.url}"
                 }
-                div { class: "shrink-0 border-t border-white/15 px-3 py-2 flex justify-end",
+
+                div {
+                    class: IFRAME_WRAPPER_CLASS,
+                    iframe {
+                        src: "{current.url}",
+                        class: "w-full h-full border-0",
+                        title: "{current.placeholder}",
+                    }
+                }
+
+                div {
+                    class: FOOTER_CLASS,
                     a {
-                        href: "{current.url}",
                         target: "_blank",
                         rel: "noopener noreferrer",
-                        class: "text-white/50 hover:text-white transition-colors duration-150",
+                        href: "{current.url}",
+                        class: LINK_CLASS,
                         "Go to Website ↗"
                     }
                 }
