@@ -526,7 +526,7 @@ pub fn WindowFrame(
     );
 
     let frame_class = format!(
-        "win-frame md:absolute flex flex-col items-start gap-5 bg-black px-5 md:pb-5 overflow-hidden border-x md:border-y rounded-[10px] border-solid border-white{maximized}{minimizing_cls}{closing_cls}{minimized}",
+        "parent win-frame md:absolute flex flex-col items-start gap-5 bg-black px-5 md:pb-5 overflow-hidden border-x md:border-y rounded-[10px] border-solid border-white{maximized}{minimizing_cls}{closing_cls}{minimized}",
         maximized = if window.maximized { " win-maximized" } else { "" },
         minimizing_cls = if window.minimizing { " win-minimizing" } else { "" },
         closing_cls = if window.closing { " win-closing" } else { "" },
@@ -599,19 +599,19 @@ pub fn WindowFrame(
                     button {
                         r#type: "button",
                         title: "Minimize",
-                        class: "relative w-3 h-3 bg-yellow-500 rounded-[6.5px] aspect-[1] border-0 p-0",
+                        class: "relative w-3 h-3 bg-yellow-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
                         onclick: move |_| request_minimize(open_windows, id),
                     }
                     button {
                         r#type: "button",
                         title: "Maximize",
-                        class: "hidden md:block relative w-3 h-3 bg-green-500 rounded-[6.5px] aspect-[1] border-0 p-0",
+                        class: "hidden md:block relative w-3 h-3 bg-green-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
                         onclick: move |_| toggle_maximize(open_windows, id),
                     }
                     button {
                         r#type: "button",
                         title: "Close",
-                        class: "relative w-3 h-3 bg-red-500 rounded-[6.5px] aspect-[1] border-0 p-0",
+                        class: "relative w-3 h-3 bg-red-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
                         onclick: move |_| request_close(open_windows, id),
                     }
                 }
