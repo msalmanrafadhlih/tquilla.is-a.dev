@@ -11,9 +11,6 @@ pub use booting::Booting;
 pub use tty::TerminalMode;
 pub use interface::DesktopMode;
 
-/// Which interface `MainPage` currently shows. Flipped by the small "Mode"
-/// badge (`#toggle`) that lives in the corner of both `TerminalMode` and
-/// `DesktopMode`.
 #[derive(Clone, Copy, PartialEq)]
 enum Mode {
     Desktop,
@@ -25,17 +22,28 @@ enum Mode {
 /// CSS transition, and they need to agree or the swap will flash.
 const SWITCH_MS: u32 = 250;
 
+/// Disables the browser context menu (right click) everywhere except inside
+/// inputs/textareas and elements marked with `data-allow-contextmenu`.
+/// Guarded by a window flag so remounting `MainPage` never stacks listeners.
+const DISABLE_CONTEXT_MENU_JS: &str = r#"
+    if (!window.__noCtxMenu) {
+        window.__noCtxMenu = true;
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.closest('input, textarea, [data-allow-contextmenu]')) return;
+            e.preventDefault();
+        });
+    }
+"#;
+
 #[component]
 pub fn MainPage() -> Element {
     let mut mode = use_signal(|| Mode::Desktop);
-    // While `true`, the wrapper below is faded out — hides the instant
-    // swap that happens the moment `mode` actually flips.
     let mut switching = use_signal(|| false);
 
-    // Fade the current interface out, swap `mode` once it's invisible,
-    // then fade the new one back in. Mirrors the double-rAF trick used
-    // elsewhere so the opacity-0 frame is guaranteed to paint before the
-    // transition starts.
+    use_effect(|| {
+        document::eval(DISABLE_CONTEXT_MENU_JS);
+    });
+
     let toggle_mode = move || {
         spawn(async move {
             switching.set(true);
@@ -52,7 +60,7 @@ pub fn MainPage() -> Element {
 
     rsx! {
         div {
-            class: "transition-opacity duration-[250ms] ease-out",
+            class: "transition-opacity duration-[250ms] ease-out select-none [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
             style: if switching() {
                 "opacity: 0; pointer-events: none;"
             } else {
@@ -67,3 +75,4 @@ pub fn MainPage() -> Element {
         }
     }
 }
+ 

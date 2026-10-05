@@ -86,7 +86,7 @@ pub fn RadioWindowContent() -> Element {
 
             // SIDE PANEL
             nav {
-                class: "flex items-center @min-[643px]:flex-col justify-start @min-[643px]:p-0 p-2 relative self-stretch w-full h-max @min-[643px]:max-w-max max-w-full @min-[643px]:h-full overflow-scroll scrollbar-hide border-b-[0.5px] @min-[643px]:border-0 @min-[643px]:border-r-[0.5px] border-solid border-white/30",
+                class: "flex items-center @min-[643px]:flex-col justify-start @min-[643px]:p-0 p-2 relative self-stretch w-full h-max @min-[643px]:max-w-max max-w-full @min-[643px]:h-full overflow-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-b-[0.5px] @min-[643px]:border-0 @min-[643px]:border-r-[0.5px] border-solid border-white/30",
                 "aria-label": "Radio stations",
                 for (idx , station) in station_list.iter().enumerate() {
                     {

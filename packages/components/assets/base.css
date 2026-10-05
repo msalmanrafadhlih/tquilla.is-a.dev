@@ -1,5 +1,9 @@
 /* Global styles that used to live in a <style> block in index.html.
    Moved here so web, desktop and mobile all get them. */
+::selection {
+    background: #ffffff;
+    color: #000000;
+}
 
 .editorial-text {
   font-family: "Playfair Display", serif;
