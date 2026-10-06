@@ -168,7 +168,7 @@ pub fn CalcKey(
         button {
             r#type: "button",
             title: "{title}",
-            class: "relative w-full h-max py-2 border-[0.5px] border-solid border-[var(--variable-collection-fg-secondary)] appearance-none bg-transparent text-inherit {radius} {tone}",
+            class: "relative w-full h-max py-2 border-[0.5px] border-solid border-[var(--fg-secondary)] appearance-none bg-[var(--bg-main)] text-inherit {radius} {tone}",
             class: "active:scale-95 transition-all duration-150 ease-in-out hover:opacity-60",
             onclick: move |evt| onclick.call(evt),
             if mathml {
@@ -178,7 +178,7 @@ pub fn CalcKey(
                 }
             } else {
                 span {
-                    class: "h-6 flex items-center justify-center [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-variable-collection-fg-main text-lg text-center tracking-[0] leading-[normal] {font}",
+                    class: "h-6 flex items-center justify-center [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-lg text-center tracking-[0] leading-[normal] {font}",
                     "{label}"
                 }
             }
@@ -198,7 +198,7 @@ pub fn KeyPad(
     rsx! {
         section {
             title: "Calculator Keypad",
-            class: "w-full grid gap-2 bg-transparent text-xs self-stretch overflow-scroll {cols}",
+            class: "w-full grid gap-2 bg-[var(--bg-main)] text-xs self-stretch overflow-scroll {cols}",
             class: "[-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
             for (i , key) in keys.iter().enumerate() {
                 CalcKey {
@@ -246,7 +246,7 @@ pub fn ModeTab(mode: Mode, label: &'static str) -> Element {
     let state = use_context::<CalcState>();
     let active = *state.mode.read() == mode;
     let class = if active {
-        "w-full p-1 appearance-none text-xs text-[var(--variable-collection-bg-main)] bg-[var(--variable-collection-fg-main)]"
+        "w-full p-1 appearance-none text-xs text-[var(--bg-main)] bg-[var(--fg-main)]"
     } else {
         "w-full p-1 appearance-none text-xs hover:opacity-100 opacity-50"
     };

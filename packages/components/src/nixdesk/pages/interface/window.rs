@@ -558,7 +558,7 @@ pub fn WindowFrame(
     );
 
     let frame_class = format!(
-        "parent win-frame md:absolute flex flex-col items-start gap-5 bg-black px-5 md:pb-5 overflow-hidden border-x md:border-y rounded-[10px] border-solid border-white{maximized}{minimizing_cls}{closing_cls}{minimized}",
+        "parent win-frame md:absolute flex flex-col items-start gap-5 bg-[var(--bg-main)] px-5 md:pb-5 overflow-hidden border-x md:border-y rounded-[10px] border-solid border-white{maximized}{minimizing_cls}{closing_cls}{minimized}",
         maximized = if window.maximized { " win-maximized" } else { "" },
         minimizing_cls = if window.minimizing { " win-minimizing" } else { "" },
         closing_cls = if window.closing { " win-closing" } else { "" },
@@ -620,7 +620,7 @@ pub fn WindowFrame(
                         alt: "{id.title()}",
                         "aria-hidden": "true",
                     }
-                    h1 { class: "relative flex items-center justify-center w-max [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-variable-collection-fg-main text-[12px] text-start tracking-[0] leading-[normal] whitespace-nowrap",
+                    h1 { class: "relative flex items-center justify-center w-max [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-fg-main text-[12px] text-start tracking-[0] leading-[normal] whitespace-nowrap",
                         "{id.title()}"
                     }
                 }

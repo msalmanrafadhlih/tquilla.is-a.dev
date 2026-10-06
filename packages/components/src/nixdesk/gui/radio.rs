@@ -98,7 +98,7 @@ pub fn RadioWindowContent() -> Element {
                                 key: "{idx}",
                                 r#type: "button",
                                 class: "w-full max-w-[300px] flex flex-col @min-[643px]:flex-row items-center gap-2 px-3 py-2 text-left border-0",
-                                class: if is_selected { "bg-white text-black" } else { "bg-transparent text-white/30 hover:text-white hover:bg-variable-collection-conic-gradient" },
+                                class: if is_selected { "bg-white text-black" } else { "bg-[var(--bg-main)] text-white/30 hover:text-white hover:bg-conic-gradient" },
                                 onclick: move |_| play_station(idx),
                                 img {
                                     src: "{image}",
@@ -148,7 +148,7 @@ pub fn RadioWindowContent() -> Element {
                                 "aria-label": "Playback controls",
                                 button {
                                     r#type: "button",
-                                    class: "w-7 h-7 flex items-center bg-transparent border-0 justify-center relative appearance-none p-0",
+                                    class: "w-7 h-7 flex items-center bg-[var(--bg-main)] border-0 justify-center relative appearance-none p-0",
                                     title: "Previous station",
                                     "aria-label": "Previous station",
                                     onclick: move |_| {
@@ -165,7 +165,7 @@ pub fn RadioWindowContent() -> Element {
                                 }
                                 button {
                                     r#type: "button",
-                                    class: "group w-10 h-10 bg-transparent hover:bg-white aspect-[1] flex items-center justify-center relative appearance-none border-0 p-0",
+                                    class: "group w-10 h-10 bg-[var(--bg-main)] hover:bg-white aspect-[1] flex items-center justify-center relative appearance-none border-0 p-0",
                                     title: "{play_title}",
                                     "aria-label": "{play_title}",
                                     onclick: move |_| {
@@ -186,7 +186,7 @@ pub fn RadioWindowContent() -> Element {
                                 }
                                 button {
                                     r#type: "button",
-                                    class: "w-7 h-7 flex items-center bg-transparent border-0 justify-center relative appearance-none p-0",
+                                    class: "w-7 h-7 flex items-center bg-[var(--bg-main)] border-0 justify-center relative appearance-none p-0",
                                     title: "Next station",
                                     "aria-label": "Next station",
                                     onclick: move |_| {

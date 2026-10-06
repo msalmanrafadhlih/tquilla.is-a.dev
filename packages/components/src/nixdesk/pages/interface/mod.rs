@@ -74,16 +74,16 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
     let brightness = use_signal(|| 0u8);
 
     let dim_class = if brightness() == 0 {
-        "pointer-events-none absolute inset-0 z-30 bg-black opacity-0 transition-opacity duration-300"
+        "pointer-events-none absolute inset-0 z-30 bg-[var(--bg-main)] opacity-0 transition-opacity duration-300"
     } else if brightness() == 1 {
-        "pointer-events-none absolute inset-0 z-30 bg-black opacity-30 transition-opacity duration-300"
+        "pointer-events-none absolute inset-0 z-30 bg-[var(--bg-main)] opacity-30 transition-opacity duration-300"
     } else {
-        "pointer-events-none absolute inset-0 z-30 bg-black opacity-60 transition-opacity duration-300"
+        "pointer-events-none absolute inset-0 z-30 bg-[var(--bg-main)] opacity-60 transition-opacity duration-300"
     };
 
     rsx! {
         main {
-            class: "relative h-screen w-full items-start overflow-hidden bg-black text-white font-mono flex flex-col gap-2.5 p-2.5 transition-opacity duration-500 ease-in",
+            class: "relative h-screen w-full items-start overflow-hidden bg-[var(--bg-main)] text-white font-mono flex flex-col gap-2.5 p-2.5 transition-opacity duration-500 ease-in",
             class: if loaded() { "opacity-100" } else { "opacity-0" },
             onmounted: move |_| {
                 spawn(async move {

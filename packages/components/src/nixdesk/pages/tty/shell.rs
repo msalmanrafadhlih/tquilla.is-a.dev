@@ -209,7 +209,7 @@ pub fn ShellPanel(
                 span { class: "text-white/40", "$" }
                 input {
                     id: "shell-input",
-                    class: "flex-1 bg-transparent outline-none border-none text-white font-mono caret-white",
+                    class: "flex-1 bg-[var(--bg-main)] outline-none border-none text-white font-mono caret-white",
                     autocomplete: "off",
                     spellcheck: "false",
                     value: "{draft}",

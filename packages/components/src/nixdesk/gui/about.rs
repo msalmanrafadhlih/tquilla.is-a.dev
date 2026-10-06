@@ -25,7 +25,7 @@ pub fn InfoBlock() -> Element {
                 img { src: NIXOS_ICON, alt: "NixOS", class: "relative flex-1 grow aspect-[1.15]", width: "75", height: "64", alt: "NixOS Logo" }
             }
             div { class: "flex flex-col w-[67px] items-start relative",
-                h2 { class: "relative flex items-center w-max [font:'Inter-Regular',Helvetica] font-normal text-variable-collection-fg-main text-xs tracking-[0] leading-[normal]",
+                h2 { class: "relative flex items-center w-max [font:'Inter-Regular',Helvetica] font-normal text-fg-main text-xs tracking-[0] leading-[normal]",
                     "NixOS 26.11"
                 }
                 a {

@@ -46,7 +46,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
     };
 
     rsx! {
-        footer { class: "relative flex w-full flex-none items-center justify-center gap-2.5 px-2.5 pb-2.5 md:pb-0 z-[999] rounded-3xl border-b-[0.5px] border-white backdrop-blur-sm [background:linear-gradient(180deg,transparent_50%,rgba(37,37,37,1)_100%)]",
+        footer { class: "relative flex w-full flex-none items-center justify-center gap-2.5 px-2.5 pb-2.5 md:pb-0 z-[999] rounded-3xl border-b-[0.5px] border-white backdrop-blur-sm bg-[image:var(--linear-b)]",
 
             // LEFT DOCK — social links. jika button `Open social menu` di klick, maka akan memunculkan tag list anchor diatasnya
             section {
@@ -81,7 +81,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                     r#type: "button",
                     "aria-label": "Open social menu",
                     "aria-expanded": if social_menu_open() { "true" } else { "false" },
-                    class: "inline-flex items-center md:hidden gap-2.5 relative flex-[0_0_auto] z-0 bg-transparent border-0 p-0 shrink-0",
+                    class: "inline-flex items-center md:hidden gap-2.5 relative flex-[0_0_auto] z-0 border-0 p-0 shrink-0",
                     onclick: move |_| social_menu_open.set(!social_menu_open()),
                     img {
                         src: MENU_ICON,
@@ -104,7 +104,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                 button {
                     r#type: "button",
                     "aria-label": "Open settings",
-                    class: "relative h-[30px] w-[30px] flex-none border-0 bg-transparent p-0",
+                    class: "relative h-[30px] w-[30px] flex-none border-0 p-0",
                     onclick: move |_| toggle_window(open_windows, next_z, AppId::Settings),
                     img { src: SETTINGS_ICON, alt: "", class: "h-full w-full" }
                 }
@@ -117,7 +117,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                             key: "{app_id.key()}",
                             r#type: "button",
                             title: "{app_id.title()}",
-                            class: if has_window(app_id) { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 border-b-[0.5px] border-white bg-transparent px-0 pb-[5px] pt-0" } else { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 bg-transparent px-0 pb-[5px] pt-0 transition-transform duration-150 ease-out hover:scale-125 active:scale-90" },
+                            class: if has_window(app_id) { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 border-b-[0.5px] border-white bg-[var(--linear-b)] px-0 pb-[5px] pt-0" } else { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 px-0 pb-[5px] pt-0 transition-transform duration-150 ease-out hover:scale-125 active:scale-90" },
                             onclick: move |_| toggle_window(open_windows, next_z, app_id),
                             img { src: icon, alt: "{app_id.title()}", class: "h-10 w-10" }
                         }
@@ -129,7 +129,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                 button {
                     r#type: "button",
                     "aria-label": "About NixDesktop",
-                    class: "relative h-[30px] w-[30px] flex-none border-0 bg-transparent p-0",
+                    class: "relative h-[30px] w-[30px] flex-none border-0 p-0",
                     onclick: move |_| toggle_window(open_windows, next_z, AppId::About),
                     img { src: NIXOS_ICON, alt: "", class: "h-full w-full" }
                 }
@@ -163,7 +163,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                     r#type: "button",
                     "aria-label": "Open chat menu",
                     "aria-expanded": if chat_menu_open() { "true" } else { "false" },
-                    class: "inline-flex md:hidden items-center justify-end gap-2.5 relative flex-[0_0_auto] z-0 bg-transparent border-0 p-0 shrink-0",
+                    class: "inline-flex md:hidden items-center justify-end gap-2.5 relative flex-[0_0_auto] z-0 border-0 p-0 shrink-0",
                     onclick: move |_| chat_menu_open.set(!chat_menu_open()),
                     img {
                         src: MENU_ICON,

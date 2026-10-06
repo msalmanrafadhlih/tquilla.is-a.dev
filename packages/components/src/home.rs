@@ -107,7 +107,7 @@ pub fn Home() -> Element {
 
         section {
             tabindex: "{total}",
-            class: "min-h-screen w-full bg-black text-neutral-200 font-mono flex flex-col items-center justify-center px-3 py-10 outline-none select-none",
+            class: "min-h-screen w-full bg-[var(--bg-main)] text-neutral-200 font-mono flex flex-col items-center justify-center px-3 py-10 outline-none select-none",
             onkeydown,
             onmounted: move |evt| {
                 let data = evt.data();
@@ -139,7 +139,7 @@ pub fn Home() -> Element {
                             class: if selected() == idx {
                                 "bg-neutral-200 text-black px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75 text-center"
                             } else {
-                                "bg-black text-neutral-200 px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75 hover:bg-neutral-800 text-center"
+                                "bg-[var(--bg-main)] text-neutral-200 px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75 hover:bg-neutral-800 text-center"
                             },
                             if hovered() == Some(idx) {
                                 "{gen.label}"

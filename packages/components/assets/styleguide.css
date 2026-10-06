@@ -1,16 +1,29 @@
 :root {
+  /* Warna Dasar */
+  --bg-main: rgba(17, 17, 17, 1);
+  --bg-secondary: rgba(37, 37, 37, 1);
+  --fg-main: rgba(255, 255, 255, 1);
+  --fg-secondary: rgba(85, 85, 85, 1);
+  
+  /* Warna Aksen */
+  --green: rgba(0, 255, 0, 1);
+  --red: rgba(255, 0, 0, 1);
+  --yellow: rgba(255, 255, 0, 1);
+
+  /* Variabel Gradasi yang Sudah Tersambung */
+  --linear-l: linear-gradient(270deg, var(--bg-secondary) 0%, transparent 100%);
+  --linear-r: linear-gradient(90deg, var(--bg-secondary) 0%, transparent 100%);
+  --linear-b: linear-gradient(180deg, transparent 0%, var(--bg-secondary) 100%);
+  --linear-t: linear-gradient(180deg,var(--bg-secondary) 10%,transparent 100%);
+  --linear-lr: linear-gradient(90deg, transparent 0%, var(--bg-secondary) 50%, transparent 100%); 
+  --conic-gradient: conic-gradient(from 0deg at 50% 50%, transparent 25%, var(--bg-secondary) 50%, transparent 75%, var(--bg-secondary) 100%);
+
   --body-base-font-family: "Inter", Helvetica;
   --body-base-font-weight: 400;
   --body-base-font-size: 16px;
   --body-base-letter-spacing: 0px;
   --body-base-line-height: 139.9999976158142%;
   --body-base-font-style: normal;
-  --variable-collection-bg-main: rgba(0, 0, 0, 1);
-  --variable-collection-fg-secondary: rgba(85, 85, 85, 1);
-  --variable-collection-fg-main: rgba(255, 255, 255, 1);
-  --variable-collection-green: rgba(0, 255, 0, 1);
-  --variable-collection-red: rgba(255, 0, 0, 1);
-  --variable-collection-yellow: rgba(255, 255, 0, 1);
   --size-space-200: 8px;
   --size-space-150: 6px;
   --size-radius-200: 8px;

@@ -12,13 +12,13 @@ pub fn SettingsWindowContent() -> Element {
 
     rsx! {
         div { class: "flex items-start w-full h-full justify-center gap-5 relative",
-            nav { class: "inline-flex flex-col h-full min-w-[100px] items-center relative self-stretch flex-[0_0_auto] border-r border-solid border-[var(--variable-collection-fg-secondary)]",
+            nav { class: "inline-flex flex-col h-full min-w-[100px] items-center relative self-stretch flex-[0_0_auto] border-r border-solid border-[var(--fg-secondary)]",
                 for s in SECTIONS {
                     button {
                         key: "{s}",
                         r#type: "button",
                         class: "flex items-center p-2 relative self-stretch w-full flex-[0_0_auto] border-0 text-xs",
-                        class: if section() == s { "bg-[var(--variable-collection-fg-main)]  text-[var(--variable-collection-bg-main)] " } else { "text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)]" },
+                        class: if section() == s { "bg-[var(--fg-main)]  text-[var(--bg-main)] " } else { "text-[var(--fg-secondary)] hover:text-[var(--fg-main)]" },
                         onclick: move |_| section.set(s),
                         "{s}"
                     }

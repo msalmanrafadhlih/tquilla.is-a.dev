@@ -38,8 +38,8 @@ fn add_bookmark(
 
 
 fn tab_class(active: bool) -> &'static str {
-    const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--variable-collection-fg-main)] text-xs text-[var(--variable-collection-bg-main)] border-0";
-    const TAB_INACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-[var(--variable-collection-fg-secondary)] text-xs hover:text-white bg-transparent border-0";
+    const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--fg-main)] text-xs text-[var(--bg-main)] border-0";
+    const TAB_INACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-[var(--fg-secondary)] text-xs hover:text-white bg-[var(--bg-main)] border-0";
 
     if active {
         TAB_ACTIVE_CLASS
@@ -68,7 +68,7 @@ pub fn BrowserWindowContent() -> Element {
 
             // sidebar: tabs + input
             section {
-                class: "w-full h-max @md:h-full @md:max-w-[200px] max-w-full shrink-0 border-r border-solid gap-2 p-2 items-center justify-between border-[var(--variable-collection-fg-main)] flex flex-col",
+                class: "w-full h-max @md:h-full @md:max-w-[200px] max-w-full shrink-0 border-r border-solid gap-2 p-2 items-center justify-between border-[var(--fg-main)] flex flex-col",
 
                 // list tabs
                 div {
@@ -85,7 +85,7 @@ pub fn BrowserWindowContent() -> Element {
 
                     button {
                         r#type: "button",
-                        class: "@md:hidden px-2 block text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] shrink-0 bg-transparent border-0",
+                        class: "@md:hidden px-2 block text-[var(--fg-secondary)] hover:text-[var(--fg-main)] shrink-0 bg-[var(--bg-main)] border-0",
                         onclick: move |_| form_open.set(!form_open()),
                         // or: onclick: move |_| form_open.toggle(),
                         "+"
@@ -99,14 +99,14 @@ pub fn BrowserWindowContent() -> Element {
                         input {
                             r#type: "text",
                             placeholder: "placeholder...",
-                            class: "w-full py-2 bg-transparent outline-none border-0 border-b border-[var(--variable-collection-fg-secondary)] text-[var(--variable-collection-fg-main)] placeholder-[var(--variable-collection-fg-secondary)] text-xs",
+                            class: "w-full py-2 bg-[var(--bg-main)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
                             value: "{new_label}",
                             oninput: move |evt: FormEvent| new_label.set(evt.value()),
                         }
                         button {
                             r#type: "button",
                             disabled: true,
-                            class: "px-2 @md:pl-2 hidden @md:flex text-transparent shrink-0 bg-transparent border-0",
+                            class: "px-2 @md:pl-2 hidden @md:flex text-transparent shrink-0 bg-[var(--bg-main)] border-0",
                             "+"
                         }
                     }
@@ -115,7 +115,7 @@ pub fn BrowserWindowContent() -> Element {
                         input {
                             r#type: "text",
                             placeholder: "https://...",
-                            class: "w-full h-full py-2 flex-1 min-w-0 bg-transparent outline-none border-0 border-b border-[var(--variable-collection-fg-secondary)] text-[var(--variable-collection-fg-main)] placeholder-[var(--variable-collection-fg-secondary)] text-xs",
+                            class: "w-full h-full py-2 flex-1 min-w-0 bg-[var(--bg-main)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
                             value: "{new_url}",
                             onkeydown: move |evt: KeyboardEvent| match evt.key() {
                                 Key::Enter => {
@@ -128,7 +128,7 @@ pub fn BrowserWindowContent() -> Element {
                         }
                         button {
                             r#type: "button",
-                            class: "px-2 @md:pl-2 text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] shrink-0 bg-transparent border-0",
+                            class: "px-2 @md:pl-2 text-[var(--fg-secondary)] hover:text-[var(--fg-main)] shrink-0 bg-[var(--bg-main)] border-0",
                             onclick: move |_| add_bookmark(bookmarks, selected, new_label, new_url),
                             "+"
                         }
@@ -141,7 +141,7 @@ pub fn BrowserWindowContent() -> Element {
                 class: "flex-1 min-w-0 flex gap-2 flex-col p-2",
 
                 div {
-                    class: "flex shrink-0 items-center border-b border-solid border-[var(--variable-collection-fg-secondary)] px-3 pb-2 truncate text-[var(--variable-collection-fg-secondary)] gap-2 text-xs",
+                    class: "flex shrink-0 items-center border-b border-solid border-[var(--fg-secondary)] px-3 pb-2 truncate text-[var(--fg-secondary)] gap-2 text-xs",
                     img {
                         src: ICON_LINK,
                         alt: "link",
@@ -160,12 +160,12 @@ pub fn BrowserWindowContent() -> Element {
                 }
 
                 div {
-                    class: "shrink-0 border-t border-solid border-[var(--variable-collection-fg-secondary)] px-3 pt-2 flex justify-end",
+                    class: "shrink-0 border-t border-solid border-[var(--fg-secondary)] px-3 pt-2 flex justify-end",
                     a {
                         target: "_blank",
                         rel: "noopener noreferrer",
                         href: "{current.url}",
-                        class: "text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] transition-colors duration-150 text-xs",
+                        class: "text-[var(--fg-secondary)] hover:text-[var(--fg-main)] transition-colors duration-150 text-xs",
                         "Go to Website ↗"
                     }
                 }

@@ -12,7 +12,7 @@ const FOLDER_NAMES: [&str; 5] = [
 
 #[component]
 pub fn FileManagerWindowContent() -> Element {
-    const NAV_BUTTON_CLASS: &str = "relative flex items-end justify-center w-fit mt-[-1.00px] appearance-none border-0 bg-transparent p-0 cursor-pointer [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-variable-collection-fg-main text-xs text-center tracking-[0] leading-[normal]";
+    const NAV_BUTTON_CLASS: &str = "relative flex items-end justify-center w-fit mt-[-1.00px] appearance-none border-0 bg-[var(--bg-main)] p-0 cursor-pointer [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-xs text-center tracking-[0] leading-[normal]";
     let mut current = use_signal(|| Option::<&'static str>::None);
     let selected = current();
     let breadcrumb_suffix = selected.unwrap_or("");
@@ -25,7 +25,7 @@ pub fn FileManagerWindowContent() -> Element {
             // side panel
             aside {
                 "aria-label": "Places",
-                class: "inline-flex flex-col w-[30%] h-full min-w-max max-w-[150px] items-center relative border-r border-solid border-[var(--variable-collection-fg-secondary)] ",
+                class: "inline-flex flex-col w-[30%] h-full min-w-max max-w-[150px] items-center relative border-r border-solid border-[var(--fg-secondary)] ",
 
                 button {
                     r#type: "button",
@@ -53,7 +53,7 @@ pub fn FileManagerWindowContent() -> Element {
 
                 // top bar: navigation + breadcrumb
                 header {
-                    class: "flex items-start gap-2.5 px-2.5 pb-2.5 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[var(--variable-collection-fg-secondary)]",
+                    class: "flex items-start gap-2.5 px-2.5 pb-2.5 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[var(--fg-secondary)]",
 
                     button {
                         r#type: "button",
@@ -73,7 +73,7 @@ pub fn FileManagerWindowContent() -> Element {
                     div {
                         class: "items-center gap-2.5 flex-1 self-stretch grow flex relative",
                         p {
-                            class: "items-end justify-center w-fit [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--variable-collection-fg-secondary)]  text-xs text-center tracking-[0] leading-[normal] flex relative whitespace-nowrap",
+                            class: "items-end justify-center w-fit [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-secondary)]  text-xs text-center tracking-[0] leading-[normal] flex relative whitespace-nowrap",
                             title: "home/tquilla/{breadcrumb_suffix}",
                             "home/tquilla/{breadcrumb_suffix}"
                         }
@@ -92,7 +92,7 @@ pub fn FileManagerWindowContent() -> Element {
                                 key: "{name}",
                                 r#type: "button",
                                 role: "listitem",
-                                class: "flex flex-col shrink-0 items-center gap-1.5 p-0 cursor-pointer hover:opacity-50 border-0 bg-transparent w-[90px] opacity-70",
+                                class: "flex flex-col shrink-0 items-center gap-1.5 p-0 cursor-pointer hover:opacity-50 border-0 bg-[var(--bg-main)] w-[90px] opacity-70",
                                 onclick: move |_| current.set(Some(name)),
                                 img {
                                     src: IMG,
@@ -100,14 +100,14 @@ pub fn FileManagerWindowContent() -> Element {
                                     class: "hidden min-[400px]:block w-full",
                                 }
                                 span {
-                                    class: "text-[var(--variable-collection-fg-main)] text-left min-[400px]:text-center text-xs w-full break-words",
+                                    class: "text-[var(--fg-main)] text-left min-[400px]:text-center text-xs w-full break-words",
                                     "{name}"
                                 }
                             }
                         }
                     } else {
                         p {
-                            class: "text-variable-collection-fg-secondary",
+                            class: "text-fg-secondary",
                             "(empty)"
                         }
                     }
@@ -121,10 +121,10 @@ fn nav_item_class(active: bool) -> String {
     const NAV_ITEM_BASE: &str = "w-full p-2 border-0 cursor-pointer [font:'JetBrains_Mono-ExtraLight',Helvetica] font-normal text-xs text-left tracking-[0] leading-[normal] flex relative";
 
     if active {
-        format!("{NAV_ITEM_BASE} text-[var(--variable-collection-bg-main)] bg-[var(--variable-collection-fg-main)]")
+        format!("{NAV_ITEM_BASE} text-[var(--bg-main)] bg-[var(--fg-main)]")
     } else {
         format!(
-            "{NAV_ITEM_BASE} bg-transparent text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)]"
+            "{NAV_ITEM_BASE} bg-[var(--bg-main)] text-[var(--fg-secondary)] hover:text-[var(--fg-main)]"
         )
     }
 }
