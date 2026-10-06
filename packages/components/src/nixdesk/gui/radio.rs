@@ -113,7 +113,7 @@ pub fn RadioWindowContent() -> Element {
             }
 
             // CONTROL PLAYER
-            div { class: "@container flex-1 w-full h-full min-w-0 flex flex-col items-center justify-start @min-[643px]:justify-center gap-4 px-6 py-6 text-center overflow-scroll",
+            div { class: "@container flex-1 w-full h-full min-w-0 flex flex-col items-center justify-start @min-[643px]:justify-center gap-4 px-6 py-6 text-center overflow-scroll [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
                 img {
                     src: "{current.image}",
                     alt: "{current.label}",

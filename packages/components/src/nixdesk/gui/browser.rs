@@ -22,11 +22,11 @@ fn add_bookmark(
     mut new_label: Signal<String>,
     mut new_url: Signal<String>,
 ) {
-    let label = new_label();
-    let url = new_url();
-    if label.trim().is_empty() || url.trim().is_empty() {
-        return;
-    }
+    let label = new_label().trim().to_string();
+    let url = new_url().trim().to_string();
+    if label.is_empty() || url.is_empty() { return; }
+    let url = if url.starts_with("http://") || url.starts_with("https://") { url } else { format!("https://{url}") };
+
     let mut list = bookmarks();
     list.push(Bookmark { placeholder: label, url });
     let idx = list.len() - 1;
@@ -36,20 +36,11 @@ fn add_bookmark(
     new_url.set(String::new());
 }
 
-const SIDEBAR_CLASS: &str = "w-full h-max @md:h-full @md:max-w-[200px] max-w-full shrink-0 border-r border-solid gap-2 p-2 items-center justify-between border-[var(--variable-collection-fg-main)] flex flex-row @md:flex-col";
-const TAB_LIST_CLASS: &str = "flex gap-1 min-h-0 h-max w-full @md:max-w-full overflow-y-auto flex-row @md:flex-col";
-const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--variable-collection-fg-main)] text-xs text-[var(--variable-collection-bg-main)] border-0";
-const TAB_INACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-[var(--variable-collection-fg-secondary)] text-xs hover:text-white bg-transparent border-0";
-const INPUT_SECTION_CLASS: &str = "w-max @md:w-full h-max pr-3 border-[var(--variable-collection-fg-secondary)] flex flex-col gap-2";
-const INPUT_LABEL_CLASS: &str = "hidden @md:block bg-transparent outline-none border-0 border-b border-[var(--variable-collection-fg-secondary)] text-[var(--variable-collection-fg-main)] placeholder-[var(--variable-collection-fg-secondary)] text-xs";
-const INPUT_URL_CLASS: &str = "hidden @md:block w-max flex-1 min-w-0 bg-transparent outline-none border-0 border-b border-[var(--variable-collection-fg-secondary)] text-[var(--variable-collection-fg-main)] placeholder-[var(--variable-collection-fg-secondary)] text-xs";
-const ADD_BUTTON_CLASS: &str = "text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] shrink-0 bg-transparent border-0";
-const URL_BAR_CLASS: &str = "flex shrink-0 items-center border-b border-solid border-[var(--variable-collection-fg-secondary)] px-3 pb-2 truncate text-[var(--variable-collection-fg-secondary)] gap-2 text-xs";
-const IFRAME_WRAPPER_CLASS: &str = "flex-1 min-h-0 bg-white/[0.02]";
-const FOOTER_CLASS: &str = "shrink-0 border-t border-solid border-[var(--variable-collection-fg-secondary)] px-3 pt-2 flex justify-end";
-const LINK_CLASS: &str = "text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] transition-colors duration-150 text-xs";
 
 fn tab_class(active: bool) -> &'static str {
+    const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--variable-collection-fg-main)] text-xs text-[var(--variable-collection-bg-main)] border-0";
+    const TAB_INACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-[var(--variable-collection-fg-secondary)] text-xs hover:text-white bg-transparent border-0";
+
     if active {
         TAB_ACTIVE_CLASS
     } else {
@@ -63,6 +54,7 @@ pub fn BrowserWindowContent() -> Element {
     let mut selected = use_signal(|| 0usize);
     let mut new_label = use_signal(String::new);
     let mut new_url = use_signal(String::new);
+    let mut form_open = use_signal(|| false);
 
     let list = bookmarks();
     let current = list
@@ -72,15 +64,15 @@ pub fn BrowserWindowContent() -> Element {
 
     rsx! {
         div {
-            class: "flex flex-col @md:flex-row min-h-0 h-full w-full overflow-auto",
+            class: "flex flex-col @md:flex-row min-h-0 h-full w-full overflow-auto [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
 
             // sidebar: tabs + input
             section {
-                class: SIDEBAR_CLASS,
+                class: "w-full h-max @md:h-full @md:max-w-[200px] max-w-full shrink-0 border-r border-solid gap-2 p-2 items-center justify-between border-[var(--variable-collection-fg-main)] flex flex-col",
 
                 // list tabs
                 div {
-                    class: TAB_LIST_CLASS,
+                    class: "flex gap-1 min-h-0 h-max w-full @md:max-w-full overflow-y-auto flex-row @md:flex-col",
                     for (idx, bm) in list.iter().enumerate() {
                         button {
                             key: "{bm.placeholder}-{idx}",
@@ -90,23 +82,40 @@ pub fn BrowserWindowContent() -> Element {
                             "{bm.placeholder}"
                         }
                     }
+
+                    button {
+                        r#type: "button",
+                        class: "@md:hidden px-2 block text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] shrink-0 bg-transparent border-0",
+                        onclick: move |_| form_open.set(!form_open()),
+                        // or: onclick: move |_| form_open.toggle(),
+                        "+"
+                    }
                 }
 
                 div {
-                    class: INPUT_SECTION_CLASS,
-                    input {
-                        r#type: "text",
-                        placeholder: "placeholder...",
-                        class: INPUT_LABEL_CLASS,
-                        value: "{new_label}",
-                        oninput: move |evt: FormEvent| new_label.set(evt.value()),
+                    class: if form_open() { "w-full flex flex-row @md:flex-col gap-2" } else { "hidden w-full @md:flex flex-col gap-2" },
+                    div {
+                        class: "w-full flex items-center gap-2",
+                        input {
+                            r#type: "text",
+                            placeholder: "placeholder...",
+                            class: "w-full py-2 bg-transparent outline-none border-0 border-b border-[var(--variable-collection-fg-secondary)] text-[var(--variable-collection-fg-main)] placeholder-[var(--variable-collection-fg-secondary)] text-xs",
+                            value: "{new_label}",
+                            oninput: move |evt: FormEvent| new_label.set(evt.value()),
+                        }
+                        button {
+                            r#type: "button",
+                            disabled: true,
+                            class: "px-2 @md:pl-2 hidden @md:flex text-transparent shrink-0 bg-transparent border-0",
+                            "+"
+                        }
                     }
                     div {
-                        class: "flex items-center gap-2",
+                        class: "w-full flex items-center gap-2",
                         input {
                             r#type: "text",
                             placeholder: "https://...",
-                            class: INPUT_URL_CLASS,
+                            class: "w-full h-full py-2 flex-1 min-w-0 bg-transparent outline-none border-0 border-b border-[var(--variable-collection-fg-secondary)] text-[var(--variable-collection-fg-main)] placeholder-[var(--variable-collection-fg-secondary)] text-xs",
                             value: "{new_url}",
                             onkeydown: move |evt: KeyboardEvent| match evt.key() {
                                 Key::Enter => {
@@ -119,7 +128,7 @@ pub fn BrowserWindowContent() -> Element {
                         }
                         button {
                             r#type: "button",
-                            class: ADD_BUTTON_CLASS,
+                            class: "px-2 @md:pl-2 text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] shrink-0 bg-transparent border-0",
                             onclick: move |_| add_bookmark(bookmarks, selected, new_label, new_url),
                             "+"
                         }
@@ -132,7 +141,7 @@ pub fn BrowserWindowContent() -> Element {
                 class: "flex-1 min-w-0 flex gap-2 flex-col p-2",
 
                 div {
-                    class: URL_BAR_CLASS,
+                    class: "flex shrink-0 items-center border-b border-solid border-[var(--variable-collection-fg-secondary)] px-3 pb-2 truncate text-[var(--variable-collection-fg-secondary)] gap-2 text-xs",
                     img {
                         src: ICON_LINK,
                         alt: "link",
@@ -142,7 +151,7 @@ pub fn BrowserWindowContent() -> Element {
                 }
 
                 div {
-                    class: IFRAME_WRAPPER_CLASS,
+                    class: "flex-1 min-h-0 bg-white/[0.02]",
                     iframe {
                         src: "{current.url}",
                         class: "w-full h-full border-0",
@@ -151,12 +160,12 @@ pub fn BrowserWindowContent() -> Element {
                 }
 
                 div {
-                    class: FOOTER_CLASS,
+                    class: "shrink-0 border-t border-solid border-[var(--variable-collection-fg-secondary)] px-3 pt-2 flex justify-end",
                     a {
                         target: "_blank",
                         rel: "noopener noreferrer",
                         href: "{current.url}",
-                        class: LINK_CLASS,
+                        class: "text-[var(--variable-collection-fg-secondary)] hover:text-[var(--variable-collection-fg-main)] transition-colors duration-150 text-xs",
                         "Go to Website ↗"
                     }
                 }
@@ -164,3 +173,5 @@ pub fn BrowserWindowContent() -> Element {
         }
     }
 }
+
+
