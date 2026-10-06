@@ -40,7 +40,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
     };
 
     let about_class = if show_about() {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] rounded-md border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 md:opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] rounded-md border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 xl:opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
     } else {
         "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] rounded-md border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
     };
@@ -189,19 +189,15 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
 
                             button {
                                 r#type: "button",
-                                class: "transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
+                                class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
                                 title: if notif_muted() { "Notifikasi dibisukan" } else { "Notifikasi aktif" },
                                 onclick: move |_| notif_muted.set(!notif_muted()),
-                                if notif_muted() {
-                                    img {
-                                        src: NOTIFICATION_ICON_SILENT, alt: "Notifications",
-                                        class: "h-4 w-4 opacity-100"
-                                    }
-                                } else {
-                                    img {
-                                        src: NOTIFICATION_ICON, alt: "Notifications",
-                                        class: "h-4 w-4 opacity-100"
-                                    }
+                                img {
+                                    src: NOTIFICATION_ICON, alt: "Notification",
+                                    class: if notif_muted() { "h-4 w-4 opacity-30 transition-opacity duration-150" } else { "h-4 w-4 opacity-100 transition-opacity duration-150" },
+                                }
+                                span {
+                                    class: if notif_muted() { "pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45 bg-white" } else { "pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45 bg-transparent" },
                                 }
                             }
 

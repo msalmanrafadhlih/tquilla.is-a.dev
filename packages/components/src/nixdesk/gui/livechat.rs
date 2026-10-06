@@ -220,7 +220,7 @@ pub fn LiveChatWindowContent() -> Element {
     let mut upload_error = use_signal(|| None::<String>);
 
     rsx! {
-        div { class: "flex flex-col items-center gap-5 h-full w-full bg-[var(--bg-main)] text-sm",
+        div { class: "flex flex-col items-center gap-5 h-full w-full bg-[var(--bg-secondary)] text-sm",
 
             // CHAT ENVIRONMENTS
             section {
@@ -311,7 +311,7 @@ pub fn LiveChatWindowContent() -> Element {
                             r#type: "button",
                             aria_label: "Remove attached image",
                             title: "Remove image",
-                            class: "absolute top-0 right-0 w-5 h-5 flex items-center justify-center text-[10px] bg-[var(--bg-main)] text-[var(--fg-main)] border border-solid border-[var(--fg-main)] cursor-pointer hover:bg-[var(--fg-main)] hover:text-[var(--bg-main)]",
+                            class: "absolute top-0 right-0 w-5 h-5 flex items-center justify-center text-[10px] bg-[var(--bg-secondary)] text-[var(--fg-main)] border border-solid border-[var(--fg-main)] cursor-pointer hover:bg-[var(--fg-main)] hover:text-[var(--bg-secondary)]",
                             onclick: move |_| attachment.set(None),
                             "x"
                         }
@@ -340,7 +340,7 @@ pub fn LiveChatWindowContent() -> Element {
                 label {
                     r#for: "avatar-upload",
                     aria_label: "Upload avatar",
-                    class: "group flex flex-col w-[50px] h-[50px] ml-2.5 mr-5 items-center justify-center gap-2.5 relative border border-solid text-[var(--fg-main)] bg-[var(--bg-main)] border-[var(--fg-main)] aspect-[1] cursor-pointer overflow-hidden hover:text-[var(--bg-main)] hover:bg-[var(--fg-main)]",
+                    class: "group flex flex-col w-[50px] h-[50px] ml-2.5 mr-5 items-center justify-center gap-2.5 relative border border-solid text-[var(--fg-main)] bg-[var(--bg-secondary)] border-[var(--fg-main)] aspect-[1] cursor-pointer overflow-hidden hover:text-[var(--bg-secondary)] hover:bg-[var(--fg-main)]",
                     if let Some(src) = avatar() {
                         img {
                             class: "w-full h-full object-cover",
@@ -380,7 +380,7 @@ pub fn LiveChatWindowContent() -> Element {
                     div { class: "flex w-full flex-row gap-2.5",
                         label { class: "sr-only", r#for: "username", "Username" }
                         input {
-                            class: "relative w-full flex items-center self-stretch mt-[-1.00px] opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-main)] border-0 outline-none p-0",
+                            class: "relative w-full flex items-center self-stretch mt-[-1.00px] opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0",
                             id: "username",
                             name: "username",
                             r#type: "text",
@@ -391,7 +391,7 @@ pub fn LiveChatWindowContent() -> Element {
                         }
                         label { class: "sr-only", r#for: "url", "Website URL" }
                         input {
-                            class: "relative w-full flex items-center self-stretch mt-[-1.00px] opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-main)] border-0 outline-none p-0",
+                            class: "relative w-full flex items-center self-stretch mt-[-1.00px] opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0",
                             id: "url",
                             name: "url",
                             r#type: "text",
@@ -406,7 +406,7 @@ pub fn LiveChatWindowContent() -> Element {
                     div { class: "flex w-full flex-row",
                         label { class: "sr-only", r#for: "message", "Message" }
                         textarea {
-                            class: "relative w-full flex items-center self-stretch opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-main)] border-0 outline-none p-0 resize-none max-h-[calc(1.4em*5)] overflow-y-hidden",
+                            class: "relative w-full flex items-center self-stretch opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0 resize-none max-h-[calc(1.4em*5)] overflow-y-hidden",
                             id: "message",
                             name: "message",
                             rows: "1",
@@ -430,7 +430,7 @@ pub fn LiveChatWindowContent() -> Element {
                         label {
                             r#for: "image-upload",
                             aria_label: "Add image file",
-                            class: "flex flex-col h-5 items-center justify-center gap-2.5 relative bg-[var(--bg-main)] aspect-[1] cursor-pointer opacity-50 hover:opacity-100",
+                            class: "flex flex-col h-5 items-center justify-center gap-2.5 relative bg-[var(--bg-secondary)] aspect-[1] cursor-pointer opacity-50 hover:opacity-100",
                             img {
                                 title: "Add Media",
                                 "aria-hidden": "true",
@@ -460,7 +460,7 @@ pub fn LiveChatWindowContent() -> Element {
 
                 button {
                     r#type: "submit",
-                    class: "group text-[10px] sm:text-xs inline-flex bg-[var(--bg-main)] border-0 hover:bg-[var(--fg-main)] items-center text-[var(--fg-secondary)] hover:text-[var(--bg-main)] gap-2.5 sm:ml-5 p-2.5 flex-[0_0_auto] justify-center relative cursor-pointer",
+                    class: "group text-[10px] sm:text-xs inline-flex bg-[var(--bg-secondary)] border-0 hover:bg-[var(--fg-main)] items-center text-[var(--fg-secondary)] hover:text-[var(--bg-secondary)] gap-2.5 sm:ml-5 p-2.5 flex-[0_0_auto] justify-center relative cursor-pointer",
                     "Send"
                 }
             }

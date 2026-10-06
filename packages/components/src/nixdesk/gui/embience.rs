@@ -108,7 +108,7 @@ pub fn EmbienceWindowContent() -> Element {
 
     rsx! {
         main {
-            class: "relative flex flex-col w-full h-full items-start gap-5 bg-[var(--bg-main)] text-[var(--fg-main,#fff)]",
+            class: "relative flex flex-col w-full h-full items-start gap-5 bg-[var(--bg-secondary)] text-[var(--fg-main,#fff)]",
             "aria-label": "Embience",
 
             for sound in sounds.iter() {
@@ -133,7 +133,7 @@ pub fn EmbienceWindowContent() -> Element {
                             div {
                                 key: "{sound_id}",
                                 class: "relative w-full min-w-0 h-max flex flex-col items-center justify-center gap-5 p-2.5 text-inherit",
-                                class: if is_active { "bg-[image:var(--conic-gradient)]" } else { "bg-[var(--bg-main)]" },
+                                class: if is_active { "bg-[image:var(--conic-gradient)]" } else { "bg-[var(--bg-secondary)]" },
 
                                 // toggle on/off: logo + title
                                 button {
@@ -152,7 +152,7 @@ pub fn EmbienceWindowContent() -> Element {
                                     // logo audio
                                     span {
                                         class: "flex flex-col w-[100px] h-[100px] items-center justify-center gap-2.5 p-2.5 relative aspect-[1]",
-                                        class: if is_active { "bg-[var(--fg-main,#fff)]" } else { "bg-[var(--bg-main,#000)]" },
+                                        class: if is_active { "bg-[var(--fg-main,#fff)]" } else { "bg-[var(--bg-secondary,#000)]" },
                                         img {
                                             class: "relative self-stretch w-full aspect-[1]",
                                             class: if is_active { "invert" } else { "" },
@@ -226,9 +226,9 @@ pub fn EmbienceWindowContent() -> Element {
                                     r#type: "button",
                                     "aria-pressed": "{is_preset_active}",
                                     class: if is_preset_active {
-                                        "appearance-none px-2.5 py-1 border border-solid border-[var(--fg-main,#fff)] bg-[var(--fg-main,#fff)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--bg-main,#000)] cursor-pointer"
+                                        "appearance-none px-2.5 py-1 border border-solid border-[var(--fg-main,#fff)] bg-[var(--fg-main,#fff)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--bg-secondary,#000)] cursor-pointer"
                                     } else {
-                                        "appearance-none bg-[var(--bg-main)] px-2.5 py-1 border border-solid border-[var(--fg-secondary,#808080)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--fg-main,#fff)] cursor-pointer"
+                                        "appearance-none bg-[var(--bg-secondary)] px-2.5 py-1 border border-solid border-[var(--fg-secondary,#808080)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--fg-main,#fff)] cursor-pointer"
                                     },
                                     onclick: move |_| {
                                         let currently_active = active();
@@ -270,7 +270,7 @@ pub fn EmbienceWindowContent() -> Element {
                 // MUTE/UNMUTE BUTTON
                 button {
                     r#type: "button",
-                    class: "relative w-6 h-6 aspect-[1] border-0 p-0 bg-[var(--bg-main)] cursor-pointer",
+                    class: "relative w-6 h-6 aspect-[1] border-0 p-0 bg-[var(--bg-secondary)] cursor-pointer",
                     "aria-label": "Toggle volume",
                     "aria-pressed": "{muted()}",
                     onclick: move |_| {
@@ -296,7 +296,7 @@ pub fn EmbienceWindowContent() -> Element {
                 // PLAYER BUTTON
                 button {
                     r#type: "button",
-                    class: "group flex w-[50px] h-[50px] items-center justify-center relative bg-[var(--bg-main)] aspect-[1] border-0 p-0 cursor-pointer hover:bg-[var(--fg-main)] disabled:opacity-40 disabled:cursor-default",
+                    class: "group flex w-[50px] h-[50px] items-center justify-center relative bg-[var(--bg-secondary)] aspect-[1] border-0 p-0 cursor-pointer hover:bg-[var(--fg-main)] disabled:opacity-40 disabled:cursor-default",
                     "aria-label": if is_playing { "Pause ambience" } else { "Play ambience" },
                     disabled: !any_active,
                     onclick: move |_| {
@@ -324,7 +324,7 @@ pub fn EmbienceWindowContent() -> Element {
                 // PLAYLISTS
                 button {
                     r#type: "button",
-                    class: "relative w-6 h-6 aspect-[1] border-0 p-0 bg-[var(--bg-main)] cursor-pointer",
+                    class: "relative w-6 h-6 aspect-[1] border-0 p-0 bg-[var(--bg-secondary)] cursor-pointer",
                     "aria-label": "Open playlist",
                     "aria-expanded": "{show_presets()}",
                     onclick: move |_| show_presets.set(!show_presets()),

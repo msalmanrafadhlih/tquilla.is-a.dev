@@ -38,8 +38,8 @@ fn add_bookmark(
 
 
 fn tab_class(active: bool) -> &'static str {
-    const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--fg-main)] text-xs text-[var(--bg-main)] border-0";
-    const TAB_INACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-[var(--fg-secondary)] text-xs hover:text-white bg-[var(--bg-main)] border-0";
+    const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--fg-main)] text-xs text-[var(--bg-secondary)] border-0";
+    const TAB_INACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-[var(--fg-secondary)] text-xs hover:text-white bg-[var(--bg-secondary)] border-0";
 
     if active {
         TAB_ACTIVE_CLASS
@@ -85,7 +85,7 @@ pub fn BrowserWindowContent() -> Element {
 
                     button {
                         r#type: "button",
-                        class: "@md:hidden px-2 block text-[var(--fg-secondary)] hover:text-[var(--fg-main)] shrink-0 bg-[var(--bg-main)] border-0",
+                        class: "@md:hidden px-2 block text-[var(--fg-secondary)] hover:text-[var(--fg-main)] shrink-0 bg-[var(--bg-secondary)] border-0",
                         onclick: move |_| form_open.set(!form_open()),
                         // or: onclick: move |_| form_open.toggle(),
                         "+"
@@ -99,14 +99,14 @@ pub fn BrowserWindowContent() -> Element {
                         input {
                             r#type: "text",
                             placeholder: "placeholder...",
-                            class: "w-full py-2 bg-[var(--bg-main)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
+                            class: "w-full py-2 bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
                             value: "{new_label}",
                             oninput: move |evt: FormEvent| new_label.set(evt.value()),
                         }
                         button {
                             r#type: "button",
                             disabled: true,
-                            class: "px-2 @md:pl-2 hidden @md:flex text-transparent shrink-0 bg-[var(--bg-main)] border-0",
+                            class: "px-2 @md:pl-2 hidden @md:flex text-transparent shrink-0 bg-[var(--bg-secondary)] border-0",
                             "+"
                         }
                     }
@@ -115,7 +115,7 @@ pub fn BrowserWindowContent() -> Element {
                         input {
                             r#type: "text",
                             placeholder: "https://...",
-                            class: "w-full h-full py-2 flex-1 min-w-0 bg-[var(--bg-main)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
+                            class: "w-full h-full py-2 flex-1 min-w-0 bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
                             value: "{new_url}",
                             onkeydown: move |evt: KeyboardEvent| match evt.key() {
                                 Key::Enter => {
@@ -128,7 +128,7 @@ pub fn BrowserWindowContent() -> Element {
                         }
                         button {
                             r#type: "button",
-                            class: "px-2 @md:pl-2 text-[var(--fg-secondary)] hover:text-[var(--fg-main)] shrink-0 bg-[var(--bg-main)] border-0",
+                            class: "px-2 @md:pl-2 text-[var(--fg-secondary)] hover:text-[var(--fg-main)] shrink-0 bg-[var(--bg-secondary)] border-0",
                             onclick: move |_| add_bookmark(bookmarks, selected, new_label, new_url),
                             "+"
                         }

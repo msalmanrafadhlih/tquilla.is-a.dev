@@ -558,7 +558,7 @@ pub fn WindowFrame(
     );
 
     let frame_class = format!(
-        "parent win-frame md:absolute flex flex-col items-start gap-5 bg-[var(--bg-main)] px-5 md:pb-5 overflow-hidden border-x md:border-y rounded-[10px] border-solid border-white{maximized}{minimizing_cls}{closing_cls}{minimized}",
+        "parent win-frame md:absolute flex flex-col items-start gap-5 bg-[var(--bg-secondary)] px-5 md:pb-5 overflow-hidden border-x md:border-y rounded-[10px] border-solid border-[var(--fg-main)]{maximized}{minimizing_cls}{closing_cls}{minimized}",
         maximized = if window.maximized { " win-maximized" } else { "" },
         minimizing_cls = if window.minimizing { " win-minimizing" } else { "" },
         closing_cls = if window.closing { " win-closing" } else { "" },

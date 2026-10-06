@@ -168,7 +168,7 @@ pub fn CalcKey(
         button {
             r#type: "button",
             title: "{title}",
-            class: "relative w-full h-max py-2 border-[0.5px] border-solid border-[var(--fg-secondary)] appearance-none bg-[var(--bg-main)] text-inherit {radius} {tone}",
+            class: "relative w-full h-max py-2 border-[0.5px] border-solid border-[var(--fg-secondary)] appearance-none bg-[var(--bg-secondary)] text-inherit {radius} {tone}",
             class: "active:scale-95 transition-all duration-150 ease-in-out hover:opacity-60",
             onclick: move |evt| onclick.call(evt),
             if mathml {
@@ -198,7 +198,7 @@ pub fn KeyPad(
     rsx! {
         section {
             title: "Calculator Keypad",
-            class: "w-full grid gap-2 bg-[var(--bg-main)] text-xs self-stretch overflow-scroll {cols}",
+            class: "w-full grid gap-2 bg-[var(--bg-secondary)] text-xs self-stretch overflow-scroll {cols}",
             class: "[-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
             for (i , key) in keys.iter().enumerate() {
                 CalcKey {
@@ -246,7 +246,7 @@ pub fn ModeTab(mode: Mode, label: &'static str) -> Element {
     let state = use_context::<CalcState>();
     let active = *state.mode.read() == mode;
     let class = if active {
-        "w-full p-1 appearance-none text-xs text-[var(--bg-main)] bg-[var(--fg-main)]"
+        "w-full p-1 appearance-none text-xs text-[var(--bg-secondary)] bg-[var(--fg-main)]"
     } else {
         "w-full p-1 appearance-none text-xs hover:opacity-100 opacity-50"
     };

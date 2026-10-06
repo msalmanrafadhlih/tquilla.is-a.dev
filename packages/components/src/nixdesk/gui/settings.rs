@@ -18,7 +18,7 @@ pub fn SettingsWindowContent() -> Element {
                         key: "{s}",
                         r#type: "button",
                         class: "flex items-center p-2 relative self-stretch w-full flex-[0_0_auto] border-0 text-xs",
-                        class: if section() == s { "bg-[var(--fg-main)]  text-[var(--bg-main)] " } else { "text-[var(--fg-secondary)] hover:text-[var(--fg-main)]" },
+                        class: if section() == s { "bg-[var(--fg-main)]  text-[var(--bg-secondary)] " } else { "text-[var(--fg-secondary)] hover:text-[var(--fg-main)]" },
                         onclick: move |_| section.set(s),
                         "{s}"
                     }

@@ -12,7 +12,7 @@ const FOLDER_NAMES: [&str; 5] = [
 
 #[component]
 pub fn FileManagerWindowContent() -> Element {
-    const NAV_BUTTON_CLASS: &str = "relative flex items-end justify-center w-fit mt-[-1.00px] appearance-none border-0 bg-[var(--bg-main)] p-0 cursor-pointer [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-xs text-center tracking-[0] leading-[normal]";
+    const NAV_BUTTON_CLASS: &str = "relative flex items-end justify-center w-fit mt-[-1.00px] appearance-none border-0 bg-[var(--bg-secondary)] p-0 cursor-pointer [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-xs text-center tracking-[0] leading-[normal]";
     let mut current = use_signal(|| Option::<&'static str>::None);
     let selected = current();
     let breadcrumb_suffix = selected.unwrap_or("");
@@ -92,7 +92,7 @@ pub fn FileManagerWindowContent() -> Element {
                                 key: "{name}",
                                 r#type: "button",
                                 role: "listitem",
-                                class: "flex flex-col shrink-0 items-center gap-1.5 p-0 cursor-pointer hover:opacity-50 border-0 bg-[var(--bg-main)] w-[90px] opacity-70",
+                                class: "flex flex-col shrink-0 items-center gap-1.5 p-0 cursor-pointer hover:opacity-50 border-0 bg-[var(--bg-secondary)] w-[90px] opacity-70",
                                 onclick: move |_| current.set(Some(name)),
                                 img {
                                     src: IMG,
@@ -121,10 +121,10 @@ fn nav_item_class(active: bool) -> String {
     const NAV_ITEM_BASE: &str = "w-full p-2 border-0 cursor-pointer [font:'JetBrains_Mono-ExtraLight',Helvetica] font-normal text-xs text-left tracking-[0] leading-[normal] flex relative";
 
     if active {
-        format!("{NAV_ITEM_BASE} text-[var(--bg-main)] bg-[var(--fg-main)]")
+        format!("{NAV_ITEM_BASE} text-[var(--bg-secondary)] bg-[var(--fg-main)]")
     } else {
         format!(
-            "{NAV_ITEM_BASE} bg-[var(--bg-main)] text-[var(--fg-secondary)] hover:text-[var(--fg-main)]"
+            "{NAV_ITEM_BASE} bg-[var(--bg-secondary)] text-[var(--fg-secondary)] hover:text-[var(--fg-main)]"
         )
     }
 }

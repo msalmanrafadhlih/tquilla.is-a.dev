@@ -70,7 +70,7 @@ pub fn Calculator() -> Element {
                 class: "flex flex-col px-2.5 py-3 relative self-stretch w-full flex-[0_0_auto] rounded-[5px] border-[0.5px] border-solid border-[var(--fg-secondary)] bg-[image:var(--linear-lr)]",
                 button {
                     r#type: "button",
-                    class: "self-start appearance-none bg-[var(--bg-main)] text-xs opacity-50 hover:opacity-100",
+                    class: "self-start appearance-none bg-[var(--bg-secondary)] text-xs opacity-50 hover:opacity-100",
                     title: "Ganti satuan sudut",
                     onclick: move |_| state.toggle_angle(),
                     "{angle_label}"
