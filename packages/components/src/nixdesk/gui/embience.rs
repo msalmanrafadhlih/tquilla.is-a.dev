@@ -296,7 +296,7 @@ pub fn EmbienceWindowContent() -> Element {
                 // PLAYER BUTTON
                 button {
                     r#type: "button",
-                    class: "flex w-[50px] h-[50px] items-center justify-center relative bg-transparent aspect-[1] border-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-default",
+                    class: "group flex w-[50px] h-[50px] items-center justify-center relative bg-transparent aspect-[1] border-0 p-0 cursor-pointer hover:bg-[var(--variable-collection-fg-main)] disabled:opacity-40 disabled:cursor-default",
                     "aria-label": if is_playing { "Pause ambience" } else { "Play ambience" },
                     disabled: !any_active,
                     onclick: move |_| {
@@ -315,7 +315,7 @@ pub fn EmbienceWindowContent() -> Element {
                         }
                     },
                     img {
-                        class: "relative w-[18px] h-[18px] aspect-[1]",
+                        class: "group-hover:invert relative w-[18px] h-[18px] aspect-[1]",
                         src: if is_playing { ICON_PAUSE } else { ICON_PLAY },
                         alt: "",
                     }
