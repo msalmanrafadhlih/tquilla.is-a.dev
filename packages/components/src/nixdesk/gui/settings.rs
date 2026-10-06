@@ -24,7 +24,7 @@ pub fn SettingsWindowContent() -> Element {
                     }
                 }
             }
-            section { class: "flex flex-col max-w-[500px] items-center justify-start gap-[25px] pl-5 pb-5 relative flex-1 grow self-stretch",
+            section { class: "max-w-[500px] flex w-full h-full flex-col items-center justify-start gap-[25px] pb-5 relative flex-1 grow self-stretch",
                 class: "overflow-auto [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
                 match section() {
                     "About" => rsx! { InfoBlock {} },
