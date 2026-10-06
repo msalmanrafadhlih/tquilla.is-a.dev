@@ -197,12 +197,23 @@ pub mod http {
         Ok(Response { status, body })
     }
 
-    #[cfg(target_arch = "wasm32")]
     pub async fn post_json(url: &str, body: String) -> Result<Response, String> {
-        let request = gloo_net::http::Request::post(url)
-            .header("Content-Type", "application/json")
-            .body(body)
-            .map_err(|e| e.to_string())?;
+        post_json_with_headers(url, body, &[]).await
+    }
+
+    /// Same as [`post_json`] plus extra request headers (e.g. an API key
+    /// header, so secrets never have to travel in the URL / query string).
+    #[cfg(target_arch = "wasm32")]
+    pub async fn post_json_with_headers(
+        url: &str,
+        body: String,
+        headers: &[(&str, &str)],
+    ) -> Result<Response, String> {
+        let mut builder = gloo_net::http::Request::post(url).header("Content-Type", "application/json");
+        for (name, value) in headers {
+            builder = builder.header(*name, *value);
+        }
+        let request = builder.body(body).map_err(|e| e.to_string())?;
         let resp = request.send().await.map_err(|e| e.to_string())?;
         let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
@@ -218,10 +229,18 @@ pub mod http {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    pub async fn post_json(url: &str, body: String) -> Result<Response, String> {
-        let resp = reqwest::Client::new()
+    pub async fn post_json_with_headers(
+        url: &str,
+        body: String,
+        headers: &[(&str, &str)],
+    ) -> Result<Response, String> {
+        let mut builder = reqwest::Client::new()
             .post(url)
-            .header("Content-Type", "application/json")
+            .header("Content-Type", "application/json");
+        for (name, value) in headers {
+            builder = builder.header(*name, *value);
+        }
+        let resp = builder
             .body(body)
             .send()
             .await

@@ -284,16 +284,45 @@ pub const WINDOW_MANAGER_JS: &str = r#"
   // both together if the project's Tailwind `md:` breakpoint changes.
   var DESKTOP_BREAKPOINT = 768;
 
+  // Listener `document` dipasang SEKALI di sini (blok ini dijaga oleh
+  // `if (window.__wm) return` di atas), bukan per window. Sebelumnya tiap
+  // `makeDraggable` menambah 5 listener `document` yang tak pernah dilepas,
+  // jadi buka-tutup window berulang kali menumpuk handler dan menahan
+  // elemen DOM lama di memori. Sekarang hanya satu gesture yang aktif pada
+  // satu waktu (`activeDrag`), dan listener meneruskan event ke gesture itu.
+  var activeDrag = null; // { move(x, y), stop() } milik window yang sedang di-drag
+  document.addEventListener('mousemove', function (e) {
+    if (activeDrag) activeDrag.move(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', function () {
+    if (activeDrag) activeDrag.stop();
+  });
+  document.addEventListener('touchmove', function (e) {
+    if (!activeDrag) return;
+    var t = e.touches[0];
+    if (!t) return;
+    activeDrag.move(t.clientX, t.clientY);
+    e.preventDefault(); // stop the page from scrolling while dragging
+  }, { passive: false });
+  document.addEventListener('touchend', function () {
+    if (activeDrag) activeDrag.stop();
+  });
+  document.addEventListener('touchcancel', function () {
+    if (activeDrag) activeDrag.stop();
+  });
+
   function makeDraggable(handleId, windowId, onEnd) {
     var handle = document.getElementById(handleId);
     var win = document.getElementById(windowId);
     if (!handle || !win) return;
     var sx = 0, sy = 0, sl = 0, st = 0, dragging = false;
+    var gesture = { move: move, stop: stop };
     function start(x, y, target) {
       if (window.innerWidth < DESKTOP_BREAKPOINT) return;
       if (win.classList.contains('win-maximized')) return;
       if (target && target.closest && target.closest('[data-no-drag]')) return;
       dragging = true;
+      activeDrag = gesture;
       win.setAttribute('data-gesture', '');
       sx = x; sy = y;
       var rect = win.getBoundingClientRect();
@@ -311,29 +340,20 @@ pub const WINDOW_MANAGER_JS: &str = r#"
     function stop() {
       if (!dragging) return;
       dragging = false;
+      if (activeDrag === gesture) activeDrag = null;
       if (onEnd) onEnd(win.offsetLeft, win.offsetTop, win.offsetWidth, win.offsetHeight);
       win.removeAttribute('data-gesture');
     }
-    // Mouse
+    // Mouse — hanya listener di handle (ikut hilang bersama elemennya).
     handle.addEventListener('mousedown', function (e) {
       start(e.clientX, e.clientY, e.target);
       if (dragging) e.preventDefault();
     });
-    document.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
-    document.addEventListener('mouseup', stop);
     // Touch — same start/move/stop, driven by the first touch point.
     handle.addEventListener('touchstart', function (e) {
       var t = e.touches[0];
       start(t.clientX, t.clientY, e.target);
     }, { passive: true });
-    document.addEventListener('touchmove', function (e) {
-      if (!dragging) return;
-      var t = e.touches[0];
-      move(t.clientX, t.clientY);
-      e.preventDefault(); // stop the page from scrolling while dragging
-    }, { passive: false });
-    document.addEventListener('touchend', stop);
-    document.addEventListener('touchcancel', stop);
   }
 
   function makeResizable(windowId, onEnd) {

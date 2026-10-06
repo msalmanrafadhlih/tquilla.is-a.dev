@@ -27,34 +27,54 @@ const SAMPLE_DATA: &str = include_str!("../../data/journal.sample.json");
 /// `wrangler deploy` in `worker/`.
 const STATS_API_URL: &str = "https://github-journal-stats.msalmanrafadhlih.workers.dev/api/stats";
 
-async fn load_data() -> Result<AppData, String> {
+/// Where the numbers on the page came from. The page keeps rendering when
+/// the live fetch fails, but it must say so: the bundled sample is dummy
+/// data and must never be mistaken for real GitHub stats.
+#[derive(Clone, Copy, PartialEq)]
+enum DataSource {
+    /// Fresh from the stats Worker.
+    Live,
+    /// Bundled `journal.sample.json` (dummy numbers), used because the live
+    /// fetch failed.
+    Snapshot,
+}
+
+#[derive(Clone, PartialEq)]
+struct Loaded {
+    data: AppData,
+    source: DataSource,
+}
+
+async fn load_data() -> Result<Loaded, String> {
     if let Ok(resp) = crate::platform::http::get(STATS_API_URL).await {
         if resp.ok() {
-            if let Ok(parsed) = serde_json::from_str::<AppData>(&resp.body) {
-                return Ok(parsed);
+            if let Ok(data) = serde_json::from_str::<AppData>(&resp.body) {
+                return Ok(Loaded { data, source: DataSource::Live });
             }
         }
     }
-    serde_json::from_str::<AppData>(SAMPLE_DATA).map_err(|e| e.to_string())
+    serde_json::from_str::<AppData>(SAMPLE_DATA)
+        .map(|data| Loaded { data, source: DataSource::Snapshot })
+        .map_err(|e| e.to_string())
 }
 
 #[component]
 pub fn JournalPage() -> Element {
-    let mut data: Signal<Option<AppData>> = use_signal(|| None);
+    let mut data: Signal<Option<Loaded>> = use_signal(|| None);
     let mut load_error: Signal<Option<String>> = use_signal(|| None);
 
     use_effect(move || {
         spawn(async move {
             match load_data().await {
-                Ok(parsed) => data.set(Some(parsed)),
+                Ok(loaded) => data.set(Some(loaded)),
                 Err(e) => load_error.set(Some(e)),
             }
         });
     });
 
     rsx! {
-        if let Some(d) = data() {
-            Page { data: d }
+        if let Some(loaded) = data() {
+            Page { data: loaded.data, source: loaded.source }
         } else if let Some(err) = load_error() {
             div { class: "min-h-screen flex items-center justify-center bg-paper text-primary font-mono text-sm",
                 "Failed to load data: {err}"
@@ -68,7 +88,7 @@ pub fn JournalPage() -> Element {
 }
 
 #[component]
-fn Page(data: AppData) -> Element {
+fn Page(data: AppData, source: DataSource) -> Element {
     let today = util::today();
     let date_label = format!("{} {}", today.month_upper, today.day);
     let build_number = format!("NO. {}", today.day_of_year);
@@ -84,6 +104,13 @@ fn Page(data: AppData) -> Element {
         document::Title { "Github Journal" }
         document::Link { rel: "icon", href: FAVICON }
         div { class: "bg-paper text-primary font-sans antialiased flex flex-col selection:bg-accent selection:text-paper overflow-x-hidden",
+            if source == DataSource::Snapshot {
+                div {
+                    role: "status",
+                    class: "w-full bg-accent text-paper font-mono text-xs text-center px-4 py-2",
+                    "Offline snapshot: live GitHub stats are unavailable right now, so the numbers below are sample data."
+                }
+            }
             Hero { hero: data.hero.clone(), date_label, build_number }
             PinnedSection { pinned: data.pinned.clone() }
             ChronicleSection { chronicle: data.chronicle.clone() }

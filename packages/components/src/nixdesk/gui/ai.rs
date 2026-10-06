@@ -103,12 +103,20 @@ async fn call_gemini(api_key: String, model: String, history: Vec<ChatTurn>) -> 
         })
         .collect();
 
-    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}");
+    // API key dikirim lewat header `x-goog-api-key`, BUKAN query string
+    // (`?key=...`): URL ikut tercatat di log proxy/server, riwayat browser,
+    // dan pesan error jaringan, sedangkan header tidak.
+    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent");
     let body = GeminiRequest { contents };
 
     let payload = serde_json::to_string(&body).map_err(|e| e.to_string())?;
 
-    let response = crate::platform::http::post_json(&url, payload).await?;
+    let response = crate::platform::http::post_json_with_headers(
+        &url,
+        payload,
+        &[("x-goog-api-key", api_key.trim())],
+    )
+    .await?;
     let status = response.status;
     let parsed: GeminiResponse = serde_json::from_str(&response.body).unwrap_or_default();
 
@@ -415,7 +423,7 @@ pub fn AiAssistantWindowContent() -> Element {
                                 "aria-label": "API Key information",
                                 target: "_blank",
                                 href: "https://aistudio.google.com/app/api-keys",
-                                title: "The key is only kept in memory for this session.",
+                                title: "Your key stays in memory for this session only and is sent straight from your browser to Google (as a request header). Never use a key you can't rotate.",
                                 class: INFO_BUTTON_CLASS,
                                 img {
                                     src: ICON_INFO,
