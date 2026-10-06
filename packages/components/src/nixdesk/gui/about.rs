@@ -66,7 +66,7 @@ pub fn AboutWindowContent() -> Element {
     rsx! {
         div { class: "flex w-full h-full items-center justify-center overflow-auto",
             section {
-                class: "max-w-[500px] flex w-full h-full flex-col items-center justify-start gap-[25px] pl-5 pb-5 relative flex-1 grow self-stretch",
+                class: "max-w-[500px] flex w-full h-full flex-col items-center justify-start gap-[25px] pb-5 relative flex-1 grow self-stretch",
                 class: "overflow-auto [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
 
                 InfoBlock {}

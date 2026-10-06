@@ -11,7 +11,7 @@ pub fn SettingsWindowContent() -> Element {
     let mut section = use_signal(|| SECTIONS[0]);
 
     rsx! {
-        div { class: "flex items-start w-full h-full justify-center gap-2.5 relative",
+        div { class: "flex items-start w-full h-full justify-center gap-5 relative",
             nav { class: "inline-flex flex-col h-full min-w-[100px] items-center relative self-stretch flex-[0_0_auto] border-r border-solid border-[var(--variable-collection-fg-secondary)]",
                 for s in SECTIONS {
                     button {
