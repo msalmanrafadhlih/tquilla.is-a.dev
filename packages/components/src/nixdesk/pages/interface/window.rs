@@ -20,14 +20,14 @@ impl AppId {
     pub fn default_geometry(self) -> (f64, f64, f64, f64) {
         match self {
             AppId::Calculator => (640.0, 240.0, 325.0, 452.0),
-            AppId::About => (745.0, 0.0, 335.0, 435.0),
-            AppId::Settings => (590.0, 0.0, 660.0, 550.0),
-            AppId::FileManager => (0.0, 0.0, 905.0, 565.0),
+            AppId::About => (745.0, 12.0, 335.0, 435.0),
+            AppId::Settings => (590.0, 12.0, 660.0, 550.0),
+            AppId::FileManager => (0.0, 12.0, 905.0, 565.0),
             AppId::Radio => (114.0, 45.0, 425.0, 755.0),
-            AppId::Browser => (0.0, 0.0, 1250.0, 820.0),
-            AppId::Embience => (1200.0, 0.0, 375.0, 430.0),
-            AppId::LiveChat => (1315.0, 0.0, 505.0, 820.0),
-            AppId::AiAssistant => (0.0, 0.0, 505.0, 820.0),
+            AppId::Browser => (0.0, 12.0, 1250.0, 820.0),
+            AppId::Embience => (1035.0, 12.0, 540.0, 610.0),
+            AppId::LiveChat => (1315.0, 12.0, 505.0, 820.0),
+            AppId::AiAssistant => (0.0, 12.0, 505.0, 820.0),
         }
     }
 
@@ -558,7 +558,7 @@ pub fn WindowFrame(
     );
 
     let frame_class = format!(
-        "parent win-frame md:absolute flex flex-col items-start gap-5 bg-[var(--bg-secondary)] px-5 md:pb-5 overflow-hidden border-x md:border-y rounded-[10px] border-solid border-[var(--fg-main)]{maximized}{minimizing_cls}{closing_cls}{minimized}",
+        "parent win-frame md:absolute flex flex-col items-start gap-5 bg-[var(--bg-secondary)] p-5 md:pt-0 overflow-hidden md:border rounded-[10px] border-solid border-[var(--fg-main)]{maximized}{minimizing_cls}{closing_cls}{minimized}",
         maximized = if window.maximized { " win-maximized" } else { "" },
         minimizing_cls = if window.minimizing { " win-minimizing" } else { "" },
         closing_cls = if window.closing { " win-closing" } else { "" },

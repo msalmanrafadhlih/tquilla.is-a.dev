@@ -95,7 +95,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                     class: if nav_menu_open() {
                         "grid grid-rows-[1fr] p-1 bg-[var(--bg-main)] xl:bg-transparent border xl:border-0 border-[var(--fg-secondary)] transition-[grid-template-rows] w-full duration-300 ease-out overflow-hidden shrink-0 xl:flex xl:overflow-visible"
                     } else {
-                        "grid grid-rows-[0fr] p-1 bg-[var(--bg-main)] xl:bg-transparent transition-[grid-template-rows] w-full duration-300 ease-out overflow-hidden shrink-0 xl:flex xl:overflow-visible"
+                        "grid grid-rows-[0fr] p-1 bg-transparent transition-all w-full duration-300 ease-out overflow-hidden shrink-0 xl:flex xl:overflow-visible"
                     },
                     div { class: "overflow-hidden xl:overflow-visible",
                         nav {
@@ -144,7 +144,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                     class: if status_menu_open() {
                         "grid grid-rows-[1fr] p-1 border sm:border-0 border-[var(--fg-secondary)] bg-[var(--bg-main)] sm:bg-transparent transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
                     } else {
-                        "grid grid-rows-[0fr] p-1 bg-[var(bg-main)] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
+                        "grid grid-rows-[0fr] p-1 bg-transparent transition-all duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
                     },
                     div { class: "overflow-hidden sm:overflow-visible",
                         div { class: "flex flex-col items-center gap-3 sm:flex-row", "aria-label": "System status",

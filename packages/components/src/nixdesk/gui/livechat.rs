@@ -20,7 +20,7 @@ const MAX_AVATAR_BYTES: u64 = 1024 * 1024;
 const MAX_ATTACHMENT_BYTES: u64 = 5 * 1024 * 1024;
 
 const ARTICLE_BASE_CLASS: &str = "flex items-start gap-5 p-2.5 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[var(--fg-main)]";
-const AUTHOR_CLASS: &str = "relative flex items-end w-fit mt-[-1.00px] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-main)] text-xs tracking-[0] leading-[normal]";
+const AUTHOR_CLASS: &str = "relative flex items-end w-fit mt-[-1.00px] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-main)] opacity-70 hover:opacity-100 text-xs tracking-[0] leading-[normal]";
 const BG_BLACK_TO_GRAY: &str = "bg-[image:var(--linear-l)]";
 const BG_GRAY_TO_BLACK: &str = "bg-[image:var(--linear-r)]";
 const RESIZE_MESSAGE_BOX_JS: &str = "const el = document.getElementById('message'); if (el) { el.style.height = 'auto'; const h = el.scrollHeight; el.style.height = h + 'px'; const max = parseFloat(getComputedStyle(el).maxHeight); el.style.overflowY = h > max ? 'auto' : 'hidden'; }";
@@ -225,7 +225,7 @@ pub fn LiveChatWindowContent() -> Element {
             // CHAT ENVIRONMENTS
             section {
                 id: "livechat-scroll",
-                class: "flex flex-col items-center relative flex-1 min-h-0 w-full overflow-y-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-t border-solid border-[var(--fg-secondary)]",
+                class: "flex flex-col items-center max-w-[500px] relative flex-1 min-h-0 w-full overflow-y-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-t border-solid border-[var(--fg-secondary)]",
 
                 for (idx, msg) in messages().into_iter().enumerate() {
                     {
@@ -259,7 +259,7 @@ pub fn LiveChatWindowContent() -> Element {
                                                 href: "{link}",
                                                 target: "_blank",
                                                 rel: "noopener noreferrer",
-                                                class: "{AUTHOR_CLASS} hover:underline",
+                                                class: "{AUTHOR_CLASS} underline decoration-dotted decoration-[var(--fg-secondary)] underline-offset-4 transition-[opacity,text-decoration-color] hover:decoration-solid hover:decoration-[var(--fg-main)]",
                                                 "{msg.username}"
                                             }
                                         } else {
@@ -276,7 +276,7 @@ pub fn LiveChatWindowContent() -> Element {
                                         }
                                     }
                                     if !msg.message.is_empty() {
-                                        p { class: "relative flex items-end self-stretch opacity-50 [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-main)] text-xs tracking-[0] leading-[normal]",
+                                        p { class: "relative flex items-end self-stretch [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-main)] text-xs tracking-[0] leading-[normal]",
                                             "{msg.message}"
                                         }
                                     }
@@ -329,7 +329,7 @@ pub fn LiveChatWindowContent() -> Element {
             // MAIN CONTENTS : LIVE CHAT
             form {
                 aria_label: "Message submission form",
-                class: "flex w-full items-center justify-center relative",
+                class: "flex w-full max-w-[500px] items-center justify-center relative",
                 onsubmit: move |evt: FormEvent| {
                     evt.prevent_default();
                     send_message(messages, draft, next_id, attachment, username(), url(), avatar());
@@ -340,7 +340,7 @@ pub fn LiveChatWindowContent() -> Element {
                 label {
                     r#for: "avatar-upload",
                     aria_label: "Upload avatar",
-                    class: "group flex flex-col w-[50px] h-[50px] ml-2.5 mr-5 items-center justify-center gap-2.5 relative border border-solid text-[var(--fg-main)] bg-[var(--bg-secondary)] border-[var(--fg-main)] aspect-[1] cursor-pointer overflow-hidden hover:text-[var(--bg-secondary)] hover:bg-[var(--fg-main)]",
+                    class: "group flex flex-col w-[50px] h-[50px] m-2.5 items-center justify-center gap-2.5 relative border border-solid text-[var(--fg-main)] bg-[var(--bg-secondary)] border-[var(--fg-main)] aspect-[1] cursor-pointer overflow-hidden hover:text-[var(--bg-secondary)] hover:bg-[var(--fg-main)]",
                     if let Some(src) = avatar() {
                         img {
                             class: "w-full h-full object-cover",
@@ -380,7 +380,7 @@ pub fn LiveChatWindowContent() -> Element {
                     div { class: "flex w-full flex-row gap-2.5",
                         label { class: "sr-only", r#for: "username", "Username" }
                         input {
-                            class: "relative w-full flex items-center self-stretch mt-[-1.00px] opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0",
+                            class: "relative w-full flex items-center self-stretch opacity-50 focus-within:opacity-100 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0",
                             id: "username",
                             name: "username",
                             r#type: "text",
@@ -391,7 +391,7 @@ pub fn LiveChatWindowContent() -> Element {
                         }
                         label { class: "sr-only", r#for: "url", "Website URL" }
                         input {
-                            class: "relative w-full flex items-center self-stretch mt-[-1.00px] opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0",
+                            class: "relative w-full flex items-center self-stretch opacity-50 focus-within:opacity-100 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0",
                             id: "url",
                             name: "url",
                             r#type: "text",
@@ -406,7 +406,7 @@ pub fn LiveChatWindowContent() -> Element {
                     div { class: "flex w-full flex-row",
                         label { class: "sr-only", r#for: "message", "Message" }
                         textarea {
-                            class: "relative w-full flex items-center self-stretch opacity-50 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0 resize-none max-h-[calc(1.4em*5)] overflow-y-hidden",
+                            class: "relative w-full flex items-center self-stretch opacity-50 focus-within:opacity-100 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0 resize-none max-h-[calc(1.4em*5)] overflow-y-hidden",
                             id: "message",
                             name: "message",
                             rows: "1",
@@ -460,7 +460,7 @@ pub fn LiveChatWindowContent() -> Element {
 
                 button {
                     r#type: "submit",
-                    class: "group text-[10px] sm:text-xs inline-flex bg-[var(--bg-secondary)] border-0 hover:bg-[var(--fg-main)] items-center text-[var(--fg-secondary)] hover:text-[var(--bg-secondary)] gap-2.5 sm:ml-5 p-2.5 flex-[0_0_auto] justify-center relative cursor-pointer",
+                    class: "group text-[10px] sm:text-xs ml-2.5 inline-flex bg-[var(--bg-secondary)] border-0 hover:bg-[var(--fg-main)] items-center text-[var(--fg-main)] hover:text-[var(--bg-secondary)] gap-2.5 sm:ml-5 p-2.5 flex-[0_0_auto] justify-center relative cursor-pointer",
                     "Send"
                 }
             }

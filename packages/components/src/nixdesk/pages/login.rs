@@ -105,7 +105,7 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                             } else {
                                 button {
                                     r#type: "submit",
-                                    class: "text-green-500 text-base sm:text-lg font-medium tracking-widest whitespace-nowrap rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+                                    class: "text-[var(--green)] text-base sm:text-lg font-medium tracking-widest whitespace-nowrap rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
                                     "[ Unlock ]"
                                 }
                             }
