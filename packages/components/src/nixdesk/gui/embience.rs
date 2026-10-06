@@ -212,15 +212,45 @@ pub fn EmbienceWindowContent() -> Element {
                             let preset_names = preset.embience_list.clone();
                             let label = preset.preset_label.clone();
                             let sounds_for_preset = sounds.clone();
+
+                            // preset aktif = sound yang menyala persis sama dengan isi preset
+                            let current = active();
+                            let is_preset_active = any_active
+                                && sounds.iter().enumerate().all(|(i, s)| {
+                                    current[i] == preset_names.contains(&s.embiences_name)
+                                });
+
                             rsx! {
                                 button {
                                     key: "{label}",
                                     r#type: "button",
-                                    class: "appearance-none bg-transparent px-2.5 py-1 border border-solid border-[var(--variable-collection-fg-secondary,#808080)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--variable-collection-fg-main,#fff)] cursor-pointer",
+                                    "aria-pressed": "{is_preset_active}",
+                                    class: if is_preset_active {
+                                        "appearance-none px-2.5 py-1 border border-solid border-[var(--variable-collection-fg-main,#fff)] bg-[var(--variable-collection-fg-main,#fff)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--variable-collection-bg-main,#000)] cursor-pointer"
+                                    } else {
+                                        "appearance-none bg-transparent px-2.5 py-1 border border-solid border-[var(--variable-collection-fg-secondary,#808080)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--variable-collection-fg-main,#fff)] cursor-pointer"
+                                    },
                                     onclick: move |_| {
-                                        for (i , s) in sounds_for_preset.iter().enumerate() {
-                                            if preset_names.contains(&s.embiences_name) {
-                                                turn_on(active, volumes, muted, master_playing, i, s.embiences_id, s.embiences_stream.clone());
+                                        let currently_active = active();
+                                        let was_playing = master_playing();
+
+                                        for (i, s) in sounds_for_preset.iter().enumerate() {
+                                            let in_preset = preset_names.contains(&s.embiences_name);
+
+                                            if in_preset {
+                                                if !(currently_active[i] && was_playing) {
+                                                    turn_on(
+                                                        active,
+                                                        volumes,
+                                                        muted,
+                                                        master_playing,
+                                                        i,
+                                                        s.embiences_id,
+                                                        s.embiences_stream.clone(),
+                                                    );
+                                                }
+                                            } else if currently_active[i] {
+                                                turn_off(active, master_playing, i, s.embiences_id);
                                             }
                                         }
                                     },
@@ -266,7 +296,7 @@ pub fn EmbienceWindowContent() -> Element {
                 // PLAYER BUTTON
                 button {
                     r#type: "button",
-                    class: "flex w-[50px] h-[50px] items-center justify-center relative bg-[var(--variable-collection-fg-main,#fff)] aspect-[1] border-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-default",
+                    class: "flex w-[50px] h-[50px] items-center justify-center relative bg-transparent aspect-[1] border-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-default",
                     "aria-label": if is_playing { "Pause ambience" } else { "Play ambience" },
                     disabled: !any_active,
                     onclick: move |_| {
@@ -285,7 +315,7 @@ pub fn EmbienceWindowContent() -> Element {
                         }
                     },
                     img {
-                        class: "relative w-[18px] h-[18px] aspect-[1] invert",
+                        class: "relative w-[18px] h-[18px] aspect-[1]",
                         src: if is_playing { ICON_PAUSE } else { ICON_PLAY },
                         alt: "",
                     }
