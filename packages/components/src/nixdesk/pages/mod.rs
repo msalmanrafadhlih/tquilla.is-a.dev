@@ -67,10 +67,16 @@ pub fn MainPage() -> Element {
                 "opacity: 1; pointer-events: auto;"
             },
 
+            // Selalu ter-mount supaya window yang terbuka (dan prosesnya,
+            // misal radio/embience) tidak mati saat pindah ke Terminal.
+            // Cukup disembunyikan dengan display:none.
+            div {
+                style: if mode() == Mode::Desktop { "display: block;" } else { "display: none;" },
+                DesktopMode { on_toggle: move |_| toggle_mode() }
+            }
+
             if mode() == Mode::Terminal {
                 TerminalMode { on_toggle: move |_| toggle_mode() }
-            } else {
-                DesktopMode { on_toggle: move |_| toggle_mode() }
             }
         }
     }
