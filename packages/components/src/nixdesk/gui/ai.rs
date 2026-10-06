@@ -10,7 +10,7 @@ const MODEL_OPTIONS: [(&str, &str); 2] = [
 ];
 
 const ROOT_CLASS: &str = "flex flex-col items-center justify-center gap-[25px] relative w-full h-full overflow-y-scroll";
-const CONVERSATION_CLASS: &str = "flex flex-col-reverse items-end gap-[25px] relative flex-1 w-full px-5 max-w-[48rem] h-full grow overflow-y-scroll";
+const CONVERSATION_CLASS: &str = "flex flex-col-reverse items-end gap-[25px] relative flex-1 w-full max-w-[48rem] h-full grow overflow-y-scroll";
 const USER_BUBBLE_CLASS: &str = "flex flex-col rounded-b-xl rounded-tl-xl items-start w-full max-w-max p-5 relative flex-[0_0_auto] bg-[var(--variable-collection-fg-main)]";
 const USER_TEXT_CLASS: &str = "relative self-stretch whitespace-pre-wrap [font:'JetBrains_Mono-Regular',Helvetica] text-[var(--variable-collection-bg-main)] text-xs text-left tracking-[0] leading-[normal]";
 const ASSISTANT_ARTICLE_CLASS: &str = "flex items-start gap-[var(--size-space-200)] relative self-stretch w-full flex-[0_0_auto] rounded-lg overflow-hidden";
