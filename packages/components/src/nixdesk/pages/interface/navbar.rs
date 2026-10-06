@@ -142,7 +142,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
 
                 div {
                     class: if status_menu_open() {
-                        "grid grid-rows-[1fr] p-1 border border-[var(--fg-secondary)] bg-[var(--bg-main)] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
+                        "grid grid-rows-[1fr] p-1 border sm:border-0 border-[var(--fg-secondary)] bg-[var(--bg-main)] sm:bg-transparent transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
                     } else {
                         "grid grid-rows-[0fr] p-1 bg-[var(bg-main)] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
                     },
@@ -150,7 +150,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                         div { class: "flex flex-col items-center gap-3 sm:flex-row", "aria-label": "System status",
                             button {
                                 r#type: "button",
-                                class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90 opacity-70 hover:opacity-100",
+                                class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
                                 title: if wifi_on() { "Wi-Fi aktif" } else { "Wi-Fi nonaktif" },
                                 onclick: move |_| wifi_on.set(!wifi_on()),
                                 img {
@@ -164,7 +164,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
 
                             button {
                                 r#type: "button",
-                                class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90 opacity-70 hover:opacity-100",
+                                class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
                                 title: if muted() { "Suara dibisukan" } else { "Suara aktif" },
                                 onclick: move |_| muted.set(!muted()),
                                 img {
@@ -178,7 +178,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
 
                             button {
                                 r#type: "button",
-                                class: "transition-transform duration-150 ease-out hover:scale-125 active:scale-90 opacity-70 hover:opacity-100",
+                                class: "transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
                                 title: "Kecerahan layar",
                                 onclick: move |_| brightness.set((brightness() + 1) % 3),
                                 img {
@@ -189,7 +189,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
 
                             button {
                                 r#type: "button",
-                                class: "transition-transform duration-150 ease-out hover:scale-125 active:scale-90 opacity-70 hover:opacity-100",
+                                class: "transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
                                 title: if notif_muted() { "Notifikasi dibisukan" } else { "Notifikasi aktif" },
                                 onclick: move |_| notif_muted.set(!notif_muted()),
                                 if notif_muted() {
@@ -208,7 +208,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                             div { class: "relative",
                                 button {
                                     r#type: "button",
-                                    class: "flex flex-col items-center gap-0.5 transition-transform duration-150 ease-out hover:scale-110 active:scale-90 opacity-70 hover:opacity-100",
+                                    class: "flex flex-col items-center gap-0.5 transition-transform duration-150 ease-out hover:scale-110 active:scale-90",
                                     title: "Baterai",
                                     onclick: move |_| show_battery_tip.set(!show_battery_tip()),
                                     img { src: BATTERY_ICON, alt: "Battery", class: "h-2 w-4.5 object-contain" }
@@ -234,7 +234,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                         stroke: "white", stroke_width: "5", stroke_linecap: "round", stroke_linejoin: "round",
                     }
                 }
-                span { class: "hidden text-[10px] text-center sm:block opacity-50 hover:opacity-100 transition-transform duration-150 ease-out hover:scale-110 active:scale-90 sm:h-full sm:px-2",
+                span { class: "hidden text-[10px] text-center sm:block opacity-70 hover:opacity-100 transition-transform duration-150 ease-out hover:scale-110 active:scale-90 sm:h-full sm:px-2",
                     "Switch "
                     p { "TTY" }
                 }
