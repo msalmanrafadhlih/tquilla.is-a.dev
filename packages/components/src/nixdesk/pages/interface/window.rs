@@ -68,7 +68,7 @@ impl AppId {
     /// (x, y, width, height) starting geometry
     pub fn default_geometry(self) -> (f64, f64, f64, f64) {
         match self {
-            AppId::Calculator => (640.0, 240.0, 300.0, 440.0),
+            AppId::Calculator => (640.0, 240.0, 325.0, 452.0),
             AppId::About => (605.0, 0.0, 580.0, 435.0),
             AppId::Settings => (340.0, 120.0, 620.0, 545.0),
             AppId::FileManager => (0.0, 0.0, 905.0, 565.0),
