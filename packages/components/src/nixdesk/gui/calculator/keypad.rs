@@ -229,14 +229,14 @@ pub fn Aljabar() -> Element {
 #[component]
 pub fn Trigonometri() -> Element {
     rsx! {
-        KeyPad { keys: TRIGONOMETRI, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-lime-900/30" }
+        KeyPad { keys: TRIGONOMETRI, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
     }
 }
 
 #[component]
 pub fn Kalkulus() -> Element {
     rsx! {
-        KeyPad { keys: KALKULUS, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-rose-900/30" }
+        KeyPad { keys: KALKULUS, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
     }
 }
 

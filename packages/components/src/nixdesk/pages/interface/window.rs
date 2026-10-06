@@ -16,6 +16,21 @@ pub enum AppId {
 }
 
 impl AppId {
+    /// (x, y, width, height) starting geometry
+    pub fn default_geometry(self) -> (f64, f64, f64, f64) {
+        match self {
+            AppId::Calculator => (640.0, 240.0, 325.0, 452.0),
+            AppId::About => (745.0, 0.0, 335.0, 435.0),
+            AppId::Settings => (590.0, 0.0, 660.0, 550.0),
+            AppId::FileManager => (0.0, 0.0, 905.0, 565.0),
+            AppId::Radio => (114.0, 45.0, 425.0, 755.0),
+            AppId::Browser => (0.0, 0.0, 1250.0, 820.0),
+            AppId::Embience => (1200.0, 0.0, 375.0, 430.0),
+            AppId::LiveChat => (1315.0, 0.0, 505.0, 820.0),
+            AppId::AiAssistant => (0.0, 0.0, 505.0, 820.0),
+        }
+    }
+
     pub fn title(self) -> &'static str {
         match self {
             AppId::Calculator => "Calculator",
@@ -62,21 +77,6 @@ impl AppId {
             AppId::Embience => "embience",
             AppId::LiveChat => "live-chat",
             AppId::AiAssistant => "ai-assistant",
-        }
-    }
-
-    /// (x, y, width, height) starting geometry
-    pub fn default_geometry(self) -> (f64, f64, f64, f64) {
-        match self {
-            AppId::Calculator => (640.0, 240.0, 325.0, 452.0),
-            AppId::About => (605.0, 0.0, 580.0, 435.0),
-            AppId::Settings => (340.0, 120.0, 620.0, 545.0),
-            AppId::FileManager => (0.0, 0.0, 905.0, 565.0),
-            AppId::Radio => (114.0, 45.0, 425.0, 755.0),
-            AppId::Browser => (0.0, 0.0, 1250.0, 820.0),
-            AppId::Embience => (1200.0, 0.0, 375.0, 430.0),
-            AppId::LiveChat => (1315.0, 0.0, 505.0, 820.0),
-            AppId::AiAssistant => (0.0, 0.0, 505.0, 820.0),
         }
     }
 }
