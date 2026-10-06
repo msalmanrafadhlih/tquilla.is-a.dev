@@ -3,7 +3,7 @@ target/
 .devenv/
 
 # activating splash screen
-packages/components/src/nixdesk/mod.rs
+/packages/components/src/nixdesk/mod.rs
 # Cargo.lock and flake.lock are committed on purpose: this workspace only
 # produces binaries (never a published library), and Nix flakes are meant
 # to pin exact input versions — both should be reproducible, not ignored.
