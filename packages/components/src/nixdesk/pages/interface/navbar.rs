@@ -40,21 +40,21 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
     };
 
     let about_class = if show_about() {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] rounded-md border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 xl:opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 xl:opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
     } else {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] rounded-md border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
     };
 
     let menu_hint_class = if active_menu().is_some() {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 whitespace-nowrap rounded-md border border-white/30 bg-[var(--bg-main)] px-2.5 py-1.5 text-[11px] text-white/60 opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "pointer-events-none absolute left-0 top-full z-20 mt-1 whitespace-nowrap border border-white/30 bg-[var(--bg-main)] px-2.5 py-1.5 text-[11px] text-white/60 opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
     } else {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 whitespace-nowrap rounded-md border border-white/30 bg-[var(--bg-main)] px-2.5 py-1.5 text-[11px] text-white/60 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "pointer-events-none absolute left-0 top-full z-20 mt-1 whitespace-nowrap border border-white/30 bg-[var(--bg-main)] px-2.5 py-1.5 text-[11px] text-white/60 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
     };
 
     let battery_tip_class = if show_battery_tip() {
-        "pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap rounded-md border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[10px] text-white/70 opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[10px] text-white/70 opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
     } else {
-        "pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap rounded-md border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[10px] text-white/70 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[10px] text-white/70 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
     };
 
     let menu_item_class = |active: bool| -> &'static str {
