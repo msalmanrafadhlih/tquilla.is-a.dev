@@ -234,7 +234,7 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
                         stroke: "white", stroke_width: "5", stroke_linecap: "round", stroke_linejoin: "round",
                     }
                 }
-                span { class: "hidden text-xs text-center sm:block opacity-50 hover:opacity-100 transition-transform duration-150 ease-out hover:scale-110 active:scale-90 sm:h-full sm:px-2",
+                span { class: "hidden text-[10px] text-center sm:block opacity-50 hover:opacity-100 transition-transform duration-150 ease-out hover:scale-110 active:scale-90 sm:h-full sm:px-2",
                     "Switch "
                     p { "TTY" }
                 }
