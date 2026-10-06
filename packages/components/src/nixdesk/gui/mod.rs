@@ -2,11 +2,12 @@ mod ai;
 mod embience;
 mod audio;
 mod browser;
-mod system_info;
 mod calculator;
 mod filemanager;
 mod livechat;
 mod radio;
+mod about;
+mod settings;
 
 pub use ai::AiAssistantWindowContent;
 pub use audio::AUDIO_JS;
@@ -17,7 +18,5 @@ pub use filemanager::FileManagerWindowContent;
 pub use livechat::LiveChatWindowContent;
 pub use radio::RadioWindowContent;
 
-pub use system_info::{
-    AboutWindowContent,
-    SettingsWindowContent
-};
+pub use about::{ AboutWindowContent, InfoBlock };
+pub use settings::{ SettingsWindowContent, };
