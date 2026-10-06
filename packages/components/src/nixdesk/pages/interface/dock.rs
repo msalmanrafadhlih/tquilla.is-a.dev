@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
-use super::window::{open_or_focus, AppId, OpenWindow};
 use crate::shared::{DISCORD_URL, GITHUB_URL, LINKEDIN_URL};
+use super::window::{toggle_window, AppId, OpenWindow};
 
 const GITHUB_ICON: Asset = asset!("/assets/icon-github.svg");
 const DISCORD_ICON: Asset = asset!("/assets/icon-discord.svg");
@@ -39,7 +39,11 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
         (LINKEDIN_ICON, "LinkedIn", LINKEDIN_URL),
     ];
 
-    let is_open = move |app_id: AppId| open_windows().iter().any(|w| w.id == app_id && !w.minimized);
+    // Indikator tetap tampil selama window masih ada (terbuka ATAU minimized).
+    // Hilang hanya saat benar-benar ditutup.
+    let has_window = move |app_id: AppId| {
+        open_windows().iter().any(|w| w.id == app_id && !w.closing)
+    };
 
     rsx! {
         footer { class: "relative flex w-full flex-none items-center justify-center gap-2.5 px-2.5 pb-2.5 md:pb-0 z-[999] rounded-3xl border-b-[0.5px] border-white backdrop-blur-sm [background:linear-gradient(180deg,transparent_50%,rgba(37,37,37,1)_100%)]",
@@ -101,7 +105,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                     r#type: "button",
                     "aria-label": "Open settings",
                     class: "relative h-[30px] w-[30px] flex-none border-0 bg-transparent p-0",
-                    onclick: move |_| open_or_focus(open_windows, next_z, AppId::Settings),
+                    onclick: move |_| toggle_window(open_windows, next_z, AppId::Settings),
                     img { src: SETTINGS_ICON, alt: "", class: "h-full w-full" }
                 }
 
@@ -113,8 +117,8 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                             key: "{app_id.key()}",
                             r#type: "button",
                             title: "{app_id.title()}",
-                            class: if is_open(app_id) { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 border-b-[0.5px] border-white bg-transparent px-0 pb-[5px] pt-0" } else { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 bg-transparent px-0 pb-[5px] pt-0 transition-transform duration-150 ease-out hover:scale-125 active:scale-90" },
-                            onclick: move |_| open_or_focus(open_windows, next_z, app_id),
+                            class: if has_window(app_id) { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 border-b-[0.5px] border-white bg-transparent px-0 pb-[5px] pt-0" } else { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 bg-transparent px-0 pb-[5px] pt-0 transition-transform duration-150 ease-out hover:scale-125 active:scale-90" },
+                            onclick: move |_| toggle_window(open_windows, next_z, app_id),
                             img { src: icon, alt: "{app_id.title()}", class: "h-10 w-10" }
                         }
                     }
@@ -126,7 +130,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                     r#type: "button",
                     "aria-label": "About NixDesktop",
                     class: "relative h-[30px] w-[30px] flex-none border-0 bg-transparent p-0",
-                    onclick: move |_| open_or_focus(open_windows, next_z, AppId::About),
+                    onclick: move |_| toggle_window(open_windows, next_z, AppId::About),
                     img { src: NIXOS_ICON, alt: "", class: "h-full w-full" }
                 }
             }
@@ -145,7 +149,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                         button {
                             r#type: "button",
                             class: "group inline-flex w-max items-center gap-2.5 relative flex-[0_0_auto] z-[3] px-2 py-1 rounded-xl hover:bg-white transition-colors duration-300 ease-out",
-                            onclick: move |_| open_or_focus(open_windows, next_z, AppId::LiveChat),
+                            onclick: move |_| toggle_window(open_windows, next_z, AppId::LiveChat),
                             span { class: "grid grid-cols-[0fr] group-hover:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out overflow-hidden",
                                 span { class: "overflow-hidden whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] font-normal text-white text-sm text-center tracking-[0] leading-[normal] group-hover:text-black",
                                     "Live Chat"

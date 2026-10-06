@@ -136,6 +136,38 @@ pub fn open_or_focus(mut open_windows: Signal<Vec<OpenWindow>>, mut next_z: Sign
     open_windows.set(list);
 }
 
+/// Klik pada ikon dock:
+/// - belum terbuka                    → buka
+/// - minimized / sedang animasi tutup → pulihkan (open_or_focus)
+/// - terbuka tapi tertutup window lain → bawa ke depan
+/// - terbuka dan paling depan          → minimize
+pub fn toggle_window(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>, id: AppId) {
+    let list = open_windows();
+
+    let Some(win) = list.iter().find(|w| w.id == id) else {
+        open_or_focus(open_windows, next_z, id);
+        return;
+    };
+
+    if win.minimized || win.minimizing || win.closing {
+        open_or_focus(open_windows, next_z, id);
+        return;
+    }
+
+    let top_z = list
+        .iter()
+        .filter(|w| !w.minimized)
+        .map(|w| w.z)
+        .max()
+        .unwrap_or(0);
+
+    if win.z == top_z {
+        request_minimize(open_windows, id);
+    } else {
+        open_or_focus(open_windows, next_z, id);
+    }
+}
+
 /// Bring an already-open window to the front — used when clicking
 /// anywhere on a window that isn't already topmost. Skips the write (and
 /// therefore the re-render) when the window is already frontmost, so
