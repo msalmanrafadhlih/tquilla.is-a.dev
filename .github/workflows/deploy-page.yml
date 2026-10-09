@@ -59,6 +59,12 @@ jobs:
         # (kompresi wasm, minifikasi, dst).
         run: dx bundle --package web --platform web --release
 
+      - name: Suntik metadata statis (lang, OG tags, robots, sitemap, noscript)
+        # Crawler preview link (WhatsApp/Discord/Facebook) tidak menjalankan
+        # WASM, jadi meta tag harus ada di HTML statis. Harus jalan SEBELUM
+        # langkah 404.html di bawah, supaya salinannya ikut berisi tag ini.
+        run: python3 scripts/postbuild.py target/dx/web/release/web/public
+
       - name: Tambahkan CNAME untuk custom domain
         # tanpa file ini, custom domain "tquilla.is-a.dev" yang kamu set di
         # Settings > Pages bisa ke-reset tiap kali deployment mengganti isi output

@@ -351,6 +351,7 @@ pub fn LiveChatWindowContent() -> Element {
                     } else {
                         img {
                             class: "group-hover:invert ",
+                            alt: "",
                             title: "Add avatar",
                             "aria-hidden": "true",
                             src: ICON_ADD,
@@ -432,6 +433,7 @@ pub fn LiveChatWindowContent() -> Element {
                             aria_label: "Add image file",
                             class: "flex flex-col h-5 items-center justify-center gap-2.5 relative bg-[var(--bg-secondary)] aspect-[1] cursor-pointer opacity-50 hover:opacity-100",
                             img {
+                                alt: "",
                                 title: "Add Media",
                                 "aria-hidden": "true",
                                 src: ICON_ADD_MEDIA,

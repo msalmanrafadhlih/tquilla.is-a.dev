@@ -8,7 +8,7 @@ use dioxus::prelude::*;
 
 use components::{ChronicleSection, EndOfStream, Footer, Hero, PinnedSection};
 use data::AppData;
-use crate::shared::{FAVICON, PLAYFAIR_FONT_URL};
+use crate::shared::{PageMeta, PLAYFAIR_FONT_URL};
 
 /// Fonts that only this route uses (kept out of `app.rs` so `/` and
 /// `/deisktify` don't download them). Inter 600 was dropped: nothing here
@@ -113,8 +113,11 @@ fn Page(data: AppData, source: DataSource) -> Element {
     });
 
     rsx! {
-        document::Title { "Github Journal" }
-        document::Link { rel: "icon", href: FAVICON }
+        PageMeta {
+            title: "GitHub Journal",
+            description: "A journal of my GitHub activity: pinned repositories, contribution volume, streaks, languages and stack.",
+            path: "/profile",
+        }
         div { class: "bg-paper text-primary font-sans antialiased flex flex-col selection:bg-accent selection:text-paper overflow-x-hidden",
             if source == DataSource::Snapshot {
                 div {

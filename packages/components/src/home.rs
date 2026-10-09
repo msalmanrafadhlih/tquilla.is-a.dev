@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::app::Route;
 use crate::platform::{use_platform, PlatformServices, TimeoutFuture};
-use crate::shared::FAVICON;
+use crate::shared::PageMeta;
 
 const GENERATIONS_JSON: &str = include_str!("../data/generations.json");
 
@@ -62,14 +62,25 @@ pub fn Home() -> Element {
     let mut hovered = use_signal(|| Option::<usize>::None);
 
     let mut counting = use_signal(|| 10i32);
+    // Seperti timeout GRUB: interaksi apa pun (tombol, hover, sentuh, klik)
+    // membatalkan auto-boot, supaya halaman tidak berpindah sendiri saat
+    // pengunjung masih membaca.
+    let mut cancelled = use_signal(|| false);
+    // Elemen daftar, disimpan agar fokus bisa dikembalikan setelah klik di
+    // area kosong (keyboard handler hidup di daftar, bukan di <section>).
+    let mut list_ref = use_signal(|| Option::<std::rc::Rc<MountedData>>::None);
     let last_link = links.first().cloned();
     // Jalan sekali saat mount. Setiap 1 detik kurangi counting; begas 0,
-    // buka link generasi terakhir dan hentikan loop-nya.
+    // buka link generasi terakhir dan hentikan loop-nya. Berhenti seketika
+    // kalau dibatalkan.
     use_effect(move || {
         let last_link = last_link.clone();
         spawn(async move {
             loop {
                 TimeoutFuture::new(1000).await;
+                if cancelled() {
+                    break;
+                }
                 let remaining = counting() - 1;
                 counting.set(remaining);
                 if remaining <= 0 {
@@ -81,7 +92,9 @@ pub fn Home() -> Element {
             }
         });
     });
-    let onkeydown = move |evt: KeyboardEvent| match evt.key() {
+    let onkeydown = move |evt: KeyboardEvent| {
+        cancelled.set(true);
+        match evt.key() {
         Key::ArrowDown => {
             evt.prevent_default();
             if total > 0 {
@@ -115,31 +128,63 @@ pub fn Home() -> Element {
             }
         }
         _ => {}
+        }
     };
 
+    // id elemen opsi yang sedang dipilih, untuk `aria-activedescendant`.
+    let active_id = generations
+        .get(selected())
+        .map(|g| format!("gen-{}", g.number))
+        .unwrap_or_default();
+
     rsx! {
-        document::Link { rel: "icon", href: FAVICON }
-        document::Title { "Generation Menu" }
+        PageMeta {
+            title: "Generation Menu",
+            description: "A NixOS-style boot menu that links to my GitHub, LinkedIn, GitHub journal and a desktop OS simulated in the browser, built with Rust and Dioxus (WebAssembly).",
+            path: "/",
+        }
 
         section {
-            tabindex: "{total}",
             class: "min-h-screen w-full bg-[var(--bg-main)] text-neutral-200 font-mono flex flex-col items-center justify-center px-3 py-10 outline-none select-none",
-            onkeydown,
-            onmounted: move |evt| {
-                let data = evt.data();
-                spawn(async move {
-                    let _ = data.set_focus(true).await;
-                });
+            // Klik di area kosong menghilangkan fokus dari daftar; kembalikan.
+            onclick: move |_| {
+                cancelled.set(true);
+                if let Some(el) = list_ref() {
+                    spawn(async move {
+                        let _ = el.set_focus(true).await;
+                    });
+                }
             },
+            ontouchstart: move |_| cancelled.set(true),
 
             div {
                 class: "w-full max-w-3xl",
+                // Pola listbox ARIA: fokus tetap di <ul>, opsi aktif
+                // diumumkan lewat `aria-activedescendant`. Ini juga mencegah
+                // Enter/Space terpicu dua kali (sekali oleh tombol yang
+                // fokus, sekali oleh handler keyboard).
                 ul {
-                    class: "flex flex-col",
+                    role: "listbox",
+                    "aria-label": "Boot generations",
+                    "aria-activedescendant": "{active_id}",
+                    tabindex: "0",
+                    class: "flex flex-col outline-none",
+                    onkeydown,
+                    onmounted: move |evt| {
+                        let data = evt.data();
+                        list_ref.set(Some(data.clone()));
+                        spawn(async move {
+                            let _ = data.set_focus(true).await;
+                        });
+                    },
                     for (idx, gen) in generations.iter().enumerate() {
                         li {
                             key: "{gen.number}",
+                            id: "gen-{gen.number}",
+                            role: "option",
+                            "aria-selected": "{selected() == idx}",
                             onmouseenter: move |_| {
+                                cancelled.set(true);
                                 selected.set(idx);
                                 hovered.set(Some(idx));
                             },
@@ -173,11 +218,15 @@ pub fn Home() -> Element {
             }
             p {
                 class: "mt-6 text-center text-[10px] sm:text-xs text-neutral-600 max-w-md",
-                "Boot in {counting}s"
+                if cancelled() {
+                    "Auto boot cancelled"
+                } else {
+                    "Boot in {counting}s · any key or tap cancels"
+                }
             }
             p {
                 class: "mt-6 text-center text-[10px] sm:text-xs text-neutral-600 max-w-md",
-                "Navigasi pakai ↑ / ↓ atau j / k · Enter / klik untuk buka link"
+                "Use ↑ / ↓ or j / k to move · Enter or click to open"
             }
         }
     }

@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 use crate::platform::TimeoutFuture;
 
 use pages::*;
-use crate::shared::FAVICON;
+use crate::shared::PageMeta;
 
 #[component]
 pub fn DesktopPage() -> Element {
@@ -22,9 +22,11 @@ pub fn DesktopPage() -> Element {
     });
 
     rsx! {
-        // Global app resources
-        document::Link { rel: "icon", href: FAVICON }
-        document::Title { "Deisktify" }
+        PageMeta {
+            title: "Deisktify",
+            description: "Deisktify: a desktop operating system simulated in the browser, with a window manager, calculator, radio, ambient sounds, AI chat and live chat. Built with Rust and Dioxus.",
+            path: "/deisktify",
+        }
 
         if is_booting() {
             Booting { on_skip: move |_| is_booting.set(false) }

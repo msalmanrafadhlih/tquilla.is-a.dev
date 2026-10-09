@@ -12,6 +12,8 @@ Live: <https://tquilla.is-a.dev>
 | `packages/web` | Entry point web (launch, Tailwind, `PlatformServices` browser) |
 | `packages/desktop` | Entry point desktop (⚠️ belum jalan, ditunda) |
 | `packages/mobile` | Entry point Android (⚠️ belum jalan, ditunda) |
+| `site/` | File statis untuk deploy: `robots.txt`, `sitemap.xml`, snippet `<head>` (SEO/Open Graph) dan `<noscript>` |
+| `scripts/postbuild.py` | Langkah pasca-build di CI: menyuntik `site/*` ke output `dx bundle` |
 
 ## Menjalankan
 
@@ -50,11 +52,9 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
   - [x] Material Symbols, Inter, dan Playfair Display hanya dimuat di `/profile`; Playfair juga di kalkulator (tombol italik). Font global tinggal JetBrains Mono. Inter 600 dibuang (tidak dipakai)
   - [ ] Self-host font (woff2 + `@font-face` lokal) dengan subset latin, supaya tidak bergantung ke Google Fonts
 - [x] **#6** Profil release: `debug = false`, `codegen-units = 1`, `panic = "abort"`, `strip = true` ditambahkan di `[profile.release]`. Ukuran `.wasm` sebelum/sesudah belum terukur, cek dengan `web-build` lalu bandingkan isi `target/dx/web/release/web/public/assets/*.wasm`
-- [ ] **#7** Hilangkan ketergantungan gambar GitHub saat runtime
-  - [x] Kode memakai `shared::AVATAR` / `FAVICON` (`assets/avatar.png`) untuk favicon, avatar login, dan avatar `/profile`
+- [x] **#7** Hilangkan ketergantungan gambar GitHub saat runtime
+  - [x] Favicon, avatar login, dan avatar `/profile` memakai `shared::AVATAR` (`assets/avatar.jpg`, gambar yang kamu kirim 2026-10-09). Ganti file itu kalau mau foto lain (tetap bernama `avatar.jpg`, atau ubah path di `shared.rs`)
   - [x] Ikon embience memakai aset lokal `logo-*.svg` (dicocokkan lewat nama file di JSON)
-  - [ ] **Timpa `packages/components/assets/avatar.png` dengan foto aslimu** (file di repo hanya placeholder):
-    `curl -L https://avatars.githubusercontent.com/u/141149698 -o packages/components/assets/avatar.png`
 - [x] **#8** Parse JSON sekali per sesi (`OnceLock`) di `home.rs` (re-render tiap detik karena countdown dan tiap hover) dan `tty/chat_preview.rs` (re-render tiap 3 detik). `browser.rs`, `radio.rs`, `embience.rs`, dan `livechat.rs` sudah parse sekali per mount lewat `use_signal`/`use_hook`, jadi tidak perlu diubah (semuanya akan diganti fetch dari database)
 - [x] **#9** Boot screen bisa di-skip: tombol "Skip ⏎" atau tekan tombol apa saja (`booting.rs`). Menyesuaikan durasi dengan waktu load aset sebenarnya belum dikerjakan
 
@@ -62,16 +62,24 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
 
 ## 🟡 Prioritas 3: SEO, aksesibilitas, UX
 
-- [ ] **#10** Metadata: `description`, `og:*`, `lang`, `robots.txt`, `sitemap.xml`, `<noscript>`, `index.html` kustom di `packages/web`
-- [ ] **#11** Samakan judul tab, dan perbaiki ejaan `deisktify` (URL, judul, komentar), beserta redirect dari URL lama
-- [ ] **#12** Aksesibilitas
-  - [ ] `alt` untuk 5 `img` yang belum punya
-  - [ ] `tabindex: "{total}"` di `home.rs` seharusnya `0`
-  - [ ] Daftar generasi memakai `button`/`a`, bukan `li` + `onclick`
-  - [ ] Cek `prefers-reduced-motion` untuk animasi boot dan login
-- [ ] **#13** Auto-redirect 10 detik di Home: beri cara membatalkan / berhenti saat ada interaksi
-- [ ] **#14** Ganti link placeholder di `shared.rs` (`LINKEDIN_URL`, `DISCORD_URL`)
-- [ ] **#15** Tentukan satu bahasa UI (Indonesia atau Inggris), atau buat modul string sederhana
+- [x] **#10** Metadata
+  - [x] `PageMeta` (`shared.rs`) di tiap route: judul, `description`, canonical, Open Graph, `twitter:card`
+  - [x] Tag statis untuk crawler preview link (tidak menjalankan WASM): `site/head.html` disuntik ke `index.html` oleh `scripts/postbuild.py` di CI, lengkap dengan `<html lang="en">` dan `<noscript>`
+  - [x] `robots.txt` dan `sitemap.xml` (`site/`), disalin ke output oleh `postbuild.py`
+  - [ ] Cek hasil deploy: lihat sumber halaman live dan tes link di <https://opengraph.xyz> atau debugger Facebook/WhatsApp
+  - [ ] Kartu preview yang lebih besar (`summary_large_image`) butuh gambar 1200×630; sekarang memakai avatar persegi
+- [x] **#11** Judul tab seragam ("`<Halaman>` | tquilla.is-a.dev"). Ejaan **`deisktify`** sengaja dipertahankan (URL, judul, komentar), jadi tidak ada rename atau redirect. Typo label di `generations.json` ("Github Jounal") diperbaiki jadi "GitHub Journal"
+- [x] **#12** Aksesibilitas
+  - [x] `alt=""` untuk 2 ikon dekoratif di livechat (hasil audit ulang: hanya 2 `img` yang belum punya `alt`, bukan 5)
+  - [x] Daftar generasi memakai pola listbox ARIA (`role="listbox"`/`option`, `aria-activedescendant`); fokus keyboard pindah dari `<section>` ke `<ul>`, `tabindex: "{total}"` diganti `0`
+  - [x] `prefers-reduced-motion` berlaku global (`base.css`); animasi boot dan login sudah punya aturan sendiri
+  - [ ] Uji dengan screen reader (NVDA/VoiceOver) dan navigasi keyboard penuh
+- [x] **#13** Auto-boot di Home dibatalkan oleh interaksi apa pun (tombol, hover, klik, sentuh); teks berubah jadi "Auto boot cancelled"
+- [x] **#14** `LINKEDIN_URL` memakai profilmu dari `generations.json` (`linkedin.com/in/msalmanrafadhlih`)
+  - [ ] `DISCORD_URL` masih invite komunitas "Motion IME" (sama seperti di `browser.json`), bukan profil pribadi. Ganti di `shared.rs` kalau ada yang lain
+- [x] **#15** Bahasa UI: **Inggris** untuk semua teks antarmuka (hint di Home sekarang berbahasa Inggris, sama seperti AI chat, login, dan banner). Pengecualian disengaja: **kalkulator tetap berbahasa Indonesia** (Aljabar/Trigonometri/Kalkulus, "Benar/Salah", koma desimal) karena memang dibuat dengan locale Indonesia. Ubah keputusan ini kalau mau kalkulator juga berbahasa Inggris (perlu menyesuaikan `engine/tests.rs`)
+
+> Catatan: P3 dicek dengan `cargo check`, `cargo test`, dan uji `postbuild.py` pada `index.html` tiruan (termasuk dijalankan dua kali, dan kasus gagal). Belum dijalankan di browser. Uji manual: (1) `/`: biarkan 10 detik (redirect ke `/deisktify`), lalu ulangi dan tekan tombol apa saja (hitungan berhenti); navigasi ↑/↓/j/k/Enter; klik area kosong lalu tekan ↓; (2) cek judul tab tiap route; (3) setelah deploy: "view-source" dan cek `og:*`, `lang="en"`, `robots.txt`, `sitemap.xml`; (4) aktifkan "reduce motion" di OS dan cek boot, login, dan jendela.
 
 ## 🔵 Prioritas 4: kualitas kode dan CI
 
