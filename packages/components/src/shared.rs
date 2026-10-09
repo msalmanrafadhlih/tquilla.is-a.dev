@@ -5,8 +5,25 @@
 //! URL required grepping the whole crate and hoping you caught every copy.
 //! Centralizing them here means there's exactly one place to edit.
 
-/// GitHub avatar used as the favicon on every route (`/`, `/profile`, `/deisktify`).
-pub const FAVICON: &str = "https://avatars.githubusercontent.com/u/141149698";
+use dioxus::prelude::*;
+
+/// Foto profil lokal (`assets/avatar.png`), dipakai sebagai avatar login,
+/// avatar `/profile`, dan favicon. Sebelumnya diambil dari
+/// `avatars.githubusercontent.com` / `github.com/<user>.png` saat runtime:
+/// satu request pihak ketiga tambahan per halaman, dan gambar rusak kalau
+/// GitHub lambat atau diblokir.
+///
+/// File yang ada di repo hanya placeholder. Timpa dengan foto aslimu:
+///   curl -L https://avatars.githubusercontent.com/u/141149698 \
+///        -o packages/components/assets/avatar.png
+pub const AVATAR: Asset = asset!("/assets/avatar.png");
+
+/// Favicon di setiap route (`/`, `/profile`, `/deisktify`).
+pub const FAVICON: Asset = AVATAR;
+
+/// Google Fonts yang hanya dibutuhkan fitur tertentu (font global ada di
+/// `app.rs`). Dimuat oleh komponen yang memakainya, bukan oleh setiap route.
+pub const PLAYFAIR_FONT_URL: &str = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap";
 
 pub const GITHUB_URL: &str = "https://github.com/msalmanrafadhlih";
 
