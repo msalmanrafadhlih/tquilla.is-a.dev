@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use dioxus::prelude::*;
 use crate::platform::{Date, TimeoutFuture};
 use serde::Deserialize;
@@ -15,8 +17,14 @@ pub struct ChatMessage {
     pub timestamp: String,
 }
 
-fn load_messages() -> Vec<ChatMessage> {
-    serde_json::from_str(CHAT_JSON).unwrap_or_default()
+/// Parsed once per session. `use_chat_cycle` and `ChatPreviewPanel` call this
+/// on every render (and the cycle re-renders every `CYCLE_MS`), so parsing
+/// the JSON each time was pure waste.
+fn load_messages() -> &'static [ChatMessage] {
+    static MESSAGES: OnceLock<Vec<ChatMessage>> = OnceLock::new();
+    MESSAGES
+        .get_or_init(|| serde_json::from_str(CHAT_JSON).unwrap_or_default())
+        .as_slice()
 }
 
 /// "3 minutes ago" / "2 hours ago" / "5 days ago" / "2 weeks ago" /

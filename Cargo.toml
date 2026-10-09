@@ -20,6 +20,14 @@ serde = { version = "1", features = ["derive"] }
 
 components = { path = "packages/components" }
 
+# Ukuran .wasm adalah biaya load terbesar di web. Pengaturan ini mengikuti
+# panduan "optimizing binary size" Dioxus. Catatan: berlaku juga untuk build
+# desktop/mobile; `panic = "abort"` tidak mengubah wasm (wasm32 memang tidak
+# punya unwinding), tapi membuang kode unwind di target native.
 [profile.release]
 opt-level = "z"
+debug = false
 lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

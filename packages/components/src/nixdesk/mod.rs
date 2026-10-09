@@ -27,7 +27,7 @@ pub fn DesktopPage() -> Element {
         document::Title { "Deisktify" }
 
         if is_booting() {
-            Booting {}
+            Booting { on_skip: move |_| is_booting.set(false) }
         } else if is_logged_in() {
             MainPage {}
         } else {

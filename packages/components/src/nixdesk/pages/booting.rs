@@ -92,8 +92,11 @@ const BOOT_LOG: &[(&str, &str, u32)] = &[
 /// own CSS `animation-delay` — computed below from `hold_ms` — kicks in.
 /// That turns a static log into a line-by-line "the kernel is booting"
 /// effect purely with CSS, no timers/JS required.
+///
+/// `on_skip` fires when the visitor presses any key or taps the "Skip"
+/// button, so the ~5 s intro never blocks someone who just wants the desktop.
 #[component]
-pub fn Booting() -> Element {
+pub fn Booting(on_skip: EventHandler<()>) -> Element {
     // Small pause before the very first line, then walk through BOOT_LOG
     // accumulating each line's reveal time from the previous line's hold.
     let mut elapsed: u32 = 200;
@@ -108,8 +111,27 @@ pub fn Booting() -> Element {
     let cursor_delay = elapsed + 150;
 
     rsx! {
-        section { id: "boot-screen",
+        section {
+            id: "boot-screen",
+            class: "outline-none",
+            tabindex: "0",
+            "aria-label": "System boot log. Press any key to skip.",
+            onkeydown: move |_| on_skip.call(()),
+            onmounted: move |evt| {
+                let data = evt.data();
+                spawn(async move {
+                    let _ = data.set_focus(true).await;
+                });
+            },
+
             div { class: "boot-scanlines" }
+
+            button {
+                r#type: "button",
+                class: "absolute bottom-4 right-4 z-10 cursor-pointer border border-solid border-[var(--fg-secondary)] bg-transparent px-3 py-1.5 font-mono text-xs text-[var(--fg-main)] opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100",
+                onclick: move |_| on_skip.call(()),
+                "Skip ⏎"
+            }
 
             div { id: "boot-console",
                 for (status, text, delay) in timed_lines {

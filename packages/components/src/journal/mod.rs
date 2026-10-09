@@ -8,7 +8,13 @@ use dioxus::prelude::*;
 
 use components::{ChronicleSection, EndOfStream, Footer, Hero, PinnedSection};
 use data::AppData;
-use crate::shared::FAVICON;
+use crate::shared::{FAVICON, PLAYFAIR_FONT_URL};
+
+/// Fonts that only this route uses (kept out of `app.rs` so `/` and
+/// `/deisktify` don't download them). Inter 600 was dropped: nothing here
+/// uses `font-semibold`.
+const INTER_FONT_URL: &str = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap";
+const MATERIAL_SYMBOLS_URL: &str = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap";
 
 /// Bundled at compile time so the page always has something to render
 /// immediately, and as a fallback if the live fetch below fails for any
@@ -73,6 +79,12 @@ pub fn JournalPage() -> Element {
     });
 
     rsx! {
+        // Di level halaman (bukan di `Page`) supaya font mulai diunduh
+        // selagi data masih di-fetch, bukan setelah data tiba.
+        document::Stylesheet { href: INTER_FONT_URL }
+        document::Stylesheet { href: PLAYFAIR_FONT_URL }
+        document::Stylesheet { href: MATERIAL_SYMBOLS_URL }
+
         if let Some(loaded) = data() {
             Page { data: loaded.data, source: loaded.source }
         } else if let Some(err) = load_error() {

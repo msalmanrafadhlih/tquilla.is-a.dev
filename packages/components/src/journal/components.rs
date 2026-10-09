@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use super::chart::build_chart_svg;
 use super::data::{Chronicle, Hero as HeroData, Repo};
 use super::util::{build_month_labels, format_stars, format_volume};
+use crate::shared::AVATAR;
 
 #[component]
 pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element {
@@ -15,7 +16,7 @@ pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element
                             img {
                                 class: "w-full h-full object-cover",
                                 alt: "Profile",
-                                src: "https://github.com/msalmanrafadhlih.png",
+                                src: AVATAR,
                             }
                         }
                         div { class: "w-72 flex justify-between items-center border-t border-b border-line py-3 font-mono tracking-wider text-muted uppercase",

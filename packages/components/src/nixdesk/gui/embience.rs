@@ -14,6 +14,43 @@ const ICON_PLAY: Asset = asset!("/assets/icon-play.svg");
 const ICON_PAUSE: Asset = asset!("/assets/icon-pause.svg");
 const ICON_PLAYLIST: Asset = asset!("/assets/icon-playlist.svg");
 
+// Ikon tiap suara ada sebagai aset lokal. Sebelumnya `embiences_icon` di JSON
+// menunjuk ke raw.githubusercontent.com, jadi tiap ikon = 1 request ke host
+// pihak ketiga. Dicocokkan lewat nama file di URL (mis. `.../logo-rain.svg`);
+// URL yang tidak dikenal tetap dipakai apa adanya.
+const ICON_BIRDS: Asset = asset!("/assets/logo-birds.svg");
+const ICON_BOAT: Asset = asset!("/assets/logo-boat.svg");
+const ICON_CITY: Asset = asset!("/assets/logo-city.svg");
+const ICON_COFFEE_SHOP: Asset = asset!("/assets/logo-coffee_shop.svg");
+const ICON_FIREPLACE: Asset = asset!("/assets/logo-fireplace.svg");
+const ICON_RAIN: Asset = asset!("/assets/logo-rain.svg");
+const ICON_STORM: Asset = asset!("/assets/logo-storm.svg");
+const ICON_STREAM: Asset = asset!("/assets/logo-stream.svg");
+const ICON_SUMMER_NIGHT: Asset = asset!("/assets/logo-summer_night.svg");
+const ICON_TRAIN: Asset = asset!("/assets/logo-train.svg");
+const ICON_WAVE: Asset = asset!("/assets/logo-wave.svg");
+const ICON_WIND: Asset = asset!("/assets/logo-wind.svg");
+
+fn icon_src(url: &str) -> String {
+    let file = url.rsplit('/').next().unwrap_or("");
+    let local = match file {
+        "logo-birds.svg" => ICON_BIRDS,
+        "logo-boat.svg" => ICON_BOAT,
+        "logo-city.svg" => ICON_CITY,
+        "logo-coffee_shop.svg" => ICON_COFFEE_SHOP,
+        "logo-fireplace.svg" => ICON_FIREPLACE,
+        "logo-rain.svg" => ICON_RAIN,
+        "logo-storm.svg" => ICON_STORM,
+        "logo-stream.svg" => ICON_STREAM,
+        "logo-summer_night.svg" => ICON_SUMMER_NIGHT,
+        "logo-train.svg" => ICON_TRAIN,
+        "logo-wave.svg" => ICON_WAVE,
+        "logo-wind.svg" => ICON_WIND,
+        _ => return url.to_string(),
+    };
+    local.to_string()
+}
+
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 struct Sound {
     embiences_id: u32,
@@ -125,7 +162,7 @@ pub fn EmbienceWindowContent() -> Element {
                         let sound_id = sound.embiences_id;
                         let url = sound.embiences_stream.clone();
                         let name = sound.embiences_name.clone();
-                        let icon = sound.embiences_icon.clone();
+                        let icon = icon_src(&sound.embiences_icon);
                         let is_active = active()[idx];
                         let vol = volumes()[idx];
                         let bar_width = if is_active { (vol * 100.0).round() } else { 0.0 };

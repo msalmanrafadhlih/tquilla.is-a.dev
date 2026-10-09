@@ -41,18 +41,24 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
   - [ ] Cek ulang nama model `gemini-3.5-flash` / `gemini-3.7-flash` masih valid di API
 - [x] **#4** Breakpoint `xs` didefinisikan di `theme.css` (`--breakpoint-xs: 30rem`), supaya `xs:text-xs` di `home.rs` benar-benar bekerja
 
-> Catatan: perubahan P1 dibuat tanpa compile di sandbox. Jalankan `web-dev` dan uji manual: buka/tutup window berkali-kali lalu drag, matikan jaringan di `/profile`, kirim satu pesan di jendela AI.
+> P1 sudah diuji manual dan berjalan baik (2026-10-09).
 
 ## 🟠 Prioritas 2: performa load awal
 
 - [ ] **#5** Muat resource per fitur, bukan global (`app.rs`)
-  - [ ] `hls.js` hanya saat Radio dibuka
-  - [ ] Material Symbols hanya di route `/profile`
-  - [ ] Self-host font dengan subset, kurangi bobot Playfair/Inter
-- [ ] **#6** Profil release: tambah `codegen-units = 1`, `panic = "abort"`, `strip = true` di `[profile.release]`, lalu ukur ulang ukuran `.wasm`
-- [ ] **#7** Hilangkan ketergantungan gambar GitHub saat runtime (favicon, avatar login, avatar `/profile`, ikon embience dari `raw.githubusercontent.com`): jadikan aset lokal
-- [ ] **#8** Parse JSON sekali saja (`use_memo`/`OnceLock`) di `home.rs`, `browser.rs`, `radio.rs`, `embience.rs` (akan terganti oleh fetch dari database, lihat bagian Fullstack)
-- [ ] **#9** Boot screen 5 detik: tambah tombol skip atau ikuti waktu load aset sebenarnya
+  - [x] `hls.js` dimuat lazy, hanya saat stream `.m3u8` pertama diputar (`AUDIO_JS` di `audio.rs`)
+  - [x] Material Symbols, Inter, dan Playfair Display hanya dimuat di `/profile`; Playfair juga di kalkulator (tombol italik). Font global tinggal JetBrains Mono. Inter 600 dibuang (tidak dipakai)
+  - [ ] Self-host font (woff2 + `@font-face` lokal) dengan subset latin, supaya tidak bergantung ke Google Fonts
+- [x] **#6** Profil release: `debug = false`, `codegen-units = 1`, `panic = "abort"`, `strip = true` ditambahkan di `[profile.release]`. Ukuran `.wasm` sebelum/sesudah belum terukur, cek dengan `web-build` lalu bandingkan isi `target/dx/web/release/web/public/assets/*.wasm`
+- [ ] **#7** Hilangkan ketergantungan gambar GitHub saat runtime
+  - [x] Kode memakai `shared::AVATAR` / `FAVICON` (`assets/avatar.png`) untuk favicon, avatar login, dan avatar `/profile`
+  - [x] Ikon embience memakai aset lokal `logo-*.svg` (dicocokkan lewat nama file di JSON)
+  - [ ] **Timpa `packages/components/assets/avatar.png` dengan foto aslimu** (file di repo hanya placeholder):
+    `curl -L https://avatars.githubusercontent.com/u/141149698 -o packages/components/assets/avatar.png`
+- [x] **#8** Parse JSON sekali per sesi (`OnceLock`) di `home.rs` (re-render tiap detik karena countdown dan tiap hover) dan `tty/chat_preview.rs` (re-render tiap 3 detik). `browser.rs`, `radio.rs`, `embience.rs`, dan `livechat.rs` sudah parse sekali per mount lewat `use_signal`/`use_hook`, jadi tidak perlu diubah (semuanya akan diganti fetch dari database)
+- [x] **#9** Boot screen bisa di-skip: tombol "Skip ⏎" atau tekan tombol apa saja (`booting.rs`). Menyesuaikan durasi dengan waktu load aset sebenarnya belum dikerjakan
+
+> Catatan: perubahan P2 dicek dengan `cargo check` + `cargo test` (native) dan uji JS dengan DOM tiruan, tetapi belum dijalankan di browser. Uji manual: (1) buka `/`, `/profile`, `/deisktify` dan cek tab Network, tidak ada request ke `cdn.jsdelivr.net` sebelum Radio diputar, dan `/` tidak memuat Inter/Playfair/Material Symbols; (2) putar stasiun HLS (mis. Jak FM) dan satu suara Embience; (3) skip boot dengan tombol dan dengan keyboard; (4) cek tombol italik kalkulator dan ikon Embience.
 
 ## 🟡 Prioritas 3: SEO, aksesibilitas, UX
 

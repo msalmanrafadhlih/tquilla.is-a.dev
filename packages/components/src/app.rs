@@ -4,9 +4,12 @@ use crate::home::Home;
 use crate::journal::JournalPage;
 use crate::nixdesk::DesktopPage;
 
-const FONTS_URL: &str = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400&display=swap";
-const MATERIAL_SYMBOLS_URL: &str = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap";
-const HLS_JS_URL: &str = "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js";
+// Hanya font yang dipakai di SEMUA route (boot menu, desktop). Font yang
+// cuma dipakai satu fitur dimuat oleh fitur itu sendiri:
+//   - Inter + Playfair Display + Material Symbols -> `journal` (`/profile`)
+//   - Playfair Display (italic)                    -> kalkulator (keypad)
+//   - hls.js                                       -> `AUDIO_JS` (saat stream .m3u8 diputar)
+const FONTS_URL: &str = "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap";
 
 // Plain CSS owned by this crate. Tailwind is *not* here: its output is
 // generated per platform package (each one scans this crate's sources).
@@ -32,13 +35,11 @@ pub fn App() -> Element {
         document::Link { rel: "preconnect", href: "https://fonts.googleapis.com" }
         document::Link { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }
         document::Stylesheet { href: FONTS_URL }
-        document::Stylesheet { href: MATERIAL_SYMBOLS_URL }
         document::Stylesheet { href: BASE_CSS }
         document::Stylesheet { href: GLOBALS_CSS }
         document::Stylesheet { href: STYLEGUIDE_CSS }
         document::Stylesheet { href: BOOTING_CSS }
         document::Stylesheet { href: LOGIN_CSS }
-        document::Script { src: HLS_JS_URL }
 
         Router::<Route> {}
     }

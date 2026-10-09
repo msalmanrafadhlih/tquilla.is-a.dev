@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use dioxus::prelude::*;
 use serde::Deserialize;
 
@@ -14,6 +16,19 @@ struct Generation {
     link: String,
     kernel: String,
     date: String,
+}
+
+/// Parsed once, then shared: the `Generation` list and, in the same order,
+/// just their links.
+fn generation_data() -> (&'static [Generation], &'static [String]) {
+    static DATA: OnceLock<(Vec<Generation>, Vec<String>)> = OnceLock::new();
+    let (generations, links) = DATA.get_or_init(|| {
+        let generations: Vec<Generation> =
+            serde_json::from_str(GENERATIONS_JSON).unwrap_or_default();
+        let links = generations.iter().map(|g| g.link.clone()).collect();
+        (generations, links)
+    });
+    (generations.as_slice(), links.as_slice())
 }
 
 /// Internal routes (`/profile`, `/deisktify`) go through the router on every
@@ -33,13 +48,14 @@ fn open_link(platform: PlatformServices, url: &str) {
 pub fn Home() -> Element {
     let platform = use_platform();
     let open = use_callback(move |url: String| open_link(platform, &url));
-    let generations: Vec<Generation> = serde_json::from_str(GENERATIONS_JSON).unwrap_or_default();
+    // Di-parse sekali per sesi (bukan tiap render: komponen ini re-render
+    // setiap detik karena countdown dan setiap hover).
+    let (generations, links) = generation_data();
     let total = generations.len();
     let mut number: f32 = 1.01;
-    // Links pulled out separately so the keyboard handler can grab the
-    // currently selected URL without borrowing `generations` across the
-    // 'static closure boundary.
-    let links: Vec<String> = generations.iter().map(|g| g.link.clone()).collect();
+    // `links` dipisah supaya handler keyboard bisa mengambil URL yang sedang
+    // dipilih tanpa meminjam `generations` melewati batas closure 'static
+    // (keduanya `&'static`, jadi `Copy`).
     let mut selected = use_signal(|| 0usize);
     // Tracks which row the mouse is currently over, independent of
     // keyboard `selected`, so the label swap only reacts to hover.

@@ -19,6 +19,8 @@ use engine::Angle;
 use keypad::{Aljabar, Kalkulus, KeyPad, ModeTab, Trigonometri, MAIN};
 use state::{CalcState, Mode};
 
+use crate::shared::PLAYFAIR_FONT_URL;
+
 #[component]
 pub fn Calculator() -> Element {
     let expr = use_signal(String::new);
@@ -63,6 +65,9 @@ pub fn Calculator() -> Element {
     };
 
     rsx! {
+        // Tombol italik (`italic font-serif` di keypad.rs) memakai Playfair
+        // Display; font ini tidak lagi dimuat global di `app.rs`.
+        document::Stylesheet { href: PLAYFAIR_FONT_URL }
         section {
             class: "flex flex-col items-center h-full w-full gap-2.5 relative",
             title: "Calculator",
