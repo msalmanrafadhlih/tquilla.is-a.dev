@@ -1,3 +1,4 @@
+use crate::nixdesk::clock::use_clock_format;
 use dioxus::prelude::*;
 
 const NIXOS_ICON: Asset = asset!("/assets/Icon-nixos.svg");
@@ -31,6 +32,7 @@ pub fn Navbar(
     on_toggle: EventHandler<()>,
     brightness: Signal<u8>,
 ) -> Element {
+    let mut clock_format = use_clock_format();
     let mut show_about = use_signal(|| false);
     let mut active_menu = use_signal(|| Option::<usize>::None);
     let mut nav_menu_open = use_signal(|| false);
@@ -78,7 +80,13 @@ pub fn Navbar(
         header { class: "relative z-[999] flex w-full shrink-0 items-center justify-center gap-2.5 px-[15px] py-2 text-xs rounded-3xl border-t-[0.5px] border-white backdrop-blur-sm bg-[image:var(--linear-t)]",
 
             // Centered clock — always visible; only the date line drops below `sm`.
-            div { class: "absolute left-1/2 top-1/2 z-[4] flex -translate-x-1/2 -translate-y-1/2 select-none flex-col items-center gap-1",
+            // It is a button: click toggles 24-hour <-> 12-hour.
+            button {
+                r#type: "button",
+                class: "absolute left-1/2 top-1/2 z-[4] flex -translate-x-1/2 -translate-y-1/2 select-none flex-col items-center gap-1 rounded-md px-3 py-0.5 transition-colors duration-150 ease-out hover:bg-white/5 active:scale-95 cursor-pointer",
+                title: clock_format().switch_label(),
+                "aria-label": "{time}. {clock_format().switch_label()}",
+                onclick: move |_| clock_format.set(clock_format().toggled()),
                 span { class: "text-center text-sm font-light", "{time}" }
                 span { class: "hidden text-[12px] text-white/40 min-[500px]:block", "{date}" }
             }

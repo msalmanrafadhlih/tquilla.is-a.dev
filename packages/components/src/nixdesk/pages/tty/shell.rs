@@ -2,6 +2,7 @@ use crate::platform::Date;
 use dioxus::prelude::*;
 
 use super::clock::{format_date, format_time};
+use crate::nixdesk::clock::{use_clock_format, ClockFormat};
 
 /// One resolved command + the output lines it produced.
 #[derive(Debug, Clone, PartialEq)]
@@ -54,6 +55,7 @@ fn run_command(
     raw: &str,
     cwd: &str,
     history: &[ShellEntry],
+    clock_format: ClockFormat,
     on_toggle: EventHandler<()>,
 ) -> (Vec<String>, Option<String>, bool) {
     let trimmed = raw.trim();
@@ -101,7 +103,11 @@ fn run_command(
         "date" => {
             let now = Date::new_0();
             (
-                vec![format!("{}, {}", format_date(&now), format_time(&now))],
+                vec![format!(
+                    "{}, {}",
+                    format_date(&now),
+                    format_time(&now, clock_format)
+                )],
                 None,
                 false,
             )
@@ -153,6 +159,7 @@ pub fn ShellPanel(
     on_toggle: EventHandler<()>,
     compact: bool,
 ) -> Element {
+    let clock_format = use_clock_format();
     let mut draft = use_signal(String::new);
     let mut log_cursor = use_signal(|| Option::<usize>::None);
 
@@ -175,7 +182,8 @@ pub fn ShellPanel(
         log_cursor.set(None);
 
         let entries = history();
-        let (output, new_cwd, should_clear) = run_command(&raw, &cwd(), &entries, on_toggle);
+        let (output, new_cwd, should_clear) =
+            run_command(&raw, &cwd(), &entries, clock_format(), on_toggle);
 
         if should_clear {
             history.set(vec![]);

@@ -1,3 +1,4 @@
+use crate::nixdesk::clock::use_clock_format_provider;
 use crate::platform::TimeoutFuture;
 use dioxus::prelude::*;
 
@@ -29,6 +30,8 @@ const DISABLE_CONTEXT_MENU_JS: &str = include_str!("../../../js/disable_context_
 
 #[component]
 pub fn MainPage() -> Element {
+    // Shared 24h/12h clock preference (navbar, terminal clock, `date`).
+    use_clock_format_provider();
     let mut mode = use_signal(|| Mode::Desktop);
     let mut switching = use_signal(|| false);
 
