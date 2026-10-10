@@ -2,7 +2,9 @@
 
 Bagian ini mendahului panduan umum Dioxus 0.7 di bawah. Baca ini dulu.
 
-- **Fokus: build web.** `packages/desktop` dan `packages/mobile` belum jalan dan sengaja ditunda; jangan "memperbaikinya" kecuali diminta. Database/fullstack juga sengaja dikerjakan terakhir, bersama setup desktop/mobile (lihat README, bagian "Fullstack dan database").
+- **Web adalah satu-satunya platform yang sudah diuji di runtime.** `packages/desktop` dan `packages/mobile` sudah compile dan lolos clippy (`platforms.yml`), tetapi belum pernah dijalankan; jangan klaim "sudah jalan" sebelum Moch mengujinya (README, bagian "Platform desktop dan mobile"). `build.rs` di keduanya hanya membuat `assets/tailwind.css` kosong kalau belum ada; `packages/web` sengaja tidak punya `build.rs` itu.
+- **Fullstack = dua repo.** Frontend ini tetap di GitHub Pages. Backend (Axum di Cloudflare Workers lewat `workers-rs`, DB Turso) ada di repo terpisah dan publik; klien hanya memakai REST + JSON, **tanpa `#[server]`**. Server tidak boleh percaya data klien (validasi ulang panjang dan URL, rate limit), dan avatar/lampiran tidak disimpan sebagai base64 di DB. Rencana dan keputusan: README, bagian "Fullstack dan database". Kerjakan satu tahap per balasan dan centang README.
+- **Teks UI: Inggris.** Rencananya semua string dikumpulkan di `components/src/languages/language.rs` (tahap L1 di README). Sebelum itu selesai, tulis teks baru dalam bahasa Inggris; kalkulator masih Indonesia sampai L1.
 - **Semua UI ada di `packages/components`.** Paket platform hanya launch + Tailwind + `PlatformServices`.
 - **Perintah yang harus hijau sebelum commit** (sama dengan `.github/workflows/ci.yml`):
   ```sh
@@ -16,7 +18,7 @@ Bagian ini mendahului panduan umum Dioxus 0.7 di bawah. Baca ini dulu.
 - **JS yang dijalankan lewat `document::eval` ada di `packages/components/js/*.js`** dan di-embed dengan `include_str!`. Jangan menulis blok JS panjang di dalam string Rust. Isi file diperlakukan sebagai badan fungsi (boleh `return` di level atas). Tiap file punya test di `js/tests/` (DOM tiruan, tanpa browser).
 - **Logika window manager itu murni** (`window.rs`: `open_or_focus_in`, `close_in`, ... atas `Vec<OpenWindow>`); wrapper `Signal` tipis. Tambah perilaku di fungsi murni lalu tes di sana.
 - **Dua `Dioxus.toml`** (root dan `packages/web/`) sengaja dua-duanya dipertahankan karena belum terverifikasi mana yang dibaca `dx` untuk build web. Ubah **keduanya** bersamaan (bagian `[web.wasm_opt]`).
-- **Ejaan `deisktify` disengaja** (URL, judul, komentar). `DISCORD_URL` sengaja invite komunitas. Kalkulator sengaja berbahasa Indonesia, UI lainnya Inggris.
+- **Ejaan `deisktify` disengaja** (URL, judul, komentar). `DISCORD_URL` sengaja invite komunitas. Brightness di navbar ditunda (nanti diganti popup daftar tema).
 - Versi Rust dikunci di `rust-toolchain.toml`; saat menaikkannya, ubah juga `dtolnay/rust-toolchain@<versi>` di kedua workflow.
 
 ---

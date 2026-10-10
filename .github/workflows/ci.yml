@@ -29,7 +29,7 @@ jobs:
 
       - name: Clippy (warning = error)
         # Hanya `components`: itu tempat seluruh UI. Paket desktop/mobile
-        # belum bisa dibangun (lihat README, bagian "Fullstack dan database").
+        # dicek di platforms.yml (workflow terpisah, tidak menahan deploy).
         run: cargo clippy -p components --all-targets -- -D warnings
 
       - name: Unit test

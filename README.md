@@ -11,11 +11,11 @@ Live: <https://tquilla.is-a.dev>
 | `packages/components` | Semua UI bersama (routing, halaman, window manager, aplikasi dock, data JSON) |
 | `packages/components/js/` | JS yang dijalankan lewat `document::eval` (window manager, audio/hls, scroll reveal, context menu) + test node di `js/tests/` |
 | `packages/web` | Entry point web (launch, Tailwind, `PlatformServices` browser) |
-| `packages/desktop` | Entry point desktop (⚠️ belum jalan, ditunda) |
-| `packages/mobile` | Entry point Android (⚠️ belum jalan, ditunda) |
+| `packages/desktop` | Entry point desktop (compile dan clippy lolos; belum diuji jalan, lihat "Platform desktop dan mobile") |
+| `packages/mobile` | Entry point Android (compile dan clippy lolos di host; build Android belum diverifikasi) |
 | `site/` | File statis untuk deploy: `robots.txt`, `sitemap.xml`, snippet `<head>` (SEO/Open Graph) dan `<noscript>` |
 | `scripts/postbuild.py` | Langkah pasca-build di CI: menyuntik `site/*` ke output `dx bundle` (tes: `scripts/test_postbuild.py`) |
-| `.github/workflows/` | `ci.yml` (fmt, clippy, test Rust, test node/python; jalan di tiap PR dan sebelum deploy) dan `deploy-page.yml` (build + deploy ke Pages) |
+| `.github/workflows/` | `ci.yml` (fmt, clippy, test Rust, test node/python; jalan di tiap PR dan sebelum deploy), `deploy-page.yml` (build + deploy ke Pages), dan `platforms.yml` (cek compile desktop/mobile; tidak menahan deploy) |
 | `rust-toolchain.toml` | Versi Rust dikunci (1.97.0); naikkan bersama workflow |
 
 ## Menjalankan
@@ -27,7 +27,7 @@ web-dev      # dx serve --package web --platform web
 web-build    # dx bundle --package web --platform web --release
 ```
 
-> Fokus saat ini: **build web saja**. Desktop dan mobile masih error dan sengaja ditunda.
+> Web adalah satu-satunya platform yang sudah diuji di runtime. Desktop dan mobile sudah bisa di-`cargo check` (lihat "Platform desktop dan mobile" di bawah); `desktop-dev` dan `android-dev` belum pernah diuji.
 
 Cek yang sama dengan CI (semuanya harus hijau sebelum commit):
 
@@ -191,30 +191,72 @@ Lalu pindahkan pemanggilan Inter/Playfair ke komponen yang memakainya (seperti s
 
 ---
 
+## 🖥️ Platform desktop dan mobile
+
+Diagnosis (2026-10-10), `packages/desktop` dan `packages/mobile`:
+
+- **Penyebab error yang terkonfirmasi:** kedua `main.rs` memakai `asset!("/assets/tailwind.css")`, tetapi file itu hasil generate Tailwind dan di-`.gitignore`, jadi tidak ada di checkout bersih. `cargo check` gagal dengan `Asset at /assets/tailwind.css doesn't exist`. Kode Rust-nya sendiri sehat: dengan file itu ada, `cargo check` dan `clippy -D warnings` lolos di Linux (rustc 1.97.0, `--locked`).
+- **Syarat di luar kode:** `cargo check -p desktop`/`-p mobile` di host Linux butuh library sistem webview (webkit2gtk-4.1, GTK3, libxdo). Di Nix sudah disediakan `devenv.nix`; di CI lihat `platforms.yml`.
+
+- [x] Diagnosis di atas
+- [x] `build.rs` di `packages/desktop` dan `packages/mobile`: membuat `assets/tailwind.css` kosong kalau belum ada (tidak pernah menimpa file yang ada). `dx`, CI, dan `nix build` tetap menimpanya dengan CSS asli. `packages/web` sengaja **tidak** diubah supaya jalur deploy yang berjalan tidak tersentuh
+- [x] `.github/workflows/platforms.yml`: `cargo check` + `clippy -D warnings` untuk desktop dan mobile. Workflow **terpisah** dari `ci.yml`, jadi tidak menahan deploy Pages
+- [ ] Uji manual `desktop-dev` (`dx serve --package desktop --platform desktop`): window terbuka, CSS termuat, jam, window manager, kalkulator, Radio/Embience (audio di webview GTK butuh GStreamer), AI chat (HTTP lewat `reqwest`)
+- [ ] Uji manual `android-dev` / `android-build`: belum pernah diverifikasi sama sekali (sandbox tidak punya NDK dan tidak bisa mengunduh target Android). Hal yang paling mungkin bermasalah: `reqwest` + `rustls` (kompilasi `ring` dengan NDK), `[bundle]` identifier di `Dioxus.toml`, izin `INTERNET`
+- [ ] Mobile: `open_external` masih menavigasi webview itu sendiri (lihat TODO di `packages/mobile/src/main.rs`); ganti dengan `Intent.ACTION_VIEW`
+- [ ] Setelah D3: URL API untuk desktop/mobile (di web memakai variable build, lihat D1)
+
+---
+
 ## 🗄️ Fullstack dan database
 
-Tujuan: mengganti file JSON dummy di `packages/components/data/` dengan database sungguhan, dan mengubah project menjadi fullstack (Dioxus server functions).
+Tujuan: mengganti file JSON dummy di `packages/components/data/` dengan database sungguhan lewat API terpisah.
 
-### Keputusan yang perlu dikonfirmasi lebih dulu
+### Keputusan (D0, 2026-10-10)
 
-GitHub Pages hanya menyajikan file statis, jadi **tidak bisa menjalankan server atau database**. Begitu ada backend, hosting dan workflow deploy harus berubah. Pilihan:
+| Hal | Keputusan |
+| --- | --- |
+| Hosting | **Opsi B**: frontend tetap di GitHub Pages (workflow, `CNAME`, `404.html`, `postbuild.py` tidak berubah) + API terpisah |
+| Runtime API | **Axum** (Rust) di **Cloudflare Workers** lewat `workers-rs` (fitur `http`). Bukan Cloudflare Containers |
+| Database | **Turso (libSQL)** untuk produksi; SQLite lokal untuk development (`turso dev`, protokol HTTP yang sama) |
+| Repo | **Dua repo**: ini (frontend, GitHub Actions ke Pages) dan repo backend baru, **publik** (nama sementara `tquilla-api`), deploy ke Cloudflare lewat Actions miliknya sendiri |
+| Klien ↔ server | **REST + JSON** lewat `platform::http`. Tanpa `#[server]` dan tanpa `dx serve --fullstack`, karena server function Dioxus butuh binary server Dioxus |
+| Tipe bersama | crate `api-types` (struct serde, batas validasi, `normalize_url`) hidup di repo backend; frontend memakainya lewat git dependency dengan **tag** |
+| Migrasi | file `.sql` biasa di repo backend, dijalankan lewat Turso CLI. `sqlx` tidak dipakai: tidak bisa compile ke wasm32 dan tidak bicara ke Turso |
+| Domain API | `*.workers.dev` dulu. Belum dipastikan apakah `is-a.dev` mengizinkan `api.tquilla.is-a.dev` |
+| CORS | hanya origin `https://tquilla.is-a.dev`; `localhost` hanya lewat env var di development |
 
-| Opsi | Cara kerja | Catatan |
-| --- | --- | --- |
-| **A. Dioxus fullstack (Axum) di satu host** | `#[server]` functions + DB di server yang sama (VPS, Fly.io, Railway, atau container Nix) | Satu codebase Rust, tanpa CORS. Perlu hosting yang menjalankan proses |
-| **B. Frontend tetap di Pages + API terpisah** | WASM statis tetap di Pages, API (Rust/Axum atau Cloudflare Worker + D1/Turso) di host lain | Deploy sekarang hampir tidak berubah, tapi perlu CORS dan dua deploy |
+```text
+Browser / Desktop / Android  (Dioxus, repo ini)
+        │  REST + JSON, tipe dari crate api-types
+        ▼
+Cloudflare Worker  (Axum via workers-rs, repo tquilla-api)
+        │  HTTP ke Turso            │ R2 untuk lampiran (D4)
+        ▼                           ▼
+Turso (libSQL)               Cron Trigger (D5, D7)
+```
 
-Database: **SQLite lokal untuk development**, lalu **Postgres atau Turso (libSQL)** untuk produksi. Akses lewat `sqlx` dengan migrasi.
+Rencana isi repo backend: `crates/api-types` (dites native), `crates/api` (Worker, hanya wasm32), `migrations/*.sql`, `wrangler.toml`, `.github/workflows/{ci,deploy}.yml`.
 
-- [ ] **D0** Putuskan opsi hosting (A atau B) dan database produksi
+### Risiko dan yang belum terverifikasi
+
+- `workers-rs` sendiri mengaku "rough edges" ([README](https://github.com/cloudflare/workers-rs)). Tokio dan semua crate native tidak bisa dipakai; semua dependensi harus compile ke `wasm32-unknown-unknown`.
+- Klien Rust Turso untuk Workers: `libsql-client` (backend Workers) sudah deprecated, dan dukungan wasm32 crate `libsql` belum terkonfirmasi. Rencananya klien HTTP kecil sendiri (`worker::Fetch`) ke API HTTP Turso. Bahwa `turso dev` memakai protokol yang sama belum diverifikasi.
+- Batas plan gratis Workers (ukuran wasm, waktu CPU per request) harus dicek di dokumentasi Cloudflare sebelum D4. Kalau terlampaui, jalur cadangannya Workers Paid atau Cloudflare Containers ($5/bulan, tanpa free tier).
+- Sandbox tidak bisa membangun wasm32 maupun menjangkau Cloudflare/Turso: semua yang menyentuh keduanya baru terbukti setelah Anda mengujinya sendiri.
 
 ### Rencana bertahap
 
-- [ ] **D1** Fondasi fullstack
-  - [ ] Tambah fitur `server` pada `components`/`web` dan jalankan lewat `dx serve --fullstack`
-  - [ ] Pisahkan kode yang hanya untuk server dengan `#[cfg(feature = "server")]` (agar tidak ikut ke WASM)
-  - [ ] Setup `sqlx` + folder `migrations/`, koneksi DB lewat env var (`DATABASE_URL`)
-  - [ ] Update `devenv.nix` (sqlx-cli, sqlite/postgres) dan `flake.nix`
+- [x] **D0** Putuskan opsi hosting dan database produksi (lihat tabel di atas)
+- [ ] **D1** Fondasi
+  - [ ] Repo backend: workspace Cargo, `crates/api-types`, Worker Axum dengan `GET /api/v1/health`, klien Turso, `wrangler.toml`, CI (fmt, clippy, test native, cek wasm32)
+  - [ ] Dev lokal: `turso dev` + `wrangler dev`; `.dev.vars.example` (tanpa kredensial asli)
+  - [ ] Repo ini: modul `api` di `components` (base URL dari `option_env!("API_BASE_URL")`, tipe error, fungsi `get`/`post` bertipe di atas `platform::http`), `api-types` sebagai git dependency; variable build `API_BASE_URL` di `deploy-page.yml`
+  - [ ] Update `devenv.nix` dan `flake.nix` (turso-cli, wrangler)
+- [ ] **L1** Bahasa UI (tepat setelah D1)
+  - [ ] Modul `languages/language.rs` di `components`: semua teks UI default **Inggris** terkumpul di satu tempat
+  - [ ] Kalkulator ikut Inggris (label mode, `Benar/Salah` → `True/False`, pemisah desimal); sesuaikan `engine/tests.rs`
+  - [ ] Rancangan agar nanti bisa multi-bahasa dari preferences di Settings (`Signal<Language>` lewat context, seperti `ClockFormat`)
 - [ ] **D2** Skema dan migrasi dari JSON ke tabel
 
   | File JSON (dummy) | Tabel | Kolom utama |
@@ -226,22 +268,23 @@ Database: **SQLite lokal untuk development**, lalu **Postgres atau Turso (libSQL
   | `chat_sample.json` | `chat_messages` | `id`, `username`, `url`, `avatar_url`, `message`, `attachment_url`, `created_at` |
   | `journal.sample.json` | `journal_snapshots` | `payload` (JSON), `fetched_at`; pengganti cache Worker |
 
-  - [ ] Script seed satu kali dari file JSON yang ada ke tabel
-  - [ ] Hapus `include_str!` data JSON setelah fitur terkait pindah ke DB
-- [ ] **D3** Server functions (read-only dulu): `list_generations`, `list_bookmarks`, `list_radio_stations`, `list_embiences`, `list_presets`; komponen memakai `use_server_future`/`use_resource` dengan state loading dan error
+  - [ ] Migrasi `.sql` di repo backend
+  - [ ] Script seed satu kali dari file JSON yang ada (menghasilkan SQL)
+  - [ ] Hapus `include_str!` data JSON setelah fitur terkait pindah ke API
+- [ ] **D3** Endpoint baca (read-only dulu): `GET /api/v1/{generations,bookmarks,radio,embiences,presets}`; komponen memakai `use_resource` dengan state loading dan error
 - [ ] **D4** LiveChat sungguhan (sekarang hanya seed lokal)
-  - [ ] `list_messages` / `post_message` (+ polling atau SSE/WebSocket untuk pesan baru)
-  - [ ] Validasi di server: panjang pesan, normalisasi URL (server tidak boleh percaya `normalize_url` dari klien), rate limit per IP
-  - [ ] Avatar dan lampiran **tidak disimpan sebagai base64 di DB**: simpan di object storage (S3/R2) atau disk, dan simpan URL-nya saja
+  - [ ] `GET/POST /api/v1/messages` (+ polling untuk pesan baru)
+  - [ ] Validasi di server: panjang pesan, normalisasi URL ulang di server (server tidak boleh percaya `normalize_url` dari klien), rate limit per IP (`CF-Connecting-IP`)
+  - [ ] Avatar dan lampiran **tidak disimpan sebagai base64 di DB**: simpan di Cloudflare R2, DB hanya menyimpan URL
   - [ ] Moderasi dasar: laporkan/hapus pesan, daftar kata terlarang
-- [ ] **D5** Jurnal GitHub: pindahkan logika Worker ke server (cron/background task yang mengisi `journal_snapshots`), hapus fallback ke sample, tampilkan `fetched_at` di UI
-- [ ] **D6** Konten bisa diubah tanpa deploy ulang (halaman admin sederhana atau CLI) untuk radio, bookmark, embience
-  - [ ] Autentikasi admin (jangan hardcode kredensial; password demo di `login.rs` hanya untuk animasi)
-- [ ] **D7** Perbaiki data yang usang: URL stream radio mengandung token (`rj-tok`) yang bisa kedaluwarsa, validasi berkala dan tandai `is_active = false`
+- [ ] **D5** Jurnal GitHub: pindahkan logika Worker lama ke Cron Trigger yang mengisi `journal_snapshots`, hapus fallback ke sample, tampilkan `fetched_at` di UI. Source Worker lama (`worker/`) tidak ada di repo; perlu dikirim
+- [ ] **D6** Konten bisa diubah tanpa deploy ulang (endpoint admin atau CLI) untuk radio, bookmark, embience
+  - [ ] Autentikasi admin lewat secret Cloudflare (jangan hardcode kredensial; password demo di `login.rs` hanya untuk animasi)
+- [ ] **D7** Perbaiki data yang usang: URL stream radio mengandung token (`rj-tok`) yang bisa kedaluwarsa; Cron Trigger memvalidasi berkala dan menandai `is_active = false`
 - [ ] **D8** Deploy dan operasi
-  - [ ] Ganti workflow `deploy-page.yml` sesuai opsi hosting (Dockerfile / `nix build` / deploy ke host)
-  - [ ] Backup database, health check, variabel rahasia di secret manager
-  - [ ] Pertahankan fallback 404 untuk routing sisi klien jika memilih opsi B
+  - [ ] Workflow `wrangler deploy` di repo backend (`CLOUDFLARE_API_TOKEN` sebagai secret Actions, token Turso lewat `wrangler secret`)
+  - [ ] Backup database (dump terjadwal), health check, rotasi secret
+  - [ ] Frontend: deploy Pages tidak berubah; `404.html` fallback tetap
 
 ---
 
