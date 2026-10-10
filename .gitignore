@@ -1,6 +1,7 @@
 target/
 .vscode/
 .devenv/
+.direnv/
 
 # activating splash screen
 /packages/components/src/nixdesk/mod.rs
