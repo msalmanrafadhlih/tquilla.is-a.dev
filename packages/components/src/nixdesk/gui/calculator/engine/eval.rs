@@ -66,7 +66,7 @@ impl Ctx {
         }
     }
 
-    fn from_rad(&self, x: f64) -> f64 {
+    fn angle_from_rad(&self, x: f64) -> f64 {
         match self.angle {
             Angle::Rad => x,
             Angle::Deg => x * 180.0 / PI,
@@ -226,10 +226,14 @@ impl Ctx {
                         "arcsin/arccos hanya untuk nilai antara -1 dan 1".into(),
                     ));
                 }
-                let r = if name.ends_with("sin") { x.asin() } else { x.acos() };
-                Ok(snap(self.from_rad(r)))
+                let r = if name.ends_with("sin") {
+                    x.asin()
+                } else {
+                    x.acos()
+                };
+                Ok(snap(self.angle_from_rad(r)))
             }
-            "arctan" | "atan" => Ok(snap(self.from_rad(x.atan()))),
+            "arctan" | "atan" => Ok(snap(self.angle_from_rad(x.atan()))),
             _ => Err(CalcError::Syntax(format!("Fungsi {name} tidak dikenal"))),
         }
     }

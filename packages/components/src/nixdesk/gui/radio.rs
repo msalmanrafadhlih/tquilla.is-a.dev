@@ -274,3 +274,26 @@ pub fn RadioWindowContent() -> Element {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stations_parse_with_usable_urls() {
+        let stations = load_stations();
+        assert!(
+            !stations.is_empty(),
+            "radio.json failed to parse or is empty"
+        );
+        for s in &stations {
+            assert!(!s.label.is_empty());
+            assert!(
+                s.url_stream.starts_with("http"),
+                "{}: bad stream url",
+                s.label
+            );
+            assert!(s.official_link.starts_with("http"), "{}: bad link", s.label);
+        }
+    }
+}

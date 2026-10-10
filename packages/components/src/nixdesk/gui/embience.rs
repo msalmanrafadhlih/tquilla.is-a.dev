@@ -79,7 +79,10 @@ fn load_data() -> EmbienceFile {
         .filter(|line| !line.trim_start().starts_with("//"))
         .collect::<Vec<_>>()
         .join("\n");
-    serde_json::from_str(&cleaned).unwrap_or(EmbienceFile { embiences: vec![], presets: vec![] })
+    serde_json::from_str(&cleaned).unwrap_or(EmbienceFile {
+        embiences: vec![],
+        presets: vec![],
+    })
 }
 
 fn audio_id_for(sound_id: u32) -> String {
@@ -118,7 +121,9 @@ fn turn_off(
     let none_left = !arr.iter().any(|a| *a);
     active.set(arr);
     let audio_id = audio_id_for(sound_id);
-    eval_js(format!("window.__audio && window.__audio.pause('{audio_id}');"));
+    eval_js(format!(
+        "window.__audio && window.__audio.pause('{audio_id}');"
+    ));
     if none_left {
         master_playing.set(false);
     }
@@ -131,7 +136,7 @@ pub fn EmbienceWindowContent() -> Element {
     let presets = data.presets;
     let sound_count = sounds.len();
 
-    let mut active = use_signal(|| vec![false; sound_count]);
+    let active = use_signal(|| vec![false; sound_count]);
     let mut volumes = use_signal(|| vec![0.6f64; sound_count]);
     let mut master_playing = use_signal(|| false);
     let mut muted = use_signal(|| false);
@@ -373,5 +378,71 @@ pub fn EmbienceWindowContent() -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn data_parses_and_ids_are_unique() {
+        let data = load_data();
+        assert!(
+            !data.embiences.is_empty(),
+            "embience.json failed to parse or is empty"
+        );
+        let mut ids: Vec<_> = data.embiences.iter().map(|s| s.embiences_id).collect();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), data.embiences.len());
+        for s in &data.embiences {
+            assert!(
+                s.embiences_stream.starts_with("http"),
+                "{}",
+                s.embiences_name
+            );
+        }
+    }
+
+    #[test]
+    fn every_icon_resolves_to_a_local_asset() {
+        // icon_src falls back to the remote URL for unknown file names, so a
+        // result equal to the input means a missing local mapping.
+        for s in load_data().embiences {
+            assert_ne!(
+                icon_src(&s.embiences_icon),
+                s.embiences_icon,
+                "no local icon for {}",
+                s.embiences_name
+            );
+        }
+    }
+
+    #[test]
+    fn presets_only_reference_existing_sounds() {
+        let data = load_data();
+        for p in &data.presets {
+            assert!(
+                !p.embience_list.is_empty(),
+                "preset {} is empty",
+                p.preset_label
+            );
+            for name in &p.embience_list {
+                assert!(
+                    data.embiences.iter().any(|s| &s.embiences_name == name),
+                    "preset {} references unknown sound {name}",
+                    p.preset_label
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn unknown_icon_urls_are_kept_as_is() {
+        assert_eq!(
+            icon_src("https://example.com/other.svg"),
+            "https://example.com/other.svg"
+        );
     }
 }

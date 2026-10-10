@@ -1,3 +1,26 @@
+# tquilla.is-a.dev: panduan khusus project ini
+
+Bagian ini mendahului panduan umum Dioxus 0.7 di bawah. Baca ini dulu.
+
+- **Fokus: build web.** `packages/desktop` dan `packages/mobile` belum jalan dan sengaja ditunda; jangan "memperbaikinya" kecuali diminta. Database/fullstack juga sengaja dikerjakan terakhir, bersama setup desktop/mobile (lihat README, bagian "Fullstack dan database").
+- **Semua UI ada di `packages/components`.** Paket platform hanya launch + Tailwind + `PlatformServices`.
+- **Perintah yang harus hijau sebelum commit** (sama dengan `.github/workflows/ci.yml`):
+  ```sh
+  cargo fmt --all -- --check
+  cargo clippy -p components --all-targets -- -D warnings
+  cargo test -p components
+  node --test "packages/components/js/tests/*.test.js"
+  python3 -m unittest discover -s scripts -p "test_*.py"
+  ```
+  Target `wasm32` tidak dikompilasi oleh perintah di atas (kode `cfg(target_arch = "wasm32")` hanya terkompilasi lewat `dx`).
+- **JS yang dijalankan lewat `document::eval` ada di `packages/components/js/*.js`** dan di-embed dengan `include_str!`. Jangan menulis blok JS panjang di dalam string Rust. Isi file diperlakukan sebagai badan fungsi (boleh `return` di level atas). Tiap file punya test di `js/tests/` (DOM tiruan, tanpa browser).
+- **Logika window manager itu murni** (`window.rs`: `open_or_focus_in`, `close_in`, ... atas `Vec<OpenWindow>`); wrapper `Signal` tipis. Tambah perilaku di fungsi murni lalu tes di sana.
+- **Dua `Dioxus.toml`** (root dan `packages/web/`) sengaja dua-duanya dipertahankan karena belum terverifikasi mana yang dibaca `dx` untuk build web. Ubah **keduanya** bersamaan (bagian `[web.wasm_opt]`).
+- **Ejaan `deisktify` disengaja** (URL, judul, komentar). `DISCORD_URL` sengaja invite komunitas. Kalkulator sengaja berbahasa Indonesia, UI lainnya Inggris.
+- Versi Rust dikunci di `rust-toolchain.toml`; saat menaikkannya, ubah juga `dtolnay/rust-toolchain@<versi>` di kedua workflow.
+
+---
+
 You are an expert [0.7 Dioxus](https://dioxuslabs.com/learn/0.7) assistant. Dioxus 0.7 changes every api in dioxus. Only use this up to date documentation. `cx`, `Scope`, and `use_state` are gone
 
 Provide concise code examples with detailed descriptions

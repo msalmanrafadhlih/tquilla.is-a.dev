@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::platform::{Date, TimeoutFuture};
+use dioxus::prelude::*;
 
 const WEEKDAYS: [&str; 7] = [
     "Sunday",

@@ -9,7 +9,8 @@ const MODEL_OPTIONS: [(&str, &str); 2] = [
     (GEMINI_37_FLASH, "3.7 Flash"),
 ];
 
-const ROOT_CLASS: &str = "flex flex-col items-center justify-center gap-[25px] relative w-full h-full overflow-y-scroll";
+const ROOT_CLASS: &str =
+    "flex flex-col items-center justify-center gap-[25px] relative w-full h-full overflow-y-scroll";
 const CONVERSATION_CLASS: &str = "flex flex-col-reverse items-end gap-[25px] relative flex-1 w-full max-w-[48rem] h-full grow overflow-y-scroll";
 const USER_BUBBLE_CLASS: &str = "flex flex-col rounded-b-xl rounded-tl-xl items-start w-full max-w-max p-5 relative flex-[0_0_auto] bg-[var(--fg-main)]";
 const USER_TEXT_CLASS: &str = "relative self-stretch whitespace-pre-wrap [font:'JetBrains_Mono-Regular',Helvetica] text-[var(--bg-secondary)] text-xs text-left tracking-[0] leading-[normal]";
@@ -22,13 +23,16 @@ const CODE_GUTTER_CLASS: &str = "flex flex-col w-12 items-end pt-[var(--size-spa
 const CODE_NUMBERS_CLASS: &str = "relative w-fit mt-[-1.00px] whitespace-pre font-body-code font-[number:var(--body-code-font-weight)] text-color-text-default-tertiary text-[length:var(--body-code-font-size)] text-right tracking-[var(--body-code-letter-spacing)] leading-[var(--body-code-line-height)] [font-style:var(--body-code-font-style)]";
 const CODE_PRE_CLASS: &str = "inline-flex flex-col items-start pt-[var(--size-space-400)] pr-[var(--size-space-200)] pb-[var(--size-space-400)] pl-[var(--size-space-200)] relative flex-1 min-w-0 overflow-auto bg-color-background-default-secondary border-r [border-right-style:solid] border-color-border-default-default whitespace-pre font-body-code font-[number:var(--body-code-font-weight)] text-[length:var(--body-code-font-size)] tracking-[var(--body-code-letter-spacing)] leading-[var(--body-code-line-height)] [font-style:var(--body-code-font-style)]";
 const FOOTER_CLASS: &str = "flex flex-col items-start relative w-full max-w-[48rem] flex-[0_0_auto] border border-solid border-[var(--fg-secondary)]";
-const FORM_CLASS: &str = "flex items-center gap-5 p-2.5 relative self-stretch w-full h-max flex-[0_0_auto]";
+const FORM_CLASS: &str =
+    "flex items-center gap-5 p-2.5 relative self-stretch w-full h-max flex-[0_0_auto]";
 const QUESTION_INPUT_CLASS: &str = "relative flex-1 min-w-0 h-[22px] bg-[var(--bg-secondary)] border-0 outline-none [font:'JetBrains_Mono-Light',Helvetica] font-light text-[var(--fg-main)] text-sm tracking-[0] leading-[19.6px]";
 const ICON_BUTTON_CLASS: &str = "flex relative h-max opacity-70 hover:opacity-100 aspect-[1] bg-[var(--bg-secondary)] border-0 items-center justify-center cursor-pointer";
-const KEY_ROW_CLASS: &str = "w-full h-12 flex items-center justify-center p-2.5 relative max-w-full";
+const KEY_ROW_CLASS: &str =
+    "w-full h-12 flex items-center justify-center p-2.5 relative max-w-full";
 const KEY_GROUP_CLASS: &str = "flex items-center gap-2.5 relative flex-1 self-stretch grow";
 const KEY_LABEL_CLASS: &str = "relative flex text-left w-fit [font:'JetBrains_Mono-Thin',Helvetica] font-thin text-[var(--fg-secondary)] text-xs text-center tracking-[0] leading-[normal] whitespace-nowrap";
-const KEY_FIELD_CLASS: &str = "w-full flex items-center gap-[5px] p-[5px] relative flex-1 self-stretch grow";
+const KEY_FIELD_CLASS: &str =
+    "w-full flex items-center gap-[5px] p-[5px] relative flex-1 self-stretch grow";
 const KEY_INPUT_CLASS: &str = "flex-1 min-w-0 w-full text-xs bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] opacity-50 focus:opacity-100 transition-opacity duration-300";
 const SHOW_BUTTON_CLASS: &str = "text-[var(--fg-secondary)] hover:text-[var(--fg-main)] transition-colors duration-150 text-xs bg-[var(--bg-secondary)] border-0 cursor-pointer";
 const INFO_BUTTON_CLASS: &str = "h-full relative aspect-[1] border-0 bg-[var(--bg-secondary)] p-[1px] opacity-70 hover:opacity-100 cursor-pointer";
@@ -36,11 +40,11 @@ const SETTINGS_WRAP_CLASS: &str = "relative flex-[0_0_auto] h-full";
 const SETTINGS_TOGGLE_CLASS: &str = "inline-flex h-full p-[5px] items-center relative bg-[var(--bg-secondary)] border-0 opacity-70 hover:opacity-100 cursor-pointer";
 const MODEL_MENU_CLASS: &str = "absolute bottom-full right-0 mb-2 flex flex-col gap-1 p-1 border border-solid border-[var(--fg-secondary)] bg-[var(--bg-secondary)]";
 
-const ICON_ASSISTANT: Asset = asset!("/assets/logo-Ai-Assistent.svg"); 
-const ICON_ADD: Asset = asset!("/assets/icon-add.svg"); 
-const ICON_SEND: Asset = asset!("assets/icon-send.svg"); 
-const ICON_INFO: Asset = asset!("assets/icon-info.svg"); 
-const ICON_TOGGLE: Asset = asset!("assets/icon-toggle-popup.svg"); 
+const ICON_ASSISTANT: Asset = asset!("/assets/logo-Ai-Assistent.svg");
+const ICON_ADD: Asset = asset!("/assets/icon-add.svg");
+const ICON_SEND: Asset = asset!("assets/icon-send.svg");
+const ICON_INFO: Asset = asset!("assets/icon-info.svg");
+const ICON_TOGGLE: Asset = asset!("assets/icon-toggle-popup.svg");
 
 #[derive(Clone, Copy, PartialEq)]
 enum Role {
@@ -91,7 +95,11 @@ struct GeminiError {
     message: String,
 }
 
-async fn call_gemini(api_key: String, model: String, history: Vec<ChatTurn>) -> Result<String, String> {
+async fn call_gemini(
+    api_key: String,
+    model: String,
+    history: Vec<ChatTurn>,
+) -> Result<String, String> {
     let contents: Vec<GeminiContent> = history
         .iter()
         .map(|turn| GeminiContent {
@@ -99,14 +107,17 @@ async fn call_gemini(api_key: String, model: String, history: Vec<ChatTurn>) -> 
                 Role::User => "user".to_string(),
                 Role::Assistant => "model".to_string(),
             },
-            parts: vec![GeminiPart { text: turn.text.clone() }],
+            parts: vec![GeminiPart {
+                text: turn.text.clone(),
+            }],
         })
         .collect();
 
     // API key dikirim lewat header `x-goog-api-key`, BUKAN query string
     // (`?key=...`): URL ikut tercatat di log proxy/server, riwayat browser,
     // dan pesan error jaringan, sedangkan header tidak.
-    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent");
+    let url =
+        format!("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent");
     let body = GeminiRequest { contents };
 
     let payload = serde_json::to_string(&body).map_err(|e| e.to_string())?;
@@ -123,7 +134,7 @@ async fn call_gemini(api_key: String, model: String, history: Vec<ChatTurn>) -> 
     if let Some(err) = parsed.error {
         return Err(err.message);
     }
-    if status < 200 || status >= 300 {
+    if !(200..300).contains(&status) {
         return Err(format!("Request failed (HTTP {status})."));
     }
 
@@ -161,7 +172,10 @@ fn send_prompt(
     }
     error.set(None);
     let mut list = history();
-    list.push(ChatTurn { role: Role::User, text: text.clone() });
+    list.push(ChatTurn {
+        role: Role::User,
+        text: text.clone(),
+    });
     history.set(list.clone());
     draft.set(String::new());
     sending.set(true);
@@ -170,7 +184,10 @@ fn send_prompt(
         match call_gemini(api_key, model, list).await {
             Ok(reply) => {
                 let mut updated = history();
-                updated.push(ChatTurn { role: Role::Assistant, text: reply });
+                updated.push(ChatTurn {
+                    role: Role::Assistant,
+                    text: reply,
+                });
                 history.set(updated);
             }
             Err(e) => error.set(Some(e)),
@@ -238,8 +255,8 @@ fn model_option_class(active: bool) -> &'static str {
 pub fn AiAssistantWindowContent() -> Element {
     let history: Signal<Vec<ChatTurn>> = use_signal(Vec::new);
     let mut draft = use_signal(String::new);
-    let mut sending = use_signal(|| false);
-    let mut error: Signal<Option<String>> = use_signal(|| None);
+    let sending = use_signal(|| false);
+    let error: Signal<Option<String>> = use_signal(|| None);
     let mut api_key = use_signal(String::new);
     let mut show_key = use_signal(|| false);
     let mut show_models = use_signal(|| false);

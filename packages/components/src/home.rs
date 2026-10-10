@@ -95,39 +95,39 @@ pub fn Home() -> Element {
     let onkeydown = move |evt: KeyboardEvent| {
         cancelled.set(true);
         match evt.key() {
-        Key::ArrowDown => {
-            evt.prevent_default();
-            if total > 0 {
-                selected.set((selected() + 1) % total);
+            Key::ArrowDown => {
+                evt.prevent_default();
+                if total > 0 {
+                    selected.set((selected() + 1) % total);
+                }
             }
-        }
-        Key::ArrowUp => {
-            evt.prevent_default();
-            if total > 0 {
-                selected.set((selected() + total - 1) % total);
+            Key::ArrowUp => {
+                evt.prevent_default();
+                if total > 0 {
+                    selected.set((selected() + total - 1) % total);
+                }
             }
-        }
-        Key::Character(c) if c.eq_ignore_ascii_case("j") => {
-            if total > 0 {
-                selected.set((selected() + 1) % total);
+            Key::Character(c) if c.eq_ignore_ascii_case("j") => {
+                if total > 0 {
+                    selected.set((selected() + 1) % total);
+                }
             }
-        }
-        Key::Character(c) if c.eq_ignore_ascii_case("k") => {
-            if total > 0 {
-                selected.set((selected() + total - 1) % total);
+            Key::Character(c) if c.eq_ignore_ascii_case("k") => {
+                if total > 0 {
+                    selected.set((selected() + total - 1) % total);
+                }
             }
-        }
-        Key::Enter => {
-            if let Some(url) = links.get(selected()) {
-                open.call(url.clone());
+            Key::Enter => {
+                if let Some(url) = links.get(selected()) {
+                    open.call(url.clone());
+                }
             }
-        }
-        Key::Character(c) if c == " " => {
-            if let Some(url) = links.get(selected()) {
-                open.call(url.clone());
+            Key::Character(c) if c == " " => {
+                if let Some(url) = links.get(selected()) {
+                    open.call(url.clone());
+                }
             }
-        }
-        _ => {}
+            _ => {}
         }
     };
 
@@ -229,5 +229,60 @@ pub fn Home() -> Element {
                 "Use ↑ / ↓ or j / k to move · Enter or click to open"
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generations_parse_and_links_stay_in_sync() {
+        let (gens, links) = generation_data();
+        assert!(
+            !gens.is_empty(),
+            "generations.json failed to parse or is empty"
+        );
+        assert_eq!(gens.len(), links.len());
+        for (g, l) in gens.iter().zip(links) {
+            assert_eq!(&g.link, l);
+        }
+        let mut nums: Vec<_> = gens.iter().map(|g| g.number).collect();
+        nums.sort_unstable();
+        nums.dedup();
+        assert_eq!(
+            nums.len(),
+            gens.len(),
+            "duplicate generation number (used as rsx key / DOM id)"
+        );
+    }
+
+    #[test]
+    fn internal_links_are_real_routes_and_external_ones_are_http() {
+        // Renaming a route in `Route` without updating generations.json would
+        // silently turn a menu entry into an external "link" that goes nowhere.
+        let (gens, _) = generation_data();
+        for g in gens {
+            if g.link.starts_with('/') {
+                assert!(
+                    g.link.parse::<Route>().is_ok(),
+                    "{} is not a known route",
+                    g.link
+                );
+            } else {
+                assert!(
+                    g.link.starts_with("http://") || g.link.starts_with("https://"),
+                    "{}",
+                    g.link
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_auto_boot_target_is_the_desktop() {
+        // The countdown opens the first entry; that is the Deisktify desktop.
+        let (_, links) = generation_data();
+        assert_eq!(links.first().map(String::as_str), Some("/deisktify"));
     }
 }

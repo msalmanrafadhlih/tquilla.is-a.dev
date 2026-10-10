@@ -26,9 +26,8 @@ pub const SITE_NAME: &str = "tquilla.is-a.dev";
 
 pub const GITHUB_URL: &str = "https://github.com/msalmanrafadhlih";
 pub const LINKEDIN_URL: &str = "https://linkedin.com/in/msalmanrafadhlih";
-// TODO(moch): ini invite server komunitas "Motion IME" (sama seperti di
-// data/browser.json), bukan profil Discord pribadi. Ganti kalau ada profil
-// atau invite lain yang ingin ditampilkan.
+// Sengaja: ini invite server komunitas "Motion IME" (sama seperti di
+// data/browser.json), bukan profil Discord pribadi. Jangan diganti.
 pub const DISCORD_URL: &str = "https://discord.com/invite/motionime";
 
 /// Judul tab + metadata satu route, dirender ke `<head>` lewat
@@ -44,7 +43,7 @@ pub const DISCORD_URL: &str = "https://discord.com/invite/motionime";
 pub fn PageMeta(title: String, description: String, path: String) -> Element {
     let full_title = format!("{title} | {SITE_NAME}");
     let url = format!("{SITE_URL}{path}");
-    let image = format!("{SITE_URL}{AVATAR}");
+    let image = format!("{SITE_URL}/og-image.jpg");
 
     rsx! {
         document::Title { "{full_title}" }
@@ -57,6 +56,7 @@ pub fn PageMeta(title: String, description: String, path: String) -> Element {
         document::Meta { property: "og:description", content: "{description}" }
         document::Meta { property: "og:url", content: "{url}" }
         document::Meta { property: "og:image", content: "{image}" }
-        document::Meta { name: "twitter:card", content: "summary" }
+        document::Meta { name: "twitter:card", content: "summary_large_image" }
+        document::Meta { name: "twitter:image", content: "{image}" }
     }
 }

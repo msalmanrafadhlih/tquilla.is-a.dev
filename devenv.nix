@@ -143,12 +143,15 @@ in
       echo ""
       echo "  Kalau 'web-dev'/'web-build' error wasm-bindgen version mismatch:"
       echo "     https://wiki.nixos.org/wiki/Dioxus"
-
+      echo ""
       if [ ! -f Cargo.toml ]; then
         echo ""
         echo "  Peringatan: Belum ada project Dioxus di folder ini!"
         echo "   Silakan run: dioxus-init"
       fi
+      echo ""
+      echo "    ------------------------------------------------------------"
+      echo "-------------------------------------------------------------------"
     }
     _help
   '';

@@ -1,7 +1,8 @@
 use std::sync::OnceLock;
 
+use crate::platform::TimeoutFuture;
+use crate::time::relative_time;
 use dioxus::prelude::*;
-use crate::platform::{Date, TimeoutFuture};
 use serde::Deserialize;
 
 const CHAT_JSON: &str = include_str!("../../../../data/chat_sample.json");
@@ -25,47 +26,6 @@ fn load_messages() -> &'static [ChatMessage] {
     MESSAGES
         .get_or_init(|| serde_json::from_str(CHAT_JSON).unwrap_or_default())
         .as_slice()
-}
-
-/// "3 minutes ago" / "2 hours ago" / "5 days ago" / "2 weeks ago" /
-/// "1 month ago" / "2 years ago" — bucketed against the real current time.
-fn relative_time(iso: &str) -> String {
-    let then = Date::from_iso(iso).get_time();
-    let now = Date::now();
-    let diff_secs = ((now - then) / 1000.0).max(0.0);
-
-    let minutes = diff_secs / 60.0;
-    let hours = minutes / 60.0;
-    let days = hours / 24.0;
-    let weeks = days / 7.0;
-    let months = days / 30.0;
-    let years = days / 365.0;
-
-    fn plural(n: u32) -> &'static str {
-        if n == 1 { "" } else { "s" }
-    }
-
-    if minutes < 1.0 {
-        "just now".to_string()
-    } else if minutes < 60.0 {
-        let n = minutes as u32;
-        format!("{n} minute{} ago", plural(n))
-    } else if hours < 24.0 {
-        let n = hours as u32;
-        format!("{n} hour{} ago", plural(n))
-    } else if days < 7.0 {
-        let n = days as u32;
-        format!("{n} day{} ago", plural(n))
-    } else if weeks < 5.0 {
-        let n = weeks as u32;
-        format!("{n} week{} ago", plural(n))
-    } else if months < 12.0 {
-        let n = months as u32;
-        format!("{n} month{} ago", plural(n))
-    } else {
-        let n = years as u32;
-        format!("{n} year{} ago", plural(n))
-    }
 }
 
 /// Cycles the active message index every 3s — mirrors the "shell 4 - chat
@@ -101,7 +61,10 @@ pub fn ChatPreviewPanel(index: Signal<usize>) -> Element {
 
     let has_message = current.is_some();
     let msg_id = current.as_ref().map(|m| m.message_id).unwrap_or(0);
-    let username = current.as_ref().map(|m| m.username.clone()).unwrap_or_default();
+    let username = current
+        .as_ref()
+        .map(|m| m.username.clone())
+        .unwrap_or_default();
     let relative = current
         .as_ref()
         .map(|m| relative_time(&m.timestamp))
@@ -127,5 +90,21 @@ pub fn ChatPreviewPanel(index: Signal<usize>) -> Element {
                 p { class: "text-white/30 text-sm", "No messages yet." }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn preview_messages_parse_and_are_cached() {
+        let a = load_messages();
+        assert!(
+            !a.is_empty(),
+            "chat_sample.json failed to parse or is empty"
+        );
+        // OnceLock: the same allocation every call, not a re-parse.
+        assert!(std::ptr::eq(a.as_ptr(), load_messages().as_ptr()));
     }
 }

@@ -92,7 +92,9 @@ pub fn lex(input: &str) -> Result<Vec<Tok>, CalcError> {
                 // ',' atau '.' hanya valid bila diikuti/didahului angka
                 let starts_with_sep = c == '.' || c == ',';
                 if starts_with_sep && !chars.get(i + 1).is_some_and(|d| d.is_ascii_digit()) {
-                    return Err(CalcError::Syntax("Tanda desimal tidak pada tempatnya".into()));
+                    return Err(CalcError::Syntax(
+                        "Tanda desimal tidak pada tempatnya".into(),
+                    ));
                 }
                 let mut s = String::new();
                 while i < chars.len() && chars[i].is_ascii_digit() {

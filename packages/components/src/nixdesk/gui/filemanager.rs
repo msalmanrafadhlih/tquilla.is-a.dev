@@ -1,14 +1,7 @@
 use dioxus::prelude::*;
 
 const IMG: Asset = asset!("/assets/logo-FileManager.svg");
-const FOLDER_NAMES: [&str; 5] = [
-    "Documents",
-    "Downloads",
-    "Musics",
-    "Pictures",
-    "Videos"
-];
-
+const FOLDER_NAMES: [&str; 5] = ["Documents", "Downloads", "Musics", "Pictures", "Videos"];
 
 #[component]
 pub fn FileManagerWindowContent() -> Element {
@@ -128,4 +121,3 @@ fn nav_item_class(active: bool) -> String {
         )
     }
 }
-

@@ -154,7 +154,13 @@ impl Cursor {
 
     fn atom(&mut self) -> Option<String> {
         let c = self.peek()?;
-        if c.is_ascii_digit() || ((c == ',' || c == '.') && self.chars.get(self.i + 1).is_some_and(|d| d.is_ascii_digit())) {
+        if c.is_ascii_digit()
+            || ((c == ',' || c == '.')
+                && self
+                    .chars
+                    .get(self.i + 1)
+                    .is_some_and(|d| d.is_ascii_digit()))
+        {
             return Some(self.number());
         }
         match c {
@@ -334,12 +340,21 @@ mod tests {
     #[test]
     fn pangkat_dan_pecahan() {
         let m = to_mathml("2^3+1");
-        assert!(m.contains("<msup><mrow><mn>2</mn></mrow><mrow><mn>3</mn></mrow></msup>"), "{m}");
+        assert!(
+            m.contains("<msup><mrow><mn>2</mn></mrow><mrow><mn>3</mn></mrow></msup>"),
+            "{m}"
+        );
         assert!(m.ends_with("<mo>+</mo><mn>1</mn></math>"), "{m}");
         let m = to_mathml("frac(1;2)");
-        assert!(m.contains("<mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac>"), "{m}");
+        assert!(
+            m.contains("<mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac>"),
+            "{m}"
+        );
         let m = to_mathml("1,5×10^20");
-        assert!(m.contains("<msup><mrow><mn>10</mn></mrow><mrow><mn>20</mn></mrow></msup>"), "{m}");
+        assert!(
+            m.contains("<msup><mrow><mn>10</mn></mrow><mrow><mn>20</mn></mrow></msup>"),
+            "{m}"
+        );
         let m = to_mathml("2^-3");
         assert!(m.contains("<mo>−</mo><mn>3</mn>"), "{m}");
     }
@@ -361,11 +376,17 @@ mod tests {
     #[test]
     fn kalkulus() {
         let m = to_mathml("int(x^2;x;0;1)");
-        assert!(m.contains("<msubsup><mo>∫</mo>") && m.contains("<mi>d</mi><mi>x</mi>"), "{m}");
+        assert!(
+            m.contains("<msubsup><mo>∫</mo>") && m.contains("<mi>d</mi><mi>x</mi>"),
+            "{m}"
+        );
         let m = to_mathml("sum(k;k;1;10)");
         assert!(m.contains("<munderover><mo>∑</mo>"), "{m}");
         let m = to_mathml("limr(1÷x;x;0)");
-        assert!(m.contains("<munder><mi>lim</mi>") && m.contains("<mo>+</mo>"), "{m}");
+        assert!(
+            m.contains("<munder><mi>lim</mi>") && m.contains("<mo>+</mo>"),
+            "{m}"
+        );
         let m = to_mathml("diff(x^2;x;3)");
         assert!(m.contains("<mfrac><mi>d</mi>"), "{m}");
         let m = to_mathml("root(3;x)");

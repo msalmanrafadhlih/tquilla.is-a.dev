@@ -1,15 +1,15 @@
-use dioxus::prelude::*;
 use crate::platform::TimeoutFuture;
+use dioxus::prelude::*;
 
-mod interface;
 mod booting;
+mod interface;
 mod login;
 mod tty;
 
-pub use login::Login;
 pub use booting::Booting;
-pub use tty::TerminalMode;
 pub use interface::DesktopMode;
+pub use login::Login;
+pub use tty::TerminalMode;
 
 #[derive(Clone, Copy, PartialEq)]
 enum Mode {
@@ -25,15 +25,7 @@ const SWITCH_MS: u32 = 250;
 /// Disables the browser context menu (right click) everywhere except inside
 /// inputs/textareas and elements marked with `data-allow-contextmenu`.
 /// Guarded by a window flag so remounting `MainPage` never stacks listeners.
-const DISABLE_CONTEXT_MENU_JS: &str = r#"
-    if (!window.__noCtxMenu) {
-        window.__noCtxMenu = true;
-        document.addEventListener('contextmenu', (e) => {
-            if (e.target.closest('input, textarea, [data-allow-contextmenu]')) return;
-            e.preventDefault();
-        });
-    }
-"#;
+const DISABLE_CONTEXT_MENU_JS: &str = include_str!("../../../js/disable_context_menu.js");
 
 #[component]
 pub fn MainPage() -> Element {
@@ -44,19 +36,24 @@ pub fn MainPage() -> Element {
         document::eval(DISABLE_CONTEXT_MENU_JS);
     });
 
-    let toggle_mode = move || {
-        spawn(async move {
-            switching.set(true);
-            TimeoutFuture::new(SWITCH_MS).await;
+    let toggle_mode =
+        move || {
+            spawn(async move {
+                switching.set(true);
+                TimeoutFuture::new(SWITCH_MS).await;
 
-            mode.set(if mode() == Mode::Desktop { Mode::Terminal } else { Mode::Desktop });
+                mode.set(if mode() == Mode::Desktop {
+                    Mode::Terminal
+                } else {
+                    Mode::Desktop
+                });
 
-            document::eval(
+                document::eval(
                 "await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));"
             ).await.ok();
-            switching.set(false);
-        });
-    };
+                switching.set(false);
+            });
+        };
 
     rsx! {
         div {
@@ -81,4 +78,3 @@ pub fn MainPage() -> Element {
         }
     }
 }
- 

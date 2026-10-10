@@ -35,9 +35,9 @@ pub enum Outcome {
 
 impl Outcome {
     /// Teks yang ditampilkan ke pengguna.
-    pub fn to_text(&self) -> String {
+    pub fn to_text(self) -> String {
         match self {
-            Outcome::Number(v) => format_number(*v),
+            Outcome::Number(v) => format_number(v),
             Outcome::Bool(true) => "Benar".to_string(),
             Outcome::Bool(false) => "Salah".to_string(),
         }

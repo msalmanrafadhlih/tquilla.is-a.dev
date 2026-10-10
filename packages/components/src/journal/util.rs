@@ -78,13 +78,13 @@ fn is_leap_year(year: i32) -> bool {
 pub fn today() -> Today {
     let now = crate::platform::Date::new_0();
     let month0 = now.get_month() as usize; // 0-indexed, like JS
-    let day = now.get_date() as u32;
+    let day = now.get_date();
     let year = now.get_full_year() as i32;
 
     const DAYS_IN_MONTH: [u32; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     let mut day_of_year = day;
-    for m in 0..month0 {
-        day_of_year += DAYS_IN_MONTH[m];
+    for (m, days) in DAYS_IN_MONTH.iter().enumerate().take(month0) {
+        day_of_year += days;
         if m == 1 && is_leap_year(year) {
             day_of_year += 1;
         }

@@ -10,7 +10,8 @@ Yang dilakukan (semuanya idempoten, aman dijalankan dua kali):
      JS/WASM, jadi tag ini harus ada di HTML statis. `{{AVATAR}}` diganti
      dengan path aset avatar yang di-hash oleh dx (assets/avatar-<hash>.jpg).
   3. site/noscript.html -> `</body>`
-  4. site/robots.txt dan site/sitemap.xml disalin ke root output.
+  4. site/robots.txt, site/sitemap.xml, dan site/og-image.jpg (gambar kartu
+     preview 1200x630, URL-nya harus stabil/tanpa hash) disalin ke root output.
 
 Dirancang sebagai langkah terpisah (bukan template index.html kustom) supaya
 tidak bergantung pada placeholder internal template dx yang bisa berubah
@@ -71,7 +72,7 @@ def main() -> None:
     index.write_text(html, encoding="utf-8")
 
     # 4. static files
-    for name in ("robots.txt", "sitemap.xml"):
+    for name in ("robots.txt", "sitemap.xml", "og-image.jpg"):
         shutil.copyfile(SITE / name, public / name)
 
     print(f"postbuild: ok ({index}, avatar={avatar_path})")

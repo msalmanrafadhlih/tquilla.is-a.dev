@@ -16,14 +16,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # format + clippy + test; build di bawah baru jalan kalau ini hijau.
+  check:
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Rust + target wasm32
-        uses: dtolnay/rust-toolchain@stable
+        # versi sama dengan rust-toolchain.toml dan ci.yml
+        uses: dtolnay/rust-toolchain@1.97.0
         with:
           targets: wasm32-unknown-unknown
 
@@ -45,8 +51,24 @@ jobs:
         # jadi di CI kita generate dulu secara eksplisit (dx juga akan
         # menimpanya). Pakai standalone CLI v4 (tailwind.css pakai sintaks v4),
         # versi di-pin biar build nggak berubah diam-diam saat ada major baru.
+        #
+        # Checksum: set variable repo `TAILWIND_SHA256` (Settings > Secrets and
+        # variables > Actions > Variables) ke hash yang dicetak step ini
+        # sekali; setelah itu binary yang berbeda akan menggagalkan build.
+        # Selama belum di-set, step ini hanya memberi peringatan + hash-nya.
+        env:
+          TAILWIND_SHA256: ${{ vars.TAILWIND_SHA256 }}
         run: |
-          curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.11/tailwindcss-linux-x64
+          curl -fsSLO https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.11/tailwindcss-linux-x64
+          actual="$(sha256sum tailwindcss-linux-x64 | cut -d' ' -f1)"
+          if [ -n "$TAILWIND_SHA256" ]; then
+            if [ "$actual" != "$TAILWIND_SHA256" ]; then
+              echo "::error::Checksum Tailwind tidak cocok. Diharapkan $TAILWIND_SHA256, didapat $actual"
+              exit 1
+            fi
+          else
+            echo "::warning::TAILWIND_SHA256 belum di-set. Hash binary ini: $actual"
+          fi
           chmod +x tailwindcss-linux-x64
           ./tailwindcss-linux-x64 \
             -i ./packages/web/tailwind.css \

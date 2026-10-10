@@ -104,34 +104,163 @@ pub struct OpenWindow {
     pub h: f64,
 }
 
-/// Open a window if it isn't already, or bring it to front (and restore
-/// it from minimized) if it is. Used by the dock's launcher icons.
-///
-/// Also cancels a minimize/close animation that is still in flight: the
-/// animation class disappears, so the open animation plays instead.
-pub fn open_or_focus(mut open_windows: Signal<Vec<OpenWindow>>, mut next_z: Signal<i32>, id: AppId) {
-    let mut list = open_windows();
-    let z = next_z();
+// ---------------------------------------------------------------------------
+// Logika registry window (murni, tanpa Signal, jadi bisa diuji)
+//
+// Setiap fungsi `*_in` hanya mengubah `Vec<OpenWindow>` yang diberikan.
+// Fungsi `pub fn` bertanda tangan Signal di bawahnya hanyalah pembungkus tipis
+// (baca signal -> panggil `*_in` -> tulis signal), jadi pemanggil di dock,
+// header window, dsb. tidak berubah.
+// ---------------------------------------------------------------------------
+
+fn new_window(id: AppId, z: i32) -> OpenWindow {
+    let (x, y, w, h) = id.default_geometry();
+    OpenWindow {
+        id,
+        z,
+        minimized: false,
+        maximized: false,
+        minimizing: false,
+        closing: false,
+        x,
+        y,
+        w,
+        h,
+    }
+}
+
+/// Buka jika belum ada; kalau sudah, bawa ke depan (`z`), pulihkan dari
+/// minimized, dan batalkan animasi minimize/close yang sedang berjalan.
+pub(crate) fn open_or_focus_in(list: &mut Vec<OpenWindow>, z: i32, id: AppId) {
     if let Some(w) = list.iter_mut().find(|w| w.id == id) {
         w.z = z;
         w.minimized = false;
         w.minimizing = false;
         w.closing = false;
     } else {
-        let (x, y, w, h) = id.default_geometry();
-        list.push(OpenWindow {
-            id,
-            z,
-            minimized: false,
-            maximized: false,
-            minimizing: false,
-            closing: false,
-            x,
-            y,
-            w,
-            h,
-        });
+        list.push(new_window(id, z));
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum ToggleAction {
+    OpenOrFocus,
+    Minimize,
+}
+
+/// Keputusan klik ikon dock (lihat `toggle_window`).
+pub(crate) fn toggle_action(list: &[OpenWindow], id: AppId) -> ToggleAction {
+    let Some(win) = list.iter().find(|w| w.id == id) else {
+        return ToggleAction::OpenOrFocus;
+    };
+    if win.minimized || win.minimizing || win.closing {
+        return ToggleAction::OpenOrFocus;
+    }
+    // Hanya window yang terlihat yang dihitung sebagai "paling depan".
+    let top_z = list
+        .iter()
+        .filter(|w| !w.minimized)
+        .map(|w| w.z)
+        .max()
+        .unwrap_or(0);
+    if win.z == top_z {
+        ToggleAction::Minimize
+    } else {
+        ToggleAction::OpenOrFocus
+    }
+}
+
+/// Bawa window ke depan. `false` (dan list tak berubah) kalau sudah paling
+/// depan atau id tidak ada.
+pub(crate) fn focus_in(list: &mut [OpenWindow], z: i32, id: AppId) -> bool {
+    let top_z = list.iter().map(|w| w.z).max().unwrap_or(0);
+    if list.iter().any(|w| w.id == id && w.z == top_z) {
+        return false;
+    }
+    if let Some(w) = list.iter_mut().find(|w| w.id == id) {
+        w.z = z;
+        true
+    } else {
+        false
+    }
+}
+
+pub(crate) fn request_close_in(list: &mut Vec<OpenWindow>, id: AppId) {
+    // A minimized window is `display: none`, so `animationend` would never
+    // fire for it — remove it immediately instead of getting stuck.
+    let hidden = list.iter().any(|w| w.id == id && w.minimized);
+    if hidden {
+        list.retain(|w| w.id != id);
+    } else if let Some(w) = list.iter_mut().find(|w| w.id == id) {
+        w.closing = true;
+        w.minimizing = false;
+    }
+}
+
+pub(crate) fn close_in(list: &mut Vec<OpenWindow>, id: AppId) {
+    list.retain(|w| w.id != id);
+}
+
+/// `false` kalau tidak perlu menulis ulang state (sudah minimized/closing).
+pub(crate) fn request_minimize_in(list: &mut [OpenWindow], id: AppId) -> bool {
+    if let Some(w) = list.iter_mut().find(|w| w.id == id) {
+        if w.minimized || w.closing {
+            return false;
+        }
+        w.minimizing = true;
+    }
+    true
+}
+
+pub(crate) fn minimize_in(list: &mut [OpenWindow], id: AppId) {
+    if let Some(w) = list.iter_mut().find(|w| w.id == id) {
+        w.minimized = true;
+        w.minimizing = false;
+    }
+}
+
+pub(crate) fn toggle_maximize_in(list: &mut [OpenWindow], id: AppId) {
+    if let Some(w) = list.iter_mut().find(|w| w.id == id) {
+        w.maximized = !w.maximized;
+    }
+}
+
+pub(crate) fn update_geometry_in(
+    list: &mut [OpenWindow],
+    id: AppId,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+) -> bool {
+    if let Some(win) = list.iter_mut().find(|win| win.id == id) {
+        win.x = x;
+        win.y = y;
+        win.w = w;
+        win.h = h;
+        true
+    } else {
+        false
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Pembungkus Signal (API yang dipakai komponen)
+// ---------------------------------------------------------------------------
+
+/// Open a window if it isn't already, or bring it to front (and restore
+/// it from minimized) if it is. Used by the dock's launcher icons.
+///
+/// Also cancels a minimize/close animation that is still in flight: the
+/// animation class disappears, so the open animation plays instead.
+pub fn open_or_focus(
+    mut open_windows: Signal<Vec<OpenWindow>>,
+    mut next_z: Signal<i32>,
+    id: AppId,
+) {
+    let mut list = open_windows();
+    let z = next_z();
+    open_or_focus_in(&mut list, z, id);
     next_z.set(z + 1);
     open_windows.set(list);
 }
@@ -142,29 +271,9 @@ pub fn open_or_focus(mut open_windows: Signal<Vec<OpenWindow>>, mut next_z: Sign
 /// - terbuka tapi tertutup window lain → bawa ke depan
 /// - terbuka dan paling depan          → minimize
 pub fn toggle_window(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>, id: AppId) {
-    let list = open_windows();
-
-    let Some(win) = list.iter().find(|w| w.id == id) else {
-        open_or_focus(open_windows, next_z, id);
-        return;
-    };
-
-    if win.minimized || win.minimizing || win.closing {
-        open_or_focus(open_windows, next_z, id);
-        return;
-    }
-
-    let top_z = list
-        .iter()
-        .filter(|w| !w.minimized)
-        .map(|w| w.z)
-        .max()
-        .unwrap_or(0);
-
-    if win.z == top_z {
-        request_minimize(open_windows, id);
-    } else {
-        open_or_focus(open_windows, next_z, id);
+    match toggle_action(&open_windows(), id) {
+        ToggleAction::OpenOrFocus => open_or_focus(open_windows, next_z, id),
+        ToggleAction::Minimize => request_minimize(open_windows, id),
     }
 }
 
@@ -175,13 +284,8 @@ pub fn toggle_window(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>,
 /// mousedown that starts a drag — don't trigger a needless re-render.
 pub fn focus_window(mut open_windows: Signal<Vec<OpenWindow>>, mut next_z: Signal<i32>, id: AppId) {
     let mut list = open_windows();
-    let top_z = list.iter().map(|w| w.z).max().unwrap_or(0);
-    if list.iter().any(|w| w.id == id && w.z == top_z) {
-        return;
-    }
     let z = next_z();
-    if let Some(w) = list.iter_mut().find(|w| w.id == id) {
-        w.z = z;
+    if focus_in(&mut list, z, id) {
         next_z.set(z + 1);
         open_windows.set(list);
     }
@@ -191,44 +295,29 @@ pub fn focus_window(mut open_windows: Signal<Vec<OpenWindow>>, mut next_z: Signa
 /// from the list (phase 2, `close_window`) once the animation ends.
 pub fn request_close(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
     let mut list = open_windows();
-    // A minimized window is `display: none`, so `animationend` would never
-    // fire for it — remove it immediately instead of getting stuck.
-    let hidden = list.iter().any(|w| w.id == id && w.minimized);
-    if hidden {
-        list.retain(|w| w.id != id);
-    } else if let Some(w) = list.iter_mut().find(|w| w.id == id) {
-        w.closing = true;
-        w.minimizing = false;
-    }
+    request_close_in(&mut list, id);
     open_windows.set(list);
 }
 
 /// Close, phase 2: actually remove the window.
 pub fn close_window(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
     let mut list = open_windows();
-    list.retain(|w| w.id != id);
+    close_in(&mut list, id);
     open_windows.set(list);
 }
 
 /// Minimize, phase 1: start the minimize animation.
 pub fn request_minimize(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
     let mut list = open_windows();
-    if let Some(w) = list.iter_mut().find(|w| w.id == id) {
-        if w.minimized || w.closing {
-            return;
-        }
-        w.minimizing = true;
+    if request_minimize_in(&mut list, id) {
+        open_windows.set(list);
     }
-    open_windows.set(list);
 }
 
 /// Minimize, phase 2: actually hide the window (called on `animationend`).
 pub fn minimize_window(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
     let mut list = open_windows();
-    if let Some(w) = list.iter_mut().find(|w| w.id == id) {
-        w.minimized = true;
-        w.minimizing = false;
-    }
+    minimize_in(&mut list, id);
     open_windows.set(list);
 }
 
@@ -238,9 +327,7 @@ pub fn minimize_window(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
 /// was left at. No special-case restore logic needed here anymore.
 pub fn toggle_maximize(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
     let mut list = open_windows();
-    if let Some(w) = list.iter_mut().find(|w| w.id == id) {
-        w.maximized = !w.maximized;
-    }
+    toggle_maximize_in(&mut list, id);
     open_windows.set(list);
 }
 
@@ -249,13 +336,16 @@ pub fn toggle_maximize(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
 /// `WindowFrame` had nothing but `AppId::default_geometry()` to render on
 /// every re-render, so any re-render (e.g. from a focus change) snapped
 /// the window straight back to its default spot and size.
-pub fn update_geometry(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId, x: f64, y: f64, w: f64, h: f64) {
+pub fn update_geometry(
+    mut open_windows: Signal<Vec<OpenWindow>>,
+    id: AppId,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+) {
     let mut list = open_windows();
-    if let Some(win) = list.iter_mut().find(|win| win.id == id) {
-        win.x = x;
-        win.y = y;
-        win.w = w;
-        win.h = h;
+    if update_geometry_in(&mut list, id, x, y, w, h) {
         open_windows.set(list);
     }
 }
@@ -277,153 +367,7 @@ pub fn update_geometry(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId, x: 
 ///   the window tracks the cursor 1:1. It's a `data-*` attribute rather
 ///   than a class because Dioxus rewrites the whole `class` attribute on
 ///   re-render and would wipe a JS-added class.
-pub const WINDOW_MANAGER_JS: &str = r#"
-(function () {
-  if (window.__wm) return;
-  // Must match WINDOW_FRAME_CSS's `@media (min-width: 768px)` — update
-  // both together if the project's Tailwind `md:` breakpoint changes.
-  var DESKTOP_BREAKPOINT = 768;
-
-  // Listener `document` dipasang SEKALI di sini (blok ini dijaga oleh
-  // `if (window.__wm) return` di atas), bukan per window. Sebelumnya tiap
-  // `makeDraggable` menambah 5 listener `document` yang tak pernah dilepas,
-  // jadi buka-tutup window berulang kali menumpuk handler dan menahan
-  // elemen DOM lama di memori. Sekarang hanya satu gesture yang aktif pada
-  // satu waktu (`activeDrag`), dan listener meneruskan event ke gesture itu.
-  var activeDrag = null; // { move(x, y), stop() } milik window yang sedang di-drag
-  document.addEventListener('mousemove', function (e) {
-    if (activeDrag) activeDrag.move(e.clientX, e.clientY);
-  });
-  document.addEventListener('mouseup', function () {
-    if (activeDrag) activeDrag.stop();
-  });
-  document.addEventListener('touchmove', function (e) {
-    if (!activeDrag) return;
-    var t = e.touches[0];
-    if (!t) return;
-    activeDrag.move(t.clientX, t.clientY);
-    e.preventDefault(); // stop the page from scrolling while dragging
-  }, { passive: false });
-  document.addEventListener('touchend', function () {
-    if (activeDrag) activeDrag.stop();
-  });
-  document.addEventListener('touchcancel', function () {
-    if (activeDrag) activeDrag.stop();
-  });
-
-  function makeDraggable(handleId, windowId, onEnd) {
-    var handle = document.getElementById(handleId);
-    var win = document.getElementById(windowId);
-    if (!handle || !win) return;
-    var sx = 0, sy = 0, sl = 0, st = 0, dragging = false;
-    var gesture = { move: move, stop: stop };
-    function start(x, y, target) {
-      if (window.innerWidth < DESKTOP_BREAKPOINT) return;
-      if (win.classList.contains('win-maximized')) return;
-      if (target && target.closest && target.closest('[data-no-drag]')) return;
-      dragging = true;
-      activeDrag = gesture;
-      win.setAttribute('data-gesture', '');
-      sx = x; sy = y;
-      var rect = win.getBoundingClientRect();
-      var parent = win.offsetParent ? win.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
-      sl = rect.left - parent.left;
-      st = rect.top - parent.top;
-    }
-    function move(x, y) {
-      if (!dragging) return;
-      var nl = sl + (x - sx);
-      var nt = Math.max(0, st + (y - sy));
-      win.style.setProperty('--win-x', nl + 'px');
-      win.style.setProperty('--win-y', nt + 'px');
-    }
-    function stop() {
-      if (!dragging) return;
-      dragging = false;
-      if (activeDrag === gesture) activeDrag = null;
-      if (onEnd) onEnd(win.offsetLeft, win.offsetTop, win.offsetWidth, win.offsetHeight);
-      win.removeAttribute('data-gesture');
-    }
-    // Mouse — hanya listener di handle (ikut hilang bersama elemennya).
-    handle.addEventListener('mousedown', function (e) {
-      start(e.clientX, e.clientY, e.target);
-      if (dragging) e.preventDefault();
-    });
-    // Touch — same start/move/stop, driven by the first touch point.
-    handle.addEventListener('touchstart', function (e) {
-      var t = e.touches[0];
-      start(t.clientX, t.clientY, e.target);
-    }, { passive: true });
-  }
-
-  function makeResizable(windowId, onEnd) {
-    var win = document.getElementById(windowId);
-    if (!win) return;
-    var MIN_W = 260, MIN_H = 180;
-    var MARGIN = 12; // harus sama dengan margin 12px di WINDOW_FRAME_CSS
-
-    function clamp(v, lo, hi) { return Math.max(lo, Math.min(v, hi)); }
-
-    win.addEventListener('pointerdown', function (e) {
-      var handle = e.target.closest && e.target.closest('[data-resize]');
-      if (!handle || !win.contains(handle)) return;
-      if (e.button !== 0) return;
-      if (window.innerWidth < DESKTOP_BREAKPOINT) return;
-      if (win.classList.contains('win-maximized')) return;
-      var parent = win.offsetParent;
-      if (!parent) return;
-
-      var dir = handle.getAttribute('data-resize'); // n s e w ne nw se sw
-      var pr = parent.getBoundingClientRect();
-      var rc = win.getBoundingClientRect();
-      var PW = parent.clientWidth, PH = parent.clientHeight;
-
-      // Bekerja dengan 4 tepi (bukan x/y/w/h) relatif ke parent.
-      var L = rc.left - pr.left - parent.clientLeft;
-      var T = rc.top - pr.top - parent.clientTop;
-      var R = L + rc.width;
-      var B = T + rc.height;
-      var sx = e.clientX, sy = e.clientY, moved = false;
-
-      handle.setPointerCapture(e.pointerId);
-      win.setAttribute('data-gesture', '');
-      document.documentElement.style.userSelect = 'none';
-
-      function move(ev) {
-        moved = true;
-        var dx = ev.clientX - sx, dy = ev.clientY - sy;
-        var l = L, t = T, r = R, b = B;
-
-        // Hanya tepi yang ditarik yang bergerak; tepi lawannya tetap.
-        if (dir.indexOf('e') !== -1) r = clamp(R + dx, L + MIN_W, PW - MARGIN);
-        if (dir.indexOf('w') !== -1) l = clamp(L + dx, MARGIN, R - MIN_W);
-        if (dir.indexOf('s') !== -1) b = clamp(B + dy, T + MIN_H, PH - MARGIN);
-        if (dir.indexOf('n') !== -1) t = clamp(T + dy, MARGIN, B - MIN_H);
-
-        win.style.setProperty('--win-x', l + 'px');
-        win.style.setProperty('--win-y', t + 'px');
-        win.style.setProperty('--win-w', (r - l) + 'px');
-        win.style.setProperty('--win-h', (b - t) + 'px');
-      }
-
-      function stop() {
-        handle.removeEventListener('pointermove', move);
-        handle.removeEventListener('pointerup', stop);
-        handle.removeEventListener('pointercancel', stop);
-        document.documentElement.style.userSelect = '';
-        if (moved && onEnd) onEnd(win.offsetLeft, win.offsetTop, win.offsetWidth, win.offsetHeight);
-        win.removeAttribute('data-gesture');
-      }
-
-      handle.addEventListener('pointermove', move);
-      handle.addEventListener('pointerup', stop);
-      handle.addEventListener('pointercancel', stop);
-    });
-  }
-
-  window.__wm = { makeDraggable: makeDraggable, makeResizable: makeResizable };
-})();
-"#;
+pub const WINDOW_MANAGER_JS: &str = include_str!("../../../../js/window_manager.js");
 
 /// Responsive chrome + animations for every `WindowFrame`.
 ///
@@ -542,10 +486,10 @@ fn geometry_sync_js(handle_id: &str, win_id: &str) -> String {
 /// because of its `overflow-hidden`. Class strings are written literally
 /// so Tailwind's scanner picks them up.
 const RESIZE_HANDLES: [(&str, &str); 8] = [
-    ("n",  "top-0 left-3 right-3 h-1.5 cursor-ns-resize"),
-    ("s",  "bottom-0 left-3 right-3 h-1.5 cursor-ns-resize"),
-    ("w",  "left-0 top-3 bottom-3 w-1.5 cursor-ew-resize"),
-    ("e",  "right-0 top-3 bottom-3 w-1.5 cursor-ew-resize"),
+    ("n", "top-0 left-3 right-3 h-1.5 cursor-ns-resize"),
+    ("s", "bottom-0 left-3 right-3 h-1.5 cursor-ns-resize"),
+    ("w", "left-0 top-3 bottom-3 w-1.5 cursor-ew-resize"),
+    ("e", "right-0 top-3 bottom-3 w-1.5 cursor-ew-resize"),
     ("nw", "top-0 left-0 w-3 h-3 cursor-nwse-resize"),
     ("ne", "top-0 right-0 w-3 h-3 cursor-nesw-resize"),
     ("sw", "bottom-0 left-0 w-3 h-3 cursor-nesw-resize"),
@@ -574,7 +518,11 @@ pub fn WindowFrame(
     // clamping) lives in WINDOW_FRAME_CSS.
     let vars = format!(
         "--win-x:{x}px;--win-y:{y}px;--win-w:{w}px;--win-h:{h}px;z-index:{z};",
-        x = window.x, y = window.y, w = window.w, h = window.h, z = window.z,
+        x = window.x,
+        y = window.y,
+        w = window.w,
+        h = window.h,
+        z = window.z,
     );
 
     let frame_class = format!(
@@ -624,11 +572,8 @@ pub fn WindowFrame(
                     let script = geometry_sync_js(&handle_mount_id, &win_mount_id);
                     spawn(async move {
                         let mut geo_eval = document::eval(&script);
-                        loop {
-                            match geo_eval.recv::<(f64, f64, f64, f64)>().await {
-                                Ok((gx, gy, gw, gh)) => update_geometry(open_windows, id, gx, gy, gw, gh),
-                                Err(_) => break,
-                            }
+                        while let Ok((gx, gy, gw, gh)) = geo_eval.recv::<(f64, f64, f64, f64)>().await {
+                            update_geometry(open_windows, id, gx, gy, gw, gh);
                         }
                     });
                 },
@@ -682,5 +627,204 @@ pub fn WindowFrame(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ALL: [AppId; 9] = [
+        AppId::Calculator,
+        AppId::About,
+        AppId::Settings,
+        AppId::FileManager,
+        AppId::Radio,
+        AppId::Browser,
+        AppId::Embience,
+        AppId::LiveChat,
+        AppId::AiAssistant,
+    ];
+
+    fn list_with(ids: &[(AppId, i32)]) -> Vec<OpenWindow> {
+        ids.iter().map(|&(id, z)| new_window(id, z)).collect()
+    }
+
+    fn get(list: &[OpenWindow], id: AppId) -> &OpenWindow {
+        list.iter()
+            .find(|w| w.id == id)
+            .expect("window not in list")
+    }
+
+    #[test]
+    fn app_ids_have_unique_dom_keys_and_sane_metadata() {
+        let mut keys: Vec<_> = ALL.iter().map(|a| a.key()).collect();
+        keys.sort_unstable();
+        keys.dedup();
+        assert_eq!(
+            keys.len(),
+            ALL.len(),
+            "AppId::key() must be unique (used as DOM id)"
+        );
+        for a in ALL {
+            let (_, _, w, h) = a.default_geometry();
+            assert!(w > 0.0 && h > 0.0, "{a:?} has an empty default size");
+            assert!(!a.title().is_empty());
+        }
+    }
+
+    #[test]
+    fn open_adds_window_with_default_geometry() {
+        let mut list = Vec::new();
+        open_or_focus_in(&mut list, 5, AppId::Radio);
+        assert_eq!(list.len(), 1);
+        let w = get(&list, AppId::Radio);
+        assert_eq!(w.z, 5);
+        assert_eq!((w.x, w.y, w.w, w.h), AppId::Radio.default_geometry());
+    }
+
+    #[test]
+    fn reopening_focuses_restores_and_cancels_animations() {
+        let mut list = list_with(&[(AppId::Radio, 1), (AppId::About, 2)]);
+        {
+            let w = list.iter_mut().find(|w| w.id == AppId::Radio).unwrap();
+            w.minimized = true;
+            w.minimizing = true;
+            w.closing = true;
+        }
+        open_or_focus_in(&mut list, 9, AppId::Radio);
+        assert_eq!(list.len(), 2, "must not duplicate");
+        let w = get(&list, AppId::Radio);
+        assert_eq!(w.z, 9);
+        assert!(!w.minimized && !w.minimizing && !w.closing);
+    }
+
+    #[test]
+    fn toggle_action_follows_dock_rules() {
+        let mut list = list_with(&[(AppId::Radio, 1), (AppId::About, 2)]);
+        // not open
+        assert_eq!(
+            toggle_action(&list, AppId::Browser),
+            ToggleAction::OpenOrFocus
+        );
+        // topmost -> minimize
+        assert_eq!(toggle_action(&list, AppId::About), ToggleAction::Minimize);
+        // behind another window -> bring to front
+        assert_eq!(
+            toggle_action(&list, AppId::Radio),
+            ToggleAction::OpenOrFocus
+        );
+        // a minimized window with the highest z must not count as "top"
+        list.iter_mut()
+            .find(|w| w.id == AppId::About)
+            .unwrap()
+            .minimized = true;
+        assert_eq!(toggle_action(&list, AppId::Radio), ToggleAction::Minimize);
+        // minimized / animating windows get restored, not minimized again
+        assert_eq!(
+            toggle_action(&list, AppId::About),
+            ToggleAction::OpenOrFocus
+        );
+        list.iter_mut()
+            .find(|w| w.id == AppId::Radio)
+            .unwrap()
+            .closing = true;
+        assert_eq!(
+            toggle_action(&list, AppId::Radio),
+            ToggleAction::OpenOrFocus
+        );
+    }
+
+    #[test]
+    fn focus_only_writes_when_needed() {
+        let mut list = list_with(&[(AppId::Radio, 1), (AppId::About, 2)]);
+        assert!(!focus_in(&mut list, 3, AppId::About), "already frontmost");
+        assert_eq!(get(&list, AppId::About).z, 2);
+        assert!(!focus_in(&mut list, 3, AppId::Browser), "unknown id");
+        assert!(focus_in(&mut list, 3, AppId::Radio));
+        assert_eq!(get(&list, AppId::Radio).z, 3);
+    }
+
+    #[test]
+    fn close_is_two_phase_except_for_hidden_windows() {
+        let mut list = list_with(&[(AppId::Radio, 1), (AppId::About, 2)]);
+        list.iter_mut()
+            .find(|w| w.id == AppId::About)
+            .unwrap()
+            .minimizing = true;
+
+        request_close_in(&mut list, AppId::About);
+        let w = get(&list, AppId::About);
+        assert!(
+            w.closing && !w.minimizing,
+            "phase 1 only flags the animation"
+        );
+        assert_eq!(list.len(), 2);
+
+        close_in(&mut list, AppId::About);
+        assert_eq!(list.len(), 1, "phase 2 removes it");
+
+        // minimized => display:none => animationend never fires => remove now
+        list.iter_mut()
+            .find(|w| w.id == AppId::Radio)
+            .unwrap()
+            .minimized = true;
+        request_close_in(&mut list, AppId::Radio);
+        assert!(list.is_empty());
+    }
+
+    #[test]
+    fn minimize_is_two_phase_and_ignores_busy_windows() {
+        let mut list = list_with(&[(AppId::Radio, 1)]);
+        assert!(request_minimize_in(&mut list, AppId::Radio));
+        assert!(get(&list, AppId::Radio).minimizing);
+        minimize_in(&mut list, AppId::Radio);
+        let w = get(&list, AppId::Radio);
+        assert!(w.minimized && !w.minimizing);
+        assert!(
+            !request_minimize_in(&mut list, AppId::Radio),
+            "already minimized"
+        );
+
+        let mut closing = list_with(&[(AppId::About, 1)]);
+        closing[0].closing = true;
+        assert!(!request_minimize_in(&mut closing, AppId::About));
+        assert!(!closing[0].minimizing);
+    }
+
+    #[test]
+    fn maximize_toggles_without_touching_geometry() {
+        let mut list = list_with(&[(AppId::Radio, 1)]);
+        let before = (list[0].x, list[0].y, list[0].w, list[0].h);
+        toggle_maximize_in(&mut list, AppId::Radio);
+        assert!(list[0].maximized);
+        assert_eq!((list[0].x, list[0].y, list[0].w, list[0].h), before);
+        toggle_maximize_in(&mut list, AppId::Radio);
+        assert!(!list[0].maximized);
+    }
+
+    #[test]
+    fn geometry_updates_persist_for_known_ids_only() {
+        let mut list = list_with(&[(AppId::Radio, 1)]);
+        assert!(update_geometry_in(
+            &mut list,
+            AppId::Radio,
+            1.0,
+            2.0,
+            3.0,
+            4.0
+        ));
+        assert_eq!(
+            (list[0].x, list[0].y, list[0].w, list[0].h),
+            (1.0, 2.0, 3.0, 4.0)
+        );
+        assert!(!update_geometry_in(
+            &mut list,
+            AppId::Browser,
+            9.0,
+            9.0,
+            9.0,
+            9.0
+        ));
     }
 }

@@ -8,6 +8,7 @@ const SYSTEM_INFO1: [(&str, &str); 5] = [
     ("Desktop", "DeistifyNix (Wayland)"),
     ("Memory", "1.70 GB / 8.00 GB"),
 ];
+#[allow(dead_code)]
 const SYSTEM_INFO2: [(&str, &str); 5] = [
     ("Philosophy", "Declaratif Desktop OS (Joke)"),
     ("Design", "Black & White"),

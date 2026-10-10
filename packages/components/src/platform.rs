@@ -29,14 +29,18 @@ pub struct PlatformServices {
 
 impl Default for PlatformServices {
     fn default() -> Self {
-        Self { open_external: default_open_external }
+        Self {
+            open_external: default_open_external,
+        }
     }
 }
 
 fn default_open_external(url: &str) {
     let url = url.replace('\\', "\\\\").replace('\'', "\\'");
     spawn(async move {
-        document::eval(&format!("window.location.href = '{url}';")).await.ok();
+        document::eval(&format!("window.location.href = '{url}';"))
+            .await
+            .ok();
     });
 }
 
@@ -58,6 +62,7 @@ pub struct TimeoutFuture;
 
 #[cfg(not(target_arch = "wasm32"))]
 impl TimeoutFuture {
+    #[allow(clippy::new_ret_no_self, clippy::manual_async_fn)]
     pub fn new(millis: u32) -> impl std::future::Future<Output = ()> {
         async move {
             tokio::time::sleep(std::time::Duration::from_millis(u64::from(millis))).await;
@@ -209,7 +214,8 @@ pub mod http {
         body: String,
         headers: &[(&str, &str)],
     ) -> Result<Response, String> {
-        let mut builder = gloo_net::http::Request::post(url).header("Content-Type", "application/json");
+        let mut builder =
+            gloo_net::http::Request::post(url).header("Content-Type", "application/json");
         for (name, value) in headers {
             builder = builder.header(*name, *value);
         }
@@ -240,11 +246,7 @@ pub mod http {
         for (name, value) in headers {
             builder = builder.header(*name, *value);
         }
-        let resp = builder
-            .body(body)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
+        let resp = builder.body(body).send().await.map_err(|e| e.to_string())?;
         let status = resp.status().as_u16();
         let body = resp.text().await.unwrap_or_default();
         Ok(Response { status, body })

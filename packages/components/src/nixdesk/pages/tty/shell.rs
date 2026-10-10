@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::platform::Date;
+use dioxus::prelude::*;
 
 use super::clock::{format_date, format_time};
 
@@ -67,7 +67,11 @@ fn run_command(
     let in_subdir = cwd != HOME;
 
     match cmd {
-        "help" => (HELP_TEXT.iter().map(|s| s.to_string()).collect(), None, false),
+        "help" => (
+            HELP_TEXT.iter().map(|s| s.to_string()).collect(),
+            None,
+            false,
+        ),
         "pwd" => (vec![cwd.to_string()], None, false),
         "whoami" => (vec!["tquilla".to_string()], None, false),
         "ls" => {
@@ -86,13 +90,21 @@ fn run_command(
         },
         "cat" => match args.first().copied() {
             Some("about.txt") | Some("README") | Some("README.md") => (about_text(), None, false),
-            Some(name) => (vec![format!("cat: {name}: No such file or directory")], None, false),
+            Some(name) => (
+                vec![format!("cat: {name}: No such file or directory")],
+                None,
+                false,
+            ),
             None => (vec!["cat: missing file operand".to_string()], None, false),
         },
         "neofetch" | "about" => (about_text(), None, false),
         "date" => {
             let now = Date::new_0();
-            (vec![format!("{}, {}", format_date(&now), format_time(&now))], None, false)
+            (
+                vec![format!("{}, {}", format_date(&now), format_time(&now))],
+                None,
+                false,
+            )
         }
         "echo" => (vec![args.join(" ")], None, false),
         "history" => {
@@ -114,10 +126,20 @@ fn run_command(
         ),
         "switch" | "desktop" => {
             on_toggle.call(());
-            (vec!["switching to Desktop Mode...".to_string()], None, false)
+            (
+                vec!["switching to Desktop Mode...".to_string()],
+                None,
+                false,
+            )
         }
         "clear" => (vec![], None, true),
-        other => (vec![format!("command not found: {other}. Type 'help' for a list.")], None, false),
+        other => (
+            vec![format!(
+                "command not found: {other}. Type 'help' for a list."
+            )],
+            None,
+            false,
+        ),
     }
 }
 
@@ -160,7 +182,11 @@ pub fn ShellPanel(
         } else {
             let mut entries = history();
             let id = entries.len();
-            entries.push(ShellEntry { id, input: raw.clone(), output });
+            entries.push(ShellEntry {
+                id,
+                input: raw.clone(),
+                output,
+            });
             history.set(entries);
         }
         if let Some(dir) = new_cwd {

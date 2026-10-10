@@ -1,8 +1,9 @@
+use crate::platform::Date;
+use crate::time::relative_time;
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use dioxus::html::FileData;
 use dioxus::prelude::*;
-use crate::platform::Date;
 use serde::Deserialize;
-use base64::{engine::general_purpose::STANDARD, Engine as _};
 
 use crate::nixdesk::js_util::eval_js;
 
@@ -126,48 +127,6 @@ fn clear_file_input_js(id: &str) -> String {
     format!("const el = document.getElementById('{id}'); if (el) el.value = '';")
 }
 
-/// Duplicated from `tty/chat_preview.rs` — small enough that a shared
-/// module across Terminal and Desktop wasn't worth the cross-feature
-/// coupling.
-fn relative_time(iso: &str) -> String {
-    let then = Date::from_iso(iso).get_time();
-    let now = Date::now();
-    let diff_secs = ((now - then) / 1000.0).max(0.0);
-
-    let minutes = diff_secs / 60.0;
-    let hours = minutes / 60.0;
-    let days = hours / 24.0;
-    let weeks = days / 7.0;
-    let months = days / 30.0;
-    let years = days / 365.0;
-
-    fn plural(n: u32) -> &'static str {
-        if n == 1 { "" } else { "s" }
-    }
-
-    if minutes < 1.0 {
-        "just now".to_string()
-    } else if minutes < 60.0 {
-        let n = minutes as u32;
-        format!("{n} minute{} ago", plural(n))
-    } else if hours < 24.0 {
-        let n = hours as u32;
-        format!("{n} hour{} ago", plural(n))
-    } else if days < 7.0 {
-        let n = days as u32;
-        format!("{n} day{} ago", plural(n))
-    } else if weeks < 5.0 {
-        let n = weeks as u32;
-        format!("{n} week{} ago", plural(n))
-    } else if months < 12.0 {
-        let n = months as u32;
-        format!("{n} month{} ago", plural(n))
-    } else {
-        let n = years as u32;
-        format!("{n} year{} ago", plural(n))
-    }
-}
-
 /// Appends a new local message (session-only — there's no backend here,
 /// same honest scope as the rest of this portfolio simulation) and
 /// scrolls the list down. A plain function taking signals as explicit
@@ -214,7 +173,7 @@ pub fn LiveChatWindowContent() -> Element {
     let mut username = use_signal(String::new);
     let mut url = use_signal(String::new);
     let mut draft = use_signal(String::new);
-    let mut next_id = use_signal(|| 1000u32);
+    let next_id = use_signal(|| 1000u32);
     let mut avatar = use_signal(|| None::<String>);
     let mut attachment = use_signal(|| None::<String>);
     let mut upload_error = use_signal(|| None::<String>);
@@ -465,6 +424,81 @@ pub fn LiveChatWindowContent() -> Element {
                     class: "group text-[10px] sm:text-xs ml-2.5 inline-flex bg-[var(--bg-secondary)] border-0 hover:bg-[var(--fg-main)] items-center text-[var(--fg-main)] hover:text-[var(--bg-secondary)] gap-2.5 sm:ml-5 p-2.5 flex-[0_0_auto] justify-center relative cursor-pointer",
                     "Send"
                 }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalize_url_rejects_empty_and_whitespace() {
+        assert_eq!(normalize_url(""), None);
+        assert_eq!(normalize_url("   "), None);
+        assert_eq!(normalize_url("exa mple.com"), None);
+    }
+
+    #[test]
+    fn normalize_url_keeps_http_schemes_and_adds_https() {
+        assert_eq!(
+            normalize_url("https://a.dev/x").as_deref(),
+            Some("https://a.dev/x")
+        );
+        assert_eq!(
+            normalize_url("http://a.dev").as_deref(),
+            Some("http://a.dev")
+        );
+        assert_eq!(
+            normalize_url("HTTP://A.DEV").as_deref(),
+            Some("HTTP://A.DEV")
+        );
+        assert_eq!(normalize_url("  a.dev ").as_deref(), Some("https://a.dev"));
+    }
+
+    #[test]
+    fn normalize_url_never_yields_a_dangerous_scheme() {
+        // The result is used as an <a href>, so it must always start with
+        // http(s):// — even for javascript:/data: input.
+        for raw in [
+            "javascript:alert(1)",
+            "data:text/html,<b>x</b>",
+            "vbscript:x",
+            "JaVaScRiPt:alert(1)",
+        ] {
+            let out = normalize_url(raw).expect("no whitespace => accepted");
+            let lower = out.to_ascii_lowercase();
+            assert!(
+                lower.starts_with("https://") || lower.starts_with("http://"),
+                "{raw} -> {out}"
+            );
+        }
+    }
+
+    #[test]
+    fn default_avatar_is_stable_per_username() {
+        assert_eq!(
+            default_avatar_for("tquilla").to_string(),
+            default_avatar_for("tquilla").to_string()
+        );
+    }
+
+    #[test]
+    fn seed_messages_parse_with_unique_ids_and_valid_links() {
+        let msgs = load_seed_messages();
+        assert!(
+            !msgs.is_empty(),
+            "chat_sample.json failed to parse or is empty"
+        );
+        let mut ids: Vec<_> = msgs.iter().map(|m| m.id).collect();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), msgs.len(), "duplicate message_id");
+        for m in &msgs {
+            assert!(!m.username.is_empty() && !m.message.is_empty());
+            if let Some(u) = &m.url {
+                assert!(u.starts_with("http://") || u.starts_with("https://"));
             }
         }
     }

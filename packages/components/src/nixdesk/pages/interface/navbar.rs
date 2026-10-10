@@ -6,6 +6,7 @@ const VOLUME_ICON: Asset = asset!("/assets/icon-volume.svg");
 const BRIGHTNESS_ICON: Asset = asset!("/assets/icon-color-scheme.svg");
 const BATTERY_ICON: Asset = asset!("/assets/icon-battery.svg");
 const NOTIFICATION_ICON: Asset = asset!("/assets/icon-notification.svg");
+#[allow(dead_code)]
 const NOTIFICATION_ICON_SILENT: Asset = asset!("/assets/icon-notification-silent.svg");
 const TOGGLE_ICON: Asset = asset!("/assets/icon-toggle-popup.svg");
 const ICON_CLOSE: Asset = asset!("/assets/icon-close.svg");
@@ -24,7 +25,12 @@ const MENU_ITEMS: [&str; 6] = ["File", "Edit", "View", "Go", "Tools", "Settings"
 /// turns this into the two-column "NixMobile" layout instead of clipping
 /// or simply disappearing on narrow screens.
 #[component]
-pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandler<()>, brightness: Signal<u8>) -> Element {
+pub fn Navbar(
+    time: Signal<String>,
+    date: Signal<String>,
+    on_toggle: EventHandler<()>,
+    brightness: Signal<u8>,
+) -> Element {
     let mut show_about = use_signal(|| false);
     let mut active_menu = use_signal(|| Option::<usize>::None);
     let mut nav_menu_open = use_signal(|| false);
@@ -35,7 +41,10 @@ pub fn Navbar(time: Signal<String>, date: Signal<String>, on_toggle: EventHandle
     let mut status_menu_open = use_signal(|| false);
 
     let menu_hint = match active_menu() {
-        Some(i) => format!("Menu \"{}\" — masih dekorasi, belum ada isinya.", MENU_ITEMS[i]),
+        Some(i) => format!(
+            "Menu \"{}\" — masih dekorasi, belum ada isinya.",
+            MENU_ITEMS[i]
+        ),
         None => String::new(),
     };
 

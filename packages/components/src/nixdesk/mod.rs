@@ -1,13 +1,13 @@
 mod clock;
-mod pages;
 mod gui;
 mod js_util;
+mod pages;
 
-use dioxus::prelude::*;
 use crate::platform::TimeoutFuture;
+use dioxus::prelude::*;
 
-use pages::*;
 use crate::shared::PageMeta;
+use pages::*;
 
 #[component]
 pub fn DesktopPage() -> Element {

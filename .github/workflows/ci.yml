@@ -1,0 +1,52 @@
+name: CI
+
+# Dipakai dua cara: otomatis di setiap pull request, dan dipanggil oleh
+# deploy-page.yml (`uses: ./.github/workflows/ci.yml`) sehingga deploy ke
+# production TIDAK jalan kalau format/clippy/test gagal.
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: fmt + clippy + test (components)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Versi harus sama dengan rust-toolchain.toml.
+      - uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (warning = error)
+        # Hanya `components`: itu tempat seluruh UI. Paket desktop/mobile
+        # belum bisa dibangun (lihat README, bagian "Fullstack dan database").
+        run: cargo clippy -p components --all-targets -- -D warnings
+
+      - name: Unit test
+        run: cargo test -p components
+
+  js:
+    name: node test (js/ yang dijalankan lewat document::eval)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test
+        run: node --test "packages/components/js/tests/*.test.js"
+
+      - name: Test skrip postbuild
+        run: python3 -m unittest discover -s scripts -p "test_*.py" -v

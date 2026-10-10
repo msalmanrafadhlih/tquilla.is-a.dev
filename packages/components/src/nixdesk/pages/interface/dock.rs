@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
-use crate::shared::{DISCORD_URL, GITHUB_URL, LINKEDIN_URL};
 use super::window::{toggle_window, AppId, OpenWindow};
+use crate::shared::{DISCORD_URL, GITHUB_URL, LINKEDIN_URL};
 
 const GITHUB_ICON: Asset = asset!("/assets/icon-github.svg");
 const DISCORD_ICON: Asset = asset!("/assets/icon-discord.svg");
@@ -17,6 +17,7 @@ const CALCULATOR_ICON: Asset = asset!("/assets/logo-calculator.svg");
 const NIXOS_ICON: Asset = asset!("/assets/Icon-nixos.svg");
 const LIVE_CHAT_ICON: Asset = asset!("/assets/logo-livechat.svg");
 
+#[allow(dead_code)]
 const LABEL_CLASS: &str = "relative flex items-center justify-center group-hover:block md:hidden w-auto max-w-max whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] font-normal text-white text-sm text-center tracking-[0] leading-[normal] group-hover:text-black";
 const IMG_CLASS: &str = "relative w-5 h-5 aspect-[1] group-hover:invert transition-transform duration-300 ease-out group-hover:scale-110";
 
@@ -41,9 +42,8 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
 
     // Indikator tetap tampil selama window masih ada (terbuka ATAU minimized).
     // Hilang hanya saat benar-benar ditutup.
-    let has_window = move |app_id: AppId| {
-        open_windows().iter().any(|w| w.id == app_id && !w.closing)
-    };
+    let has_window =
+        move |app_id: AppId| open_windows().iter().any(|w| w.id == app_id && !w.closing);
 
     rsx! {
         footer { class: "relative flex w-full flex-none items-center justify-center gap-2.5 px-2.5 pb-2.5 md:pb-0 z-[999] rounded-3xl border-b-[0.5px] border-white backdrop-blur-sm bg-[image:var(--linear-b)]",

@@ -25,7 +25,13 @@ fn close(a: f64, b: f64, tol: f64) -> bool {
 macro_rules! assert_close {
     ($expr:expr, $want:expr, $tol:expr) => {{
         let got = num($expr);
-        assert!(close(got, $want, $tol), "{} = {} (harusnya {})", $expr, got, $want);
+        assert!(
+            close(got, $want, $tol),
+            "{} = {} (harusnya {})",
+            $expr,
+            got,
+            $want
+        );
     }};
 }
 
@@ -55,7 +61,10 @@ fn perkalian_implisit_dan_kurung_terbuka() {
 
 #[test]
 fn error_aritmetika() {
-    assert_eq!(text("1÷0", Angle::Rad), "ERR: Tidak bisa membagi dengan nol");
+    assert_eq!(
+        text("1÷0", Angle::Rad),
+        "ERR: Tidak bisa membagi dengan nol"
+    );
     assert!(text("(-1)!", Angle::Rad).starts_with("ERR"));
     assert!(text("ln(0)", Angle::Rad).starts_with("ERR"));
     assert!(text("√(-4)", Angle::Rad).starts_with("ERR"));

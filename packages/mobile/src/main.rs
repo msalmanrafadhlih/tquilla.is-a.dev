@@ -3,7 +3,6 @@
 use components::{App as SharedApp, PlatformServices};
 use dioxus::prelude::*;
 
-const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
 fn main() {
     dioxus::launch(App);
@@ -14,7 +13,6 @@ fn App() -> Element {
     use_context_provider(|| PlatformServices { open_external });
 
     rsx! {
-        document::Stylesheet { href: TAILWIND_CSS }
         SharedApp {}
     }
 }
@@ -25,6 +23,8 @@ fn App() -> Element {
 fn open_external(url: &str) {
     let url = url.replace('\\', "\\\\").replace('\'', "\\'");
     spawn(async move {
-        document::eval(&format!("window.location.href = '{url}';")).await.ok();
+        document::eval(&format!("window.location.href = '{url}';"))
+            .await
+            .ok();
     });
 }

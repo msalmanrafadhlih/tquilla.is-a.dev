@@ -1,0 +1,8 @@
+# Toolchain dikunci supaya build lokal, CI, dan hasil clippy sama.
+# Naikkan versinya sengaja (bersama `dtolnay/rust-toolchain@<versi>` di
+# .github/workflows/*.yml), jangan biarkan `stable` bergeser sendiri.
+# Target wasm32 sengaja TIDAK ditulis di sini: CI memasangnya lewat action,
+# dan `dx` memasangnya sendiri di mesin lokal.
+[toolchain]
+channel = "1.97.0"
+components = ["rustfmt", "clippy"]

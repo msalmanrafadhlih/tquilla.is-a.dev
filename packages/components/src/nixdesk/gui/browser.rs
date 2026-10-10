@@ -24,18 +24,26 @@ fn add_bookmark(
 ) {
     let label = new_label().trim().to_string();
     let url = new_url().trim().to_string();
-    if label.is_empty() || url.is_empty() { return; }
-    let url = if url.starts_with("http://") || url.starts_with("https://") { url } else { format!("https://{url}") };
+    if label.is_empty() || url.is_empty() {
+        return;
+    }
+    let url = if url.starts_with("http://") || url.starts_with("https://") {
+        url
+    } else {
+        format!("https://{url}")
+    };
 
     let mut list = bookmarks();
-    list.push(Bookmark { placeholder: label, url });
+    list.push(Bookmark {
+        placeholder: label,
+        url,
+    });
     let idx = list.len() - 1;
     bookmarks.set(list);
     selected.set(idx);
     new_label.set(String::new());
     new_url.set(String::new());
 }
-
 
 fn tab_class(active: bool) -> &'static str {
     const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--fg-main)] text-xs text-[var(--bg-secondary)] border-0";
@@ -57,10 +65,10 @@ pub fn BrowserWindowContent() -> Element {
     let mut form_open = use_signal(|| false);
 
     let list = bookmarks();
-    let current = list
-        .get(selected())
-        .cloned()
-        .unwrap_or(Bookmark { placeholder: String::new(), url: String::new() });
+    let current = list.get(selected()).cloned().unwrap_or(Bookmark {
+        placeholder: String::new(),
+        url: String::new(),
+    });
 
     rsx! {
         div {
@@ -117,12 +125,11 @@ pub fn BrowserWindowContent() -> Element {
                             placeholder: "https://...",
                             class: "w-full h-full py-2 flex-1 min-w-0 bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
                             value: "{new_url}",
-                            onkeydown: move |evt: KeyboardEvent| match evt.key() {
-                                Key::Enter => {
+                            onkeydown: move |evt: KeyboardEvent| {
+                                if evt.key() == Key::Enter {
                                     evt.prevent_default();
                                     add_bookmark(bookmarks, selected, new_label, new_url);
                                 }
-                                _ => {}
                             },
                             oninput: move |evt: FormEvent| new_url.set(evt.value()),
                         }
@@ -174,4 +181,21 @@ pub fn BrowserWindowContent() -> Element {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn bookmarks_parse_and_point_to_http_urls() {
+        let list = load_bookmarks();
+        assert!(!list.is_empty(), "browser.json failed to parse or is empty");
+        for b in &list {
+            assert!(!b.placeholder.is_empty());
+            assert!(
+                b.url.starts_with("http://") || b.url.starts_with("https://"),
+                "{}",
+                b.url
+            );
+        }
+    }
+}

@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
 use crate::platform::TimeoutFuture;
 use crate::shared::AVATAR;
+use dioxus::prelude::*;
 
 const TYPE_DELAY_MS: u32 = 150;
 const DEMO_PASSWORD: &str = "msalmanrafadhlih";
@@ -42,7 +42,7 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
     });
 
     rsx! {
-        main { 
+        main {
             class: "relative min-h-screen w-full bg-[var(--bg-main)] text-white font-mono antialiased overflow-hidden selection:bg-green-500/30 transition-opacity duration-500 ease-in",
             class: if loaded() { "opacity-100" } else { "opacity-0" },
             onmounted: move |_| {

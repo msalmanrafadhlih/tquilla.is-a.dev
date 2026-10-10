@@ -1,10 +1,1 @@
-[application]
-name = "NixOS Desktop"
-default_platform = "web"
-
-[web.app]
-title = "tquilla.is-a.dev"
-
-[web.wasm_opt]
-debug = false
-level = "z"
+# Salinan lain ada di ../../Dioxus.toml (bagian [web.wasm_opt]): ubah keduanya bersamaan.

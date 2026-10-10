@@ -9,11 +9,14 @@ Live: <https://tquilla.is-a.dev>
 | Paket | Isi |
 | --- | --- |
 | `packages/components` | Semua UI bersama (routing, halaman, window manager, aplikasi dock, data JSON) |
+| `packages/components/js/` | JS yang dijalankan lewat `document::eval` (window manager, audio/hls, scroll reveal, context menu) + test node di `js/tests/` |
 | `packages/web` | Entry point web (launch, Tailwind, `PlatformServices` browser) |
 | `packages/desktop` | Entry point desktop (⚠️ belum jalan, ditunda) |
 | `packages/mobile` | Entry point Android (⚠️ belum jalan, ditunda) |
 | `site/` | File statis untuk deploy: `robots.txt`, `sitemap.xml`, snippet `<head>` (SEO/Open Graph) dan `<noscript>` |
-| `scripts/postbuild.py` | Langkah pasca-build di CI: menyuntik `site/*` ke output `dx bundle` |
+| `scripts/postbuild.py` | Langkah pasca-build di CI: menyuntik `site/*` ke output `dx bundle` (tes: `scripts/test_postbuild.py`) |
+| `.github/workflows/` | `ci.yml` (fmt, clippy, test Rust, test node/python; jalan di tiap PR dan sebelum deploy) dan `deploy-page.yml` (build + deploy ke Pages) |
+| `rust-toolchain.toml` | Versi Rust dikunci (1.97.0); naikkan bersama workflow |
 
 ## Menjalankan
 
@@ -26,7 +29,15 @@ web-build    # dx bundle --package web --platform web --release
 
 > Fokus saat ini: **build web saja**. Desktop dan mobile masih error dan sengaja ditunda.
 
-Tes engine kalkulator (logika murni, tanpa browser): `cargo test -p components`.
+Cek yang sama dengan CI (semuanya harus hijau sebelum commit):
+
+```sh
+cargo fmt --all -- --check
+cargo clippy -p components --all-targets -- -D warnings
+cargo test -p components                                   # 50 test: engine kalkulator, window manager, parsing data, URL, waktu
+node --test "packages/components/js/tests/*.test.js"       # 13 test JS dengan DOM tiruan
+python3 -m unittest discover -s scripts -p "test_*.py"     # 6 test postbuild
+```
 
 ---
 
@@ -67,7 +78,7 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
   - [x] Tag statis untuk crawler preview link (tidak menjalankan WASM): `site/head.html` disuntik ke `index.html` oleh `scripts/postbuild.py` di CI, lengkap dengan `<html lang="en">` dan `<noscript>`
   - [x] `robots.txt` dan `sitemap.xml` (`site/`), disalin ke output oleh `postbuild.py`
   - [ ] Cek hasil deploy: lihat sumber halaman live dan tes link di <https://opengraph.xyz> atau debugger Facebook/WhatsApp
-  - [ ] Kartu preview yang lebih besar (`summary_large_image`) butuh gambar 1200×630; sekarang memakai avatar persegi
+  - [x] Kartu preview besar (`summary_large_image`): gambar 1200×630 ada di `site/og-image.jpg`, disalin ke root output oleh `postbuild.py` (URL tetap `/og-image.jpg`). Edit gambarnya kalau mau tampilan lain; ukuran dan nama file jangan diubah
 - [x] **#11** Judul tab seragam ("`<Halaman>` | tquilla.is-a.dev"). Ejaan **`deisktify`** sengaja dipertahankan (URL, judul, komentar), jadi tidak ada rename atau redirect. Typo label di `generations.json` ("Github Jounal") diperbaiki jadi "GitHub Journal"
 - [x] **#12** Aksesibilitas
   - [x] `alt=""` untuk 2 ikon dekoratif di livechat (hasil audit ulang: hanya 2 `img` yang belum punya `alt`, bukan 5)
@@ -75,20 +86,27 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
   - [x] `prefers-reduced-motion` berlaku global (`base.css`); animasi boot dan login sudah punya aturan sendiri
   - [ ] Uji dengan screen reader (NVDA/VoiceOver) dan navigasi keyboard penuh
 - [x] **#13** Auto-boot di Home dibatalkan oleh interaksi apa pun (tombol, hover, klik, sentuh); teks berubah jadi "Auto boot cancelled"
-- [x] **#14** `LINKEDIN_URL` memakai profilmu dari `generations.json` (`linkedin.com/in/msalmanrafadhlih`)
-  - [ ] `DISCORD_URL` masih invite komunitas "Motion IME" (sama seperti di `browser.json`), bukan profil pribadi. Ganti di `shared.rs` kalau ada yang lain
+- [x] **#14** `LINKEDIN_URL` memakai profilmu dari `generations.json` (`linkedin.com/in/msalmanrafadhlih`). `DISCORD_URL` **sengaja** tetap invite komunitas "Motion IME" (keputusan 2026-10-09, jangan diganti)
 - [x] **#15** Bahasa UI: **Inggris** untuk semua teks antarmuka (hint di Home sekarang berbahasa Inggris, sama seperti AI chat, login, dan banner). Pengecualian disengaja: **kalkulator tetap berbahasa Indonesia** (Aljabar/Trigonometri/Kalkulus, "Benar/Salah", koma desimal) karena memang dibuat dengan locale Indonesia. Ubah keputusan ini kalau mau kalkulator juga berbahasa Inggris (perlu menyesuaikan `engine/tests.rs`)
 
 > Catatan: P3 dicek dengan `cargo check`, `cargo test`, dan uji `postbuild.py` pada `index.html` tiruan (termasuk dijalankan dua kali, dan kasus gagal). Belum dijalankan di browser. Uji manual: (1) `/`: biarkan 10 detik (redirect ke `/deisktify`), lalu ulangi dan tekan tombol apa saja (hitungan berhenti); navigasi ↑/↓/j/k/Enter; klik area kosong lalu tekan ↓; (2) cek judul tab tiap route; (3) setelah deploy: "view-source" dan cek `og:*`, `lang="en"`, `robots.txt`, `sitemap.xml`; (4) aktifkan "reduce motion" di OS dan cek boot, login, dan jendela.
 
 ## 🔵 Prioritas 4: kualitas kode dan CI
 
-- [ ] **#16** CI: tambah job `cargo fmt --check`, `cargo clippy`, `cargo test` sebelum build
-- [ ] **#17** Pin versi di CI (`dtolnay/rust-toolchain`, `cargo-binstall`) dan verifikasi checksum binary Tailwind, atau pakai `rust-toolchain.toml`
-- [ ] **#18** Tambah test: `normalize_url`, `relative_time`, parsing bookmark, state window manager
-- [ ] **#19** Pindahkan JS inline (`document::eval`, `WINDOW_MANAGER_JS`) ke file `.js` sebagai aset
-- [ ] **#20** Hapus duplikasi `relative_time` (livechat dan `tty/chat_preview.rs`)
-- [ ] **#21** Rapikan repo: dokumentasi (file ini), `AGENTS.md`, dan pastikan hanya satu `Dioxus.toml` yang dipakai
+- [x] **#16** CI: `.github/workflows/ci.yml` menjalankan `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`, test node, dan test postbuild. Jalan di tiap pull request, dan dipanggil `deploy-page.yml` (`needs: check`), jadi deploy tidak jalan kalau ada yang merah. Seluruh kode sudah diformat dengan `cargo fmt` (diff besar satu kali, sekali ini saja) dan 21 warning clippy dibereskan
+  - [ ] Jalankan sekali di GitHub dan pastikan hijau. Workflow ini belum pernah dijalankan (sandbox tidak punya akses ke GitHub Actions)
+  - [ ] Makro `rsx!` tidak diformat oleh `cargo fmt`; kalau mau seragam, jalankan `dx fmt` (belum dipakai di CI)
+- [x] **#17** Pin versi
+  - [x] `rust-toolchain.toml` + `dtolnay/rust-toolchain@1.97.0` (komponen rustfmt, clippy; target wasm32 di job build)
+  - [x] Binary Tailwind v4.1.11: `curl -f`, dan checksum diverifikasi kalau variable repo `TAILWIND_SHA256` di-set; kalau belum, step memberi **warning berisi hash**. Tindakan kamu: jalankan deploy sekali, salin hash dari warning ke Settings → Secrets and variables → Actions → **Variables** → `TAILWIND_SHA256`
+  - [ ] `cargo-bins/cargo-binstall@main` masih mengikuti branch `main` (tidak bisa saya verifikasi tag-nya dari sandbox). Ganti ke tag/commit SHA terbaru yang kamu percayai
+- [x] **#18** Test: 50 test Rust (`normalize_url`, `relative_time_between`, parsing semua JSON data, link `generations.json` valid sebagai `Route`, state window manager, mapping ikon embience, engine kalkulator) + 13 test JS + 6 test postbuild. Logika state window kini fungsi murni (`open_or_focus_in`, `close_in`, `toggle_maximize_in`, ...) dengan wrapper `Signal` tipis
+- [x] **#19** JS inline dipindah ke `packages/components/js/*.js` (`include_str!`, semantik `document::eval` tidak berubah), lengkap dengan test node. JS satu-dua baris di `livechat.rs` dan `geometry_sync_js` (berisi interpolasi id) sengaja dibiarkan inline
+- [x] **#20** `relative_time` digabung ke `time.rs` (dipakai livechat dan `tty/chat_preview.rs`), dengan test
+- [x] **#21** Rapikan repo: `AGENTS.md` kini diawali panduan khusus project, kedua `Dioxus.toml` diberi catatan "ubah bersamaan" (belum terverifikasi mana yang dibaca `dx`, jadi keduanya dipertahankan), README diperbarui
+  - [ ] `.gitignore` berisi baris `/packages/components/src/nixdesk/mod.rs` ("activating splash screen"). File itu sudah di-track dan dipakai, jadi ignore tidak berpengaruh, tetapi file baru dengan path itu tidak akan masuk git. Hapus baris itu kalau memang tidak disengaja
+
+> Bug yang ikut ketemu dan diperbaiki saat refactor: tombol brightness tidak berpengaruh karena overlay peredupnya tidak pernah dirender (`pages/interface/mod.rs`). Dicek dengan `cargo fmt`/`clippy`/`test` dan test JS, belum dijalankan di browser.
 
 ---
 

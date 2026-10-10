@@ -20,19 +20,43 @@ pub struct Key {
 }
 
 const fn txt(label: &'static str, insert: &'static str) -> Key {
-    Key { label, mathml: false, italic: false, action: Action::Insert(insert), title: "" }
+    Key {
+        label,
+        mathml: false,
+        italic: false,
+        action: Action::Insert(insert),
+        title: "",
+    }
 }
 
 const fn var(label: &'static str) -> Key {
-    Key { label, mathml: false, italic: true, action: Action::Insert(label), title: "" }
+    Key {
+        label,
+        mathml: false,
+        italic: true,
+        action: Action::Insert(label),
+        title: "",
+    }
 }
 
 const fn ml(label: &'static str, insert: &'static str, title: &'static str) -> Key {
-    Key { label, mathml: true, italic: false, action: Action::Insert(insert), title }
+    Key {
+        label,
+        mathml: true,
+        italic: false,
+        action: Action::Insert(insert),
+        title,
+    }
 }
 
 const fn act(label: &'static str, action: Action, title: &'static str) -> Key {
-    Key { label, mathml: false, italic: false, action, title }
+    Key {
+        label,
+        mathml: false,
+        italic: false,
+        action,
+        title,
+    }
 }
 
 // ------------------------------------------------------------- keypad utama (4 kolom)
@@ -63,13 +87,33 @@ pub const MAIN: &[Key] = &[
 // ------------------------------------------------------------------- Aljabar (3 kolom)
 
 pub const ALJABAR: &[Key] = &[
-    ml("<math><msup><mi>□</mi><mi>□</mi></msup></math>", "^", "Pangkat: 2^3 (gunakan kurung untuk pangkat panjang)"),
-    ml("<math><mroot><mi>□</mi><mi>□</mi></mroot></math>", "root(", "Akar ke-n: root(n; x)"),
+    ml(
+        "<math><msup><mi>□</mi><mi>□</mi></msup></math>",
+        "^",
+        "Pangkat: 2^3 (gunakan kurung untuk pangkat panjang)",
+    ),
+    ml(
+        "<math><mroot><mi>□</mi><mi>□</mi></mroot></math>",
+        "root(",
+        "Akar ke-n: root(n; x)",
+    ),
     txt("<", "<"),
-    ml("<math><mfrac><mi>□</mi><mi>□</mi></mfrac></math>", "frac(", "Pecahan: frac(atas; bawah)"),
-    ml("<math><mo>|</mo><mi>□</mi><mo>|</mo></math>", "abs(", "Nilai mutlak"),
+    ml(
+        "<math><mfrac><mi>□</mi><mi>□</mi></mfrac></math>",
+        "frac(",
+        "Pecahan: frac(atas; bawah)",
+    ),
+    ml(
+        "<math><mo>|</mo><mi>□</mi><mo>|</mo></math>",
+        "abs(",
+        "Nilai mutlak",
+    ),
     txt("≤", "≤"),
-    ml("<math><msub><mi>log</mi><mi>□</mi></msub></math>", "log(", "log(x) basis 10, atau log(basis; x)"),
+    ml(
+        "<math><msub><mi>log</mi><mi>□</mi></msub></math>",
+        "log(",
+        "log(x) basis 10, atau log(basis; x)",
+    ),
     ml("<math><mi>□</mi><mo>!</mo></math>", "!", "Faktorial"),
     txt(">", ">"),
     var("i"),
@@ -95,8 +139,16 @@ pub const TRIGONOMETRI: &[Key] = &[
     txt("arcsin", "arcsin("),
     txt("arccos", "arccos("),
     txt("arctan", "arctan("),
-    ml("<math><msup><mi>□</mi><mn>2</mn></msup></math>", "^2", "Kuadrat"),
-    ml("<math><msup><mi>□</mi><mo>°</mo></msup></math>", "°", "Derajat"),
+    ml(
+        "<math><msup><mi>□</mi><mn>2</mn></msup></math>",
+        "^2",
+        "Kuadrat",
+    ),
+    ml(
+        "<math><msup><mi>□</mi><mo>°</mo></msup></math>",
+        "°",
+        "Derajat",
+    ),
     txt("π", "π"),
     var("x"),
     var("y"),

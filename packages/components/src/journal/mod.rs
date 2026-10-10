@@ -6,14 +6,15 @@ mod util;
 
 use dioxus::prelude::*;
 
+use crate::shared::{PageMeta, PLAYFAIR_FONT_URL};
 use components::{ChronicleSection, EndOfStream, Footer, Hero, PinnedSection};
 use data::AppData;
-use crate::shared::{PageMeta, PLAYFAIR_FONT_URL};
 
 /// Fonts that only this route uses (kept out of `app.rs` so `/` and
 /// `/deisktify` don't download them). Inter 600 was dropped: nothing here
 /// uses `font-semibold`.
-const INTER_FONT_URL: &str = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap";
+const INTER_FONT_URL: &str =
+    "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap";
 const MATERIAL_SYMBOLS_URL: &str = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap";
 
 /// Bundled at compile time so the page always has something to render
@@ -55,12 +56,18 @@ async fn load_data() -> Result<Loaded, String> {
     if let Ok(resp) = crate::platform::http::get(STATS_API_URL).await {
         if resp.ok() {
             if let Ok(data) = serde_json::from_str::<AppData>(&resp.body) {
-                return Ok(Loaded { data, source: DataSource::Live });
+                return Ok(Loaded {
+                    data,
+                    source: DataSource::Live,
+                });
             }
         }
     }
     serde_json::from_str::<AppData>(SAMPLE_DATA)
-        .map(|data| Loaded { data, source: DataSource::Snapshot })
+        .map(|data| Loaded {
+            data,
+            source: DataSource::Snapshot,
+        })
         .map_err(|e| e.to_string())
 }
 
@@ -132,5 +139,18 @@ fn Page(data: AppData, source: DataSource) -> Element {
             EndOfStream {}
             Footer { year: today.year }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bundled_sample_matches_the_live_api_shape() {
+        // If AppData changes, the offline-snapshot fallback must still parse.
+        let data: AppData = serde_json::from_str(SAMPLE_DATA)
+            .expect("journal.sample.json no longer matches AppData");
+        assert!(!data.pinned.is_empty());
     }
 }

@@ -63,9 +63,7 @@ pub fn sum(ctx: &mut Ctx, args: &[Expr]) -> Result<f64, CalcError> {
         ));
     }
     if a.fract() != 0.0 || b.fract() != 0.0 {
-        return Err(CalcError::Domain(
-            "Batas Σ harus bilangan bulat".into(),
-        ));
+        return Err(CalcError::Domain("Batas Σ harus bilangan bulat".into()));
     }
     if b < a {
         return Ok(0.0);
@@ -90,7 +88,11 @@ pub fn sum(ctx: &mut Ctx, args: &[Expr]) -> Result<f64, CalcError> {
 /// `dir` = +1 (dari kanan) atau -1 (dari kiri). Untuk a = ±∞ dipakai x = ±1/t, t → 0⁺.
 fn one_sided(ctx: &mut Ctx, f: &Expr, v: char, a: f64, dir: f64) -> Result<f64, CalcError> {
     const N: usize = 7;
-    let h0 = if a.is_infinite() { 0.1 } else { 0.1 * a.abs().max(1.0) };
+    let h0 = if a.is_infinite() {
+        0.1
+    } else {
+        0.1 * a.abs().max(1.0)
+    };
     let mut g = [0.0_f64; N];
     for (k, slot) in g.iter_mut().enumerate() {
         let h = h0 / f64::powi(2.0, k as i32);
@@ -139,11 +141,19 @@ fn one_sided(ctx: &mut Ctx, f: &Expr, v: char, a: f64, dir: f64) -> Result<f64, 
 /// Cadangan untuk fungsi tidak mulus (mis. √x di 0): sampel pada h yang sangat kecil
 /// dan terima hanya bila selisih antar-sampel menyusut.
 fn non_smooth(ctx: &mut Ctx, f: &Expr, v: char, a: f64, dir: f64) -> Result<f64, CalcError> {
-    let scale = if a.is_infinite() { 1.0 } else { a.abs().max(1.0) };
+    let scale = if a.is_infinite() {
+        1.0
+    } else {
+        a.abs().max(1.0)
+    };
     let mut g = [0.0_f64; 3];
     for (k, slot) in g.iter_mut().enumerate() {
         let h = scale * 10f64.powi(-9 - 2 * k as i32);
-        let x = if a.is_infinite() { a.signum() / h } else { a + dir * h };
+        let x = if a.is_infinite() {
+            a.signum() / h
+        } else {
+            a + dir * h
+        };
         *slot = ctx.eval_at(f, v, x)?;
     }
     let (d1, d2) = ((g[1] - g[0]).abs(), (g[2] - g[1]).abs());
@@ -273,7 +283,12 @@ pub fn integral(ctx: &mut Ctx, args: &[Expr]) -> Result<f64, CalcError> {
         return Ok(0.0);
     }
     if a > b {
-        let swapped = [args[0].clone(), args[1].clone(), args[3].clone(), args[2].clone()];
+        let swapped = [
+            args[0].clone(),
+            args[1].clone(),
+            args[3].clone(),
+            args[2].clone(),
+        ];
         return integral(ctx, &swapped).map(|r| -r);
     }
 

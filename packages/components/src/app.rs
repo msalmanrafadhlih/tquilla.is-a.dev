@@ -9,7 +9,8 @@ use crate::nixdesk::DesktopPage;
 //   - Inter + Playfair Display + Material Symbols -> `journal` (`/profile`)
 //   - Playfair Display (italic)                    -> kalkulator (keypad)
 //   - hls.js                                       -> `AUDIO_JS` (saat stream .m3u8 diputar)
-const FONTS_URL: &str = "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap";
+const FONTS_URL: &str =
+    "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap";
 
 // Plain CSS owned by this crate. Tailwind is *not* here: its output is
 // generated per platform package (each one scans this crate's sources).

@@ -26,7 +26,10 @@ fn last_number_has_decimal(expr: &str) -> bool {
 /// `fresh` = true bila ekspresi saat ini adalah hasil dari menekan "=".
 pub fn insert(expr: &mut String, fresh: bool, text: &str) {
     if fresh {
-        let continues = text.chars().next().is_some_and(|c| CONTINUATIONS.contains(c));
+        let continues = text
+            .chars()
+            .next()
+            .is_some_and(|c| CONTINUATIONS.contains(c));
         if !continues {
             expr.clear();
         }

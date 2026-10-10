@@ -9,16 +9,9 @@ use navbar::Navbar;
 use window::{AppId, OpenWindow, WindowFrame, WINDOW_FRAME_CSS, WINDOW_MANAGER_JS};
 
 use crate::nixdesk::gui::{
-    AiAssistantWindowContent,
-    AUDIO_JS,
-    BrowserWindowContent,
-    Calculator,
-    EmbienceWindowContent,
-    FileManagerWindowContent,
-    LiveChatWindowContent,
-    RadioWindowContent,
-    AboutWindowContent,
-    SettingsWindowContent
+    AboutWindowContent, AiAssistantWindowContent, BrowserWindowContent, Calculator,
+    EmbienceWindowContent, FileManagerWindowContent, LiveChatWindowContent, RadioWindowContent,
+    SettingsWindowContent, AUDIO_JS,
 };
 
 use crate::nixdesk::clock::use_live_clock;
@@ -56,9 +49,6 @@ fn AppContent(id: AppId) -> Element {
         },
         AppId::AiAssistant => rsx! {
             AiAssistantWindowContent {}
-        },
-        _ => rsx! {
-            div { class: "flex items-center justify-center h-full text-white/30 text-sm", "Coming soon." }
         },
     }
 }
@@ -118,6 +108,11 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
             }
 
             Dock { open_windows, next_z }
+
+            // Overlay peredup untuk tombol brightness di navbar. `dim_class`
+            // sudah dihitung di atas tetapi elemennya tidak pernah dirender,
+            // jadi tombol hanya mengganti ikon tanpa meredupkan layar.
+            div { class: dim_class, "aria-hidden": "true" }
         }
     }
 }

@@ -4,6 +4,7 @@
 //!   1. launch Dioxus,
 //!   2. load their own generated Tailwind stylesheet,
 //!   3. provide [`PlatformServices`] (how to open external links, ...),
+//!
 //! and then render [`App`].
 
 mod app;
@@ -12,6 +13,7 @@ mod journal;
 mod nixdesk;
 pub mod platform;
 mod shared;
+mod time;
 
 pub use app::{App, Route};
 pub use platform::PlatformServices;
