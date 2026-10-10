@@ -117,7 +117,9 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
 - [x] CI: perbaikan di #16/#17/#21 di atas (fmt, pin `cargo-binstall`, versi `dx`, `.gitignore`)
 - [x] Navbar: jam + tanggal kini **tombol** yang beralih 24 jam ↔ 12 jam (`nixdesk/clock.rs`: `ClockFormat`, `format_hm`; dipakai navbar, panel jam Terminal, dan perintah `date`). Default **24 jam**; ubah di `ClockFormat::default()`. Pilihan disimpan di context `Signal<ClockFormat>` (provider di `MainPage`), jadi Settings nanti tinggal memakai `use_clock_format()`. Belum disimpan ke `localStorage`, jadi kembali ke default saat halaman dimuat ulang
 - [ ] Brightness: **ditunda**. Rencana: diganti popup window untuk theme/preferences yang tersambung ke aplikasi Settings. Overlay peredup (`pages/interface/mod.rs`) sudah ada, tinggal disambungkan
-- [ ] **Ukur ukuran wasm** (kerjaanmu, langkah di bawah)
+- [X] **Ukur ukuran wasm** (kerjaanmu, langkah di bawah)
+  - update: wasm_compresed: size: 1.4mb gzip: 452141  brotli: 389603
+  - update: wasm_uncompresed: size: 3.5mb gzip: 762299  brotli: 654407
 - [ ] **Self-host font** (kerjaanmu, langkah di bawah)
 
 ### Mengukur ukuran wasm
