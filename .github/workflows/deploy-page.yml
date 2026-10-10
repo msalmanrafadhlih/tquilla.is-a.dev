@@ -37,14 +37,16 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-binstall
-        uses: cargo-bins/cargo-binstall@main
+        # Dipin ke tag rilis (bukan branch `main`), supaya CI tidak ikut berubah
+        # saat ada commit baru di repo action itu. Naikkan versinya sengaja.
+        uses: cargo-bins/cargo-binstall@v1.25.2
 
       - name: Install dioxus-cli (dx)
-        # pin versi biar SAMA PERSIS dengan versi `dioxus` di Cargo.toml (0.7.1).
-        # ini penting buat kamu spesifik: versi dx yang beda dari versi crate
-        # `dioxus` bisa bikin wasm-opt/binaryen bundled-nya mismatch, mirip kasus
-        # yang pernah kamu debug di Nix devshell.
-        run: cargo binstall dioxus-cli@0.7.1 --force -y
+        # pin versi biar SAMA PERSIS dengan versi crate `dioxus` yang terkunci di
+        # Cargo.lock (0.7.10; Cargo.toml hanya meminta ^0.7.1). Versi dx yang beda
+        # dari versi crate bisa bikin wasm-opt/binaryen bundled-nya mismatch.
+        # Kalau `cargo update` menaikkan dioxus, naikkan angka ini juga.
+        run: cargo binstall dioxus-cli@0.7.10 --force -y
 
       - name: Build Tailwind CSS
         # `asset!("/assets/tailwind.css")` butuh file-nya ada saat compile,

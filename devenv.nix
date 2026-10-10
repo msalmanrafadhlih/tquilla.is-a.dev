@@ -141,16 +141,16 @@ in
       echo "     Run: adb-device (cek serial number device)"
       echo "     ANDROID_SERIAL=<serial> android-dev  (untuk device spesifik)"
       echo ""
-      echo "  Kalau 'web-dev'/'web-build' error wasm-bindgen version mismatch:"
-      echo "     https://wiki.nixos.org/wiki/Dioxus"
-      echo ""
       if [ ! -f Cargo.toml ]; then
         echo ""
         echo "  Peringatan: Belum ada project Dioxus di folder ini!"
         echo "   Silakan run: dioxus-init"
       fi
       echo ""
-      echo "    ------------------------------------------------------------"
+      echo "  Kalau 'web-dev'/'web-build' error wasm-bindgen version mismatch:"
+      echo "     https://wiki.nixos.org/wiki/Dioxus"
+      echo ""
+      echo "   ------------------------------------------------------------"
       echo "-------------------------------------------------------------------"
     }
     _help
