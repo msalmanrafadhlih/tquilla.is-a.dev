@@ -208,6 +208,61 @@ Diagnosis (2026-10-10), `packages/desktop` dan `packages/mobile`:
 
 ---
 
+## 🗄️ Fullstack dan database
+
+Tujuan: mengganti file JSON dummy di `packages/components/data/` dengan database sungguhan, dan mengubah project menjadi fullstack (Dioxus server functions).
+
+### Keputusan yang perlu dikonfirmasi lebih dulu
+
+GitHub Pages hanya menyajikan file statis, jadi **tidak bisa menjalankan server atau database**. Begitu ada backend, hosting dan workflow deploy harus berubah. Pilihan:
+
+| Opsi | Cara kerja | Catatan |
+| --- | --- | --- |
+| **A. Dioxus fullstack (Axum) di satu host** | `#[server]` functions + DB di server yang sama (VPS, Fly.io, Railway, atau container Nix) | Satu codebase Rust, tanpa CORS. Perlu hosting yang menjalankan proses |
+| **B. Frontend tetap di Pages + API terpisah** | WASM statis tetap di Pages, API (Rust/Axum atau Cloudflare Worker + D1/Turso) di host lain | Deploy sekarang hampir tidak berubah, tapi perlu CORS dan dua deploy |
+
+Database: **SQLite lokal untuk development**, lalu **Postgres atau Turso (libSQL)** untuk produksi. Akses lewat `sqlx` dengan migrasi.
+
+- [ ] **D0** Putuskan opsi hosting (A atau B) dan database produksi
+
+### Rencana bertahap
+
+- [ ] **D1** Fondasi fullstack
+  - [ ] Tambah fitur `server` pada `components`/`web` dan jalankan lewat `dx serve --fullstack`
+  - [ ] Pisahkan kode yang hanya untuk server dengan `#[cfg(feature = "server")]` (agar tidak ikut ke WASM)
+  - [ ] Setup `sqlx` + folder `migrations/`, koneksi DB lewat env var (`DATABASE_URL`)
+  - [ ] Update `devenv.nix` (sqlx-cli, sqlite/postgres) dan `flake.nix`
+- [ ] **D2** Skema dan migrasi dari JSON ke tabel
+
+  | File JSON (dummy) | Tabel | Kolom utama |
+  | --- | --- | --- |
+  | `generations.json` | `generations` | `number` (PK), `label`, `link`, `kernel`, `built_on` |
+  | `browser.json` | `bookmarks` | `id`, `label`, `url`, `sort_order` |
+  | `radio.json` | `radio_stations` | `id`, `label`, `slogan`, `stream_url`, `official_link`, `image_url`, `sort_order`, `is_active` |
+  | `embience.json` | `embiences`, `embience_presets`, `embience_preset_items` | `id`, `name`, `icon_url`, `stream_url`; preset dan relasi ke embience |
+  | `chat_sample.json` | `chat_messages` | `id`, `username`, `url`, `avatar_url`, `message`, `attachment_url`, `created_at` |
+  | `journal.sample.json` | `journal_snapshots` | `payload` (JSON), `fetched_at`; pengganti cache Worker |
+
+  - [ ] Script seed satu kali dari file JSON yang ada ke tabel
+  - [ ] Hapus `include_str!` data JSON setelah fitur terkait pindah ke DB
+- [ ] **D3** Server functions (read-only dulu): `list_generations`, `list_bookmarks`, `list_radio_stations`, `list_embiences`, `list_presets`; komponen memakai `use_server_future`/`use_resource` dengan state loading dan error
+- [ ] **D4** LiveChat sungguhan (sekarang hanya seed lokal)
+  - [ ] `list_messages` / `post_message` (+ polling atau SSE/WebSocket untuk pesan baru)
+  - [ ] Validasi di server: panjang pesan, normalisasi URL (server tidak boleh percaya `normalize_url` dari klien), rate limit per IP
+  - [ ] Avatar dan lampiran **tidak disimpan sebagai base64 di DB**: simpan di object storage (S3/R2) atau disk, dan simpan URL-nya saja
+  - [ ] Moderasi dasar: laporkan/hapus pesan, daftar kata terlarang
+- [ ] **D5** Jurnal GitHub: pindahkan logika Worker ke server (cron/background task yang mengisi `journal_snapshots`), hapus fallback ke sample, tampilkan `fetched_at` di UI
+- [ ] **D6** Konten bisa diubah tanpa deploy ulang (halaman admin sederhana atau CLI) untuk radio, bookmark, embience
+  - [ ] Autentikasi admin (jangan hardcode kredensial; password demo di `login.rs` hanya untuk animasi)
+- [ ] **D7** Perbaiki data yang usang: URL stream radio mengandung token (`rj-tok`) yang bisa kedaluwarsa, validasi berkala dan tandai `is_active = false`
+- [ ] **D8** Deploy dan operasi
+  - [ ] Ganti workflow `deploy-page.yml` sesuai opsi hosting (Dockerfile / `nix build` / deploy ke host)
+  - [ ] Backup database, health check, variabel rahasia di secret manager
+  - [ ] Pertahankan fallback 404 untuk routing sisi klien jika memilih opsi B
+
+---
+
+
 ## Lisensi
 
 Lihat `LICENSE`.
