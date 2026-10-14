@@ -51,6 +51,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
+name = "api-types"
+version = "0.1.0"
+source = "git+https://github.com/msalmanrafadhlih/deisktify-worker.rs?tag=v0.1.1#756e3030e876218815b451ce4a8a6098c35ec8bd"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -552,6 +560,7 @@ dependencies = [
 name = "components"
 version = "0.1.0"
 dependencies = [
+ "api-types",
  "base64 0.23.1",
  "chrono",
  "dioxus",
