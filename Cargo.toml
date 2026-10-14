@@ -18,6 +18,10 @@ wasm-bindgen = "=0.2.127"
 dioxus = { version = "0.7.1" }
 serde = { version = "1", features = ["derive"] }
 
+# Kontrak API bersama (repo backend, publik). Dikunci ke TAG, bukan branch, supaya
+# perubahan di backend tidak masuk diam-diam; naikkan tag-nya sengaja.
+api-types = { git = "https://github.com/msalmanrafadhlih/deisktify-worker.rs", tag = "v0.1.1" }
+
 components = { path = "packages/components" }
 
 # Ukuran .wasm adalah biaya load terbesar di web. Pengaturan ini mengikuti

@@ -7,6 +7,7 @@
 //!
 //! and then render [`App`].
 
+pub mod api;
 mod app;
 mod home;
 mod journal;

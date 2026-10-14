@@ -77,10 +77,28 @@ jobs:
             -o ./packages/web/assets/tailwind.css \
             --minify
 
+      - name: Periksa API_BASE_URL
+        # Alamat API (repo backend) ikut dikompilasi ke wasm lewat `option_env!`
+        # (components/src/api.rs). Set di Settings > Secrets and variables >
+        # Actions > Variables, mis. https://tquilla-api.<subdomain>.workers.dev
+        # (tanpa path, tanpa garis miring di akhir). Itu alamat publik, jadi
+        # BUKAN secret. Belum di-set = fitur yang butuh API menampilkan error
+        # "server address is not configured"; build tetap lanjut.
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::warning::Variable API_BASE_URL belum di-set; build web tanpa alamat API."
+          else
+            echo "API_BASE_URL di-set (${#API_BASE_URL} karakter)."
+          fi
+
       - name: Build & bundle (release, web)
         # dx bundle, bukan dx build — dx build cuma wrapper `cargo build`,
         # sedangkan dx bundle yang menjalankan pipeline produksi Dioxus
         # (kompresi wasm, minifikasi, dst).
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: dx bundle --package web --platform web --release
 
       - name: Suntik metadata statis (lang, OG tags, robots, sitemap, noscript)
