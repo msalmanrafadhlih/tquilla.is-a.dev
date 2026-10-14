@@ -16,6 +16,28 @@ let
     # Web target
     fenix.packages.${system}.targets.wasm32-unknown-unknown.stable.rust-std
   ];
+
+  # Android SDK untuk `dx bundle/serve --platform android`.
+  # Modul template `android` hanya memasang platform dan build-tools 35/36,
+  # tetapi project Gradle buatan dx 0.7.x (AGP 8.7.0, compileSdk/targetSdk
+  # default 34, tanpa buildToolsVersion) butuh `platforms;android-34` dan
+  # `build-tools;34.0.0`. Kalau tidak ada, Gradle mencoba memasangnya sendiri
+  # dan gagal karena SDK ada di /nix/store (read-only). Isi di bawah sama dengan
+  # modul template + versi 34; ANDROID_HOME di-override lewat mkForce.
+  # (Alternatif: tambahkan dua paket 34 itu di android/devenv.nix repo template.)
+  androidSdk = templateInputs.android.inputs.android-nixpkgs.sdk.${system} (
+    sdkPkgs: with sdkPkgs; [
+      cmdline-tools-21-0
+      platform-tools # adb
+      build-tools-34-0-0
+      build-tools-35-0-0
+      build-tools-36-0-0
+      platforms-android-34
+      platforms-android-35
+      platforms-android-36
+      ndk-26-1-10909125 # sama dengan ndkVersion di modul template
+    ]
+  );
 in
 {
   imports = [
@@ -34,6 +56,10 @@ in
     emulator = false;
     device = true;
   };
+
+  # ANDROID_SDK_ROOT, ANDROID_NDK_ROOT, dan NDK_HOME di modul template dihitung
+  # dari config.env.ANDROID_HOME, jadi ikut berpindah ke SDK di atas.
+  env.ANDROID_HOME = lib.mkForce "${androidSdk}/share/android-sdk";
 
   packages = with pkgs; [
     dioxus-cli # `dx`

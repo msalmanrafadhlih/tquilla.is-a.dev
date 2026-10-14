@@ -1,11 +1,8 @@
 name: Deploy to GitHub Pages
 
 on:
-  # push:
-  #   branches: [main]
   push:
-    tags:
-      - "generation_*"
+    branches: [main]
   workflow_dispatch: # biar bisa di-trigger manual dari tab Actions
 
 permissions:

@@ -8,9 +8,7 @@ name: Platforms (desktop + mobile)
 # Yang dicek: kode Rust-nya compile + lolos clippy. Yang TIDAK dicek: build
 # Android sebenarnya (NDK, `dx bundle --platform android`) dan runtime webview.
 on:
-  push:
-    tags:
-      - "cross_v*"
+  pull_request:
   workflow_dispatch:
 
 permissions:
