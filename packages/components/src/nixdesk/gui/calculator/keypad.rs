@@ -2,11 +2,66 @@
 //!
 //! Tombol ber-label MathML (`mathml: true`) meniru template □ milik Google. Karena input
 //! berbentuk linear, tombol hanya menyisipkan teks; renderer menampilkannya sebagai
-//! pangkat/pecahan/akar. Argumen fungsi dipisah dengan `;` (koma dipakai untuk desimal).
+//! pangkat/pecahan/akar. Argumen fungsi dipisah dengan `;`.
 
 use dioxus::prelude::*;
 
 use super::state::{Action, CalcState, Mode};
+use crate::languages::{use_strings, Strings};
+
+/// Petunjuk (tooltip) sebuah tombol. Enum, bukan teks, supaya tabel tombol
+/// tetap `const` dan teksnya mengikuti bahasa aktif (`Tip::text`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Tip {
+    None,
+    Delete,
+    ClearAll,
+    Equals,
+    Power,
+    NthRoot,
+    Fraction,
+    Abs,
+    Log,
+    Factorial,
+    Square,
+    Degree,
+    Diff,
+    Lim,
+    LimR,
+    LimL,
+    Ncr,
+    Npr,
+    Sum,
+    Int,
+}
+
+impl Tip {
+    pub fn text(self, s: &Strings) -> &'static str {
+        let c = &s.calc;
+        match self {
+            Tip::None => "",
+            Tip::Delete => c.tip_delete,
+            Tip::ClearAll => c.tip_clear_all,
+            Tip::Equals => c.tip_equals,
+            Tip::Power => c.tip_power,
+            Tip::NthRoot => c.tip_nth_root,
+            Tip::Fraction => c.tip_fraction,
+            Tip::Abs => c.tip_abs,
+            Tip::Log => c.tip_log,
+            Tip::Factorial => c.tip_factorial,
+            Tip::Square => c.tip_square,
+            Tip::Degree => c.tip_degree,
+            Tip::Diff => c.tip_diff,
+            Tip::Lim => c.tip_lim,
+            Tip::LimR => c.tip_limr,
+            Tip::LimL => c.tip_liml,
+            Tip::Ncr => c.tip_ncr,
+            Tip::Npr => c.tip_npr,
+            Tip::Sum => c.tip_sum,
+            Tip::Int => c.tip_int,
+        }
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Key {
@@ -16,7 +71,7 @@ pub struct Key {
     pub italic: bool,
     pub action: Action,
     /// Tooltip / petunjuk penggunaan.
-    pub title: &'static str,
+    pub tip: Tip,
 }
 
 const fn txt(label: &'static str, insert: &'static str) -> Key {
@@ -25,7 +80,7 @@ const fn txt(label: &'static str, insert: &'static str) -> Key {
         mathml: false,
         italic: false,
         action: Action::Insert(insert),
-        title: "",
+        tip: Tip::None,
     }
 }
 
@@ -35,27 +90,27 @@ const fn var(label: &'static str) -> Key {
         mathml: false,
         italic: true,
         action: Action::Insert(label),
-        title: "",
+        tip: Tip::None,
     }
 }
 
-const fn ml(label: &'static str, insert: &'static str, title: &'static str) -> Key {
+const fn ml(label: &'static str, insert: &'static str, tip: Tip) -> Key {
     Key {
         label,
         mathml: true,
         italic: false,
         action: Action::Insert(insert),
-        title,
+        tip,
     }
 }
 
-const fn act(label: &'static str, action: Action, title: &'static str) -> Key {
+const fn act(label: &'static str, action: Action, tip: Tip) -> Key {
     Key {
         label,
         mathml: false,
         italic: false,
         action,
-        title,
+        tip,
     }
 }
 
@@ -64,8 +119,8 @@ const fn act(label: &'static str, action: Action, title: &'static str) -> Key {
 pub const MAIN: &[Key] = &[
     txt("(", "("),
     txt(")", ")"),
-    act("⌫", Action::Backspace, "Hapus"),
-    act("c", Action::Clear, "Bersihkan semua"),
+    act("⌫", Action::Backspace, Tip::Delete),
+    act("c", Action::Clear, Tip::ClearAll),
     txt("7", "7"),
     txt("8", "8"),
     txt("9", "9"),
@@ -79,42 +134,42 @@ pub const MAIN: &[Key] = &[
     txt("3", "3"),
     txt("-", "-"),
     txt("0", "0"),
-    txt(",", ","),
-    act("=", Action::Equals, "Hitung"),
+    txt(".", "."),
+    act("=", Action::Equals, Tip::Equals),
     txt("+", "+"),
 ];
 
-// ------------------------------------------------------------------- Aljabar (3 kolom)
+// ------------------------------------------------------------------- Algebra (3 kolom)
 
-pub const ALJABAR: &[Key] = &[
+pub const ALGEBRA: &[Key] = &[
     ml(
         "<math><msup><mi>□</mi><mi>□</mi></msup></math>",
         "^",
-        "Pangkat: 2^3 (gunakan kurung untuk pangkat panjang)",
+        Tip::Power,
     ),
     ml(
         "<math><mroot><mi>□</mi><mi>□</mi></mroot></math>",
         "root(",
-        "Akar ke-n: root(n; x)",
+        Tip::NthRoot,
     ),
     txt("<", "<"),
     ml(
         "<math><mfrac><mi>□</mi><mi>□</mi></mfrac></math>",
         "frac(",
-        "Pecahan: frac(atas; bawah)",
+        Tip::Fraction,
     ),
     ml(
         "<math><mo>|</mo><mi>□</mi><mo>|</mo></math>",
         "abs(",
-        "Nilai mutlak",
+        Tip::Abs,
     ),
     txt("≤", "≤"),
     ml(
         "<math><msub><mi>log</mi><mi>□</mi></msub></math>",
         "log(",
-        "log(x) basis 10, atau log(basis; x)",
+        Tip::Log,
     ),
-    ml("<math><mi>□</mi><mo>!</mo></math>", "!", "Faktorial"),
+    ml("<math><mi>□</mi><mo>!</mo></math>", "!", Tip::Factorial),
     txt(">", ">"),
     var("i"),
     txt("%", "%"),
@@ -127,9 +182,9 @@ pub const ALJABAR: &[Key] = &[
     txt("ln", "ln("),
 ];
 
-// -------------------------------------------------------------- Trigonometri (3 kolom)
+// -------------------------------------------------------------- Trigonometry (3 kolom)
 
-pub const TRIGONOMETRI: &[Key] = &[
+pub const TRIGONOMETRY: &[Key] = &[
     txt("sin", "sin("),
     txt("cos", "cos("),
     txt("tan", "tan("),
@@ -142,12 +197,12 @@ pub const TRIGONOMETRI: &[Key] = &[
     ml(
         "<math><msup><mi>□</mi><mn>2</mn></msup></math>",
         "^2",
-        "Kuadrat",
+        Tip::Square,
     ),
     ml(
         "<math><msup><mi>□</mi><mo>°</mo></msup></math>",
         "°",
-        "Derajat",
+        Tip::Degree,
     ),
     txt("π", "π"),
     var("x"),
@@ -155,48 +210,48 @@ pub const TRIGONOMETRI: &[Key] = &[
     txt("=", "="),
 ];
 
-// ----------------------------------------------------------------- Kalkulus (3 kolom)
+// ----------------------------------------------------------------- Calculus (3 kolom)
 
-pub const KALKULUS: &[Key] = &[
+pub const CALCULUS: &[Key] = &[
     ml(
         "<math><mfrac><mi>d</mi><mrow><mi>d</mi><mi>□</mi></mrow></mfrac></math>",
         "diff(",
-        "Turunan di satu titik: diff(f; x; a)",
+        Tip::Diff,
     ),
     txt("∞", "∞"),
-    ml("<math><mroot><mi>□</mi><mi>□</mi></mroot></math>", "root(", "Akar ke-n: root(n; x)"),
+    ml("<math><mroot><mi>□</mi><mi>□</mi></mroot></math>", "root(", Tip::NthRoot),
     ml(
         "<math><munder><mi>lim</mi><mrow><mi>□</mi><mo>→</mo><mi>□</mi></mrow></munder></math>",
         "lim(",
-        "Limit dua sisi: lim(f; x; a)",
+        Tip::Lim,
     ),
     ml(
         "<math><munder><mi>lim</mi><mrow><mi>□</mi><mo>→</mo><msup><mi>□</mi><mo>+</mo></msup></mrow></munder></math>",
         "limr(",
-        "Limit dari kanan: limr(f; x; a)",
+        Tip::LimR,
     ),
     ml(
         "<math><munder><mi>lim</mi><mrow><mi>□</mi><mo>→</mo><msup><mi>□</mi><mo>−</mo></msup></mrow></munder></math>",
         "liml(",
-        "Limit dari kiri: liml(f; x; a)",
+        Tip::LimL,
     ),
-    ml("<math><msub><mi>log</mi><mi>□</mi></msub></math>", "log(", "log(x) basis 10, atau log(basis; x)"),
+    ml("<math><msub><mi>log</mi><mi>□</mi></msub></math>", "log(", Tip::Log),
     ml(
         "<math><mi>C</mi><mo>(</mo><mi>n</mi><mo>,</mo><mi>k</mi><mo>)</mo></math>",
         "nCr(",
-        "Kombinasi: nCr(n; k)",
+        Tip::Ncr,
     ),
     ml(
         "<math><mi>P</mi><mo>(</mo><mi>n</mi><mo>,</mo><mi>k</mi><mo>)</mo></math>",
         "nPr(",
-        "Permutasi: nPr(n; k)",
+        Tip::Npr,
     ),
-    ml("<math><mo>∑</mo></math>", "sum(", "Jumlah: sum(f; k; dari; sampai)"),
+    ml("<math><mo>∑</mo></math>", "sum(", Tip::Sum),
     txt(";", ";"),
     ml(
         "<math><msubsup><mo>∫</mo><mi>□</mi><mi>□</mi></msubsup><mi>□</mi></math>",
         "int(",
-        "Integral tentu: int(f; x; a; b)",
+        Tip::Int,
     ),
     var("x"),
     var("y"),
@@ -247,9 +302,10 @@ pub fn KeyPad(
     #[props(default)] tone: &'static str,
 ) -> Element {
     let state = use_context::<CalcState>();
+    let s = use_strings();
     rsx! {
         section {
-            title: "Calculator Keypad",
+            title: s.calc.keypad_title,
             class: "w-full grid gap-2 bg-[var(--bg-secondary)] text-xs self-stretch overflow-scroll {cols}",
             class: "[-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
             for (i , key) in keys.iter().enumerate() {
@@ -258,7 +314,7 @@ pub fn KeyPad(
                     label: key.label,
                     mathml: key.mathml,
                     italic: key.italic,
-                    title: key.title,
+                    title: key.tip.text(s),
                     radius,
                     tone,
                     onclick: {
@@ -272,27 +328,27 @@ pub fn KeyPad(
 }
 
 #[component]
-pub fn Aljabar() -> Element {
+pub fn Algebra() -> Element {
     rsx! {
-        KeyPad { keys: ALJABAR, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
+        KeyPad { keys: ALGEBRA, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
     }
 }
 
 #[component]
-pub fn Trigonometri() -> Element {
+pub fn Trigonometry() -> Element {
     rsx! {
-        KeyPad { keys: TRIGONOMETRI, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
+        KeyPad { keys: TRIGONOMETRY, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
     }
 }
 
 #[component]
-pub fn Kalkulus() -> Element {
+pub fn Calculus() -> Element {
     rsx! {
-        KeyPad { keys: KALKULUS, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
+        KeyPad { keys: CALCULUS, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
     }
 }
 
-/// Tab pemilih mode (Aljabar / Trigonometri / Kalkulus).
+/// Tab pemilih mode (Algebra / Trigonometry / Calculus).
 #[component]
 pub fn ModeTab(mode: Mode, label: &'static str) -> Element {
     let state = use_context::<CalcState>();

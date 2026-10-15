@@ -1,3 +1,4 @@
+use crate::languages::use_strings;
 use crate::nixdesk::clock::use_clock_format;
 use dioxus::prelude::*;
 
@@ -12,9 +13,8 @@ const NOTIFICATION_ICON_SILENT: Asset = asset!("/assets/icon-notification-silent
 const TOGGLE_ICON: Asset = asset!("/assets/icon-toggle-popup.svg");
 const ICON_CLOSE: Asset = asset!("/assets/icon-close.svg");
 
-/// Decorative only for now — a real dropdown per item is more than this
-/// pass covers, matching classic desktop chrome without the behavior.
-const MENU_ITEMS: [&str; 6] = ["File", "Edit", "View", "Go", "Tools", "Settings"];
+// Item menu (File, Edit, ...) hanya dekorasi untuk saat ini: dropdown
+// sungguhan belum ada. Labelnya ada di `Strings::navbar.menu_items()`.
 
 /// Mirrors the "Top Bar" of the Desktop + GUIs Figma frame: logo + menu on
 /// the left, a centered clock, system-status icons and the terminal-mode
@@ -32,6 +32,8 @@ pub fn Navbar(
     on_toggle: EventHandler<()>,
     brightness: Signal<u8>,
 ) -> Element {
+    let s = use_strings();
+    let menu_items = s.navbar.menu_items();
     let mut clock_format = use_clock_format();
     let mut show_about = use_signal(|| false);
     let mut active_menu = use_signal(|| Option::<usize>::None);
@@ -43,10 +45,7 @@ pub fn Navbar(
     let mut status_menu_open = use_signal(|| false);
 
     let menu_hint = match active_menu() {
-        Some(i) => format!(
-            "Menu \"{}\" — masih dekorasi, belum ada isinya.",
-            MENU_ITEMS[i]
-        ),
+        Some(i) => s.navbar.menu_hint(menu_items[i]),
         None => String::new(),
     };
 
@@ -84,8 +83,8 @@ pub fn Navbar(
             button {
                 r#type: "button",
                 class: "absolute left-1/2 top-1/2 z-[4] flex -translate-x-1/2 -translate-y-1/2 select-none flex-col items-center gap-1 rounded-md px-3 py-0.5 transition-colors duration-150 ease-out hover:bg-white/5 active:scale-95 cursor-pointer",
-                title: clock_format().switch_label(),
-                "aria-label": "{time}. {clock_format().switch_label()}",
+                title: clock_format().switch_label(s),
+                "aria-label": "{time}. {clock_format().switch_label(s)}",
                 onclick: move |_| clock_format.set(clock_format().toggled()),
                 span { class: "text-center text-sm font-light", "{time}" }
                 span { class: "hidden text-[12px] text-white/40 min-[500px]:block", "{date}" }
@@ -96,16 +95,16 @@ pub fn Navbar(
                 button {
                     r#type: "button",
                     class: "group relative flex shrink-0 items-center gap-2 rounded-md px-1 py-1 transition-colors duration-150 ease-out hover:bg-white/5 active:scale-95",
-                    "aria-label": "Open main menu",
+                    "aria-label": s.navbar.open_main_menu,
                     "aria-expanded": if nav_menu_open() { "true" } else { "false" },
                     onclick: move |_| {
                         show_about.set(!show_about());
                         nav_menu_open.set(!nav_menu_open());
                     },
-                    img { src: NIXOS_ICON, alt: "NixDesktop logo", class: "h-[26px] w-[26px]" }
-                    span { class: "hidden text-sm font-normal lg:inline", "NixDesktop" }
-                    span { class: "max-[370px]:hidden text-sm font-normal lg:hidden", "NixMobile" }
-                    div { class: about_class, "Desktop simulasi pribadi milik Moch." }
+                    img { src: NIXOS_ICON, alt: s.navbar.logo_alt, class: "h-[26px] w-[26px]" }
+                    span { class: "hidden text-sm font-normal lg:inline", "{s.navbar.brand_desktop}" }
+                    span { class: "max-[370px]:hidden text-sm font-normal lg:hidden", "{s.navbar.brand_mobile}" }
+                    div { class: about_class, "{s.navbar.about_tip}" }
                 }
 
                 div {
@@ -117,8 +116,8 @@ pub fn Navbar(
                     div { class: "overflow-hidden xl:overflow-visible",
                         nav {
                             class: "relative flex w-full flex-col items-stretch gap-0.5 xl:w-auto xl:flex-row",
-                            "aria-label": "Main navigation",
-                            for (i , label) in MENU_ITEMS.into_iter().enumerate() {
+                            "aria-label": s.navbar.main_navigation,
+                            for (i , label) in menu_items.into_iter().enumerate() {
                                 button {
                                     key: "{label}",
                                     r#type: "button",
@@ -142,13 +141,13 @@ pub fn Navbar(
             div { class: "flex flex-none flex-col h-[20px] items-center gap-[25px] md:flex-row",
                 button {
                     r#type: "button",
-                    "aria-label": "Open status menu",
+                    "aria-label": s.navbar.open_status_menu,
                     "aria-expanded": if status_menu_open() { "true" } else { "false" },
                     class: "border-0 pt-1 sm:hidden",
                     onclick: move |_| status_menu_open.set(!status_menu_open()),
                     img {
                         src: if status_menu_open() { ICON_CLOSE } else { TOGGLE_ICON },
-                        alt: "Toggle",
+                        alt: s.navbar.toggle_alt,
                         class: if status_menu_open() {
                             "w-[10px] pt-0.5 cursor-pointer transition-transform duration-300 ease-out"
                         } else {
@@ -164,14 +163,14 @@ pub fn Navbar(
                         "grid grid-rows-[0fr] p-1 bg-transparent transition-all duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
                     },
                     div { class: "overflow-hidden sm:overflow-visible",
-                        div { class: "flex flex-col items-center gap-3 sm:flex-row", "aria-label": "System status",
+                        div { class: "flex flex-col items-center gap-3 sm:flex-row", "aria-label": s.navbar.system_status,
                             button {
                                 r#type: "button",
                                 class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
-                                title: if wifi_on() { "Wi-Fi aktif" } else { "Wi-Fi nonaktif" },
+                                title: if wifi_on() { s.navbar.wifi_on } else { s.navbar.wifi_off },
                                 onclick: move |_| wifi_on.set(!wifi_on()),
                                 img {
-                                    src: WIFI_ICON, alt: "Wi-Fi",
+                                    src: WIFI_ICON, alt: s.navbar.wifi_alt,
                                     class: if wifi_on() { "h-4 w-4 opacity-100 transition-opacity duration-150" } else { "h-4 w-4 opacity-30 transition-opacity duration-150" },
                                 }
                                 span {
@@ -182,10 +181,10 @@ pub fn Navbar(
                             button {
                                 r#type: "button",
                                 class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
-                                title: if muted() { "Suara dibisukan" } else { "Suara aktif" },
+                                title: if muted() { s.navbar.sound_muted } else { s.navbar.sound_on },
                                 onclick: move |_| muted.set(!muted()),
                                 img {
-                                    src: VOLUME_ICON, alt: "Volume",
+                                    src: VOLUME_ICON, alt: s.navbar.volume_alt,
                                     class: if muted() { "h-4 w-4 opacity-30 transition-opacity duration-150" } else { "h-4 w-4 opacity-100 transition-opacity duration-150" },
                                 }
                                 span {
@@ -196,10 +195,10 @@ pub fn Navbar(
                             button {
                                 r#type: "button",
                                 class: "transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
-                                title: "Kecerahan layar",
+                                title: s.navbar.brightness_title,
                                 onclick: move |_| brightness.set((brightness() + 1) % 3),
                                 img {
-                                    src: BRIGHTNESS_ICON, alt: "Brightness",
+                                    src: BRIGHTNESS_ICON, alt: s.navbar.brightness_alt,
                                     class: if brightness() == 0 { "h-4 w-4 opacity-100 transition-opacity duration-150" } else if brightness() == 1 { "h-4 w-4 opacity-70 transition-opacity duration-150" } else { "h-4 w-4 opacity-40 transition-opacity duration-150" },
                                 }
                             }
@@ -207,10 +206,10 @@ pub fn Navbar(
                             button {
                                 r#type: "button",
                                 class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
-                                title: if notif_muted() { "Notifikasi dibisukan" } else { "Notifikasi aktif" },
+                                title: if notif_muted() { s.navbar.notifications_muted } else { s.navbar.notifications_on },
                                 onclick: move |_| notif_muted.set(!notif_muted()),
                                 img {
-                                    src: NOTIFICATION_ICON, alt: "Notification",
+                                    src: NOTIFICATION_ICON, alt: s.navbar.notification_alt,
                                     class: if notif_muted() { "h-4 w-4 opacity-30 transition-opacity duration-150" } else { "h-4 w-4 opacity-100 transition-opacity duration-150" },
                                 }
                                 span {
@@ -222,12 +221,12 @@ pub fn Navbar(
                                 button {
                                     r#type: "button",
                                     class: "flex flex-col items-center gap-0.5 transition-transform duration-150 ease-out hover:scale-110 active:scale-90",
-                                    title: "Baterai",
+                                    title: s.navbar.battery_title,
                                     onclick: move |_| show_battery_tip.set(!show_battery_tip()),
-                                    img { src: BATTERY_ICON, alt: "Battery", class: "h-2 w-4.5 object-contain" }
+                                    img { src: BATTERY_ICON, alt: s.navbar.battery_alt, class: "h-2 w-4.5 object-contain" }
                                     span { class: "text-[8px] font-normal font-['JetBrains_Mono']", "100%" }
                                 }
-                                div { class: battery_tip_class, "100% · Terisi penuh" }
+                                div { class: battery_tip_class, "{s.navbar.battery_tip}" }
                             }
                         }
                     }
@@ -248,8 +247,8 @@ pub fn Navbar(
                     }
                 }
                 span { class: "hidden text-[10px] text-center sm:block opacity-70 hover:opacity-100 transition-transform duration-150 ease-out hover:scale-110 active:scale-90 sm:h-full sm:px-2",
-                    "Switch "
-                    p { "TTY" }
+                    "{s.navbar.switch}"
+                    p { "{s.navbar.tty}" }
                 }
             }
         }

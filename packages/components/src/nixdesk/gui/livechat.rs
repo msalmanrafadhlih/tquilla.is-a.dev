@@ -1,3 +1,4 @@
+use crate::languages::{use_strings, Strings};
 use crate::platform::Date;
 use crate::time::relative_time;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
@@ -102,22 +103,40 @@ fn default_avatar_for(username: &str) -> Asset {
     }
 }
 
+/// Kenapa sebuah gambar ditolak. Disimpan sebagai enum dan baru
+/// diterjemahkan saat ditampilkan (`UploadError::message`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UploadError {
+    NotAnImage,
+    TooLarge { max_mb: u64 },
+    ReadFailed,
+}
+
+impl UploadError {
+    fn message(self, s: &Strings) -> String {
+        match self {
+            UploadError::NotAnImage => s.livechat.upload_not_image.to_string(),
+            UploadError::TooLarge { max_mb } => s.livechat.upload_too_large(max_mb),
+            UploadError::ReadFailed => s.livechat.upload_read_failed.to_string(),
+        }
+    }
+}
+
 /// Baca file gambar -> validasi (tipe & ukuran) -> data URL base64.
-async fn read_image_data_url(file: FileData, max_bytes: u64) -> Result<String, String> {
+async fn read_image_data_url(file: FileData, max_bytes: u64) -> Result<String, UploadError> {
     let mime = file.content_type().unwrap_or_default();
     if !mime.starts_with("image/") {
-        return Err("File harus berupa gambar.".to_string());
+        return Err(UploadError::NotAnImage);
     }
     if file.size() > max_bytes {
-        return Err(format!(
-            "Ukuran gambar maksimal {} MB.",
-            max_bytes / (1024 * 1024)
-        ));
+        return Err(UploadError::TooLarge {
+            max_mb: max_bytes / (1024 * 1024),
+        });
     }
     let bytes = file
         .read_bytes()
         .await
-        .map_err(|_| "Gagal membaca file gambar.".to_string())?;
+        .map_err(|_| UploadError::ReadFailed)?;
     Ok(format!("data:{mime};base64,{}", STANDARD.encode(&bytes)))
 }
 
@@ -169,6 +188,7 @@ fn send_message(
 
 #[component]
 pub fn LiveChatWindowContent() -> Element {
+    let s = use_strings();
     let messages = use_signal(load_seed_messages);
     let mut username = use_signal(String::new);
     let mut url = use_signal(String::new);
@@ -176,7 +196,7 @@ pub fn LiveChatWindowContent() -> Element {
     let next_id = use_signal(|| 1000u32);
     let mut avatar = use_signal(|| None::<String>);
     let mut attachment = use_signal(|| None::<String>);
-    let mut upload_error = use_signal(|| None::<String>);
+    let mut upload_error = use_signal(|| None::<UploadError>);
 
     rsx! {
         div { class: "flex flex-col items-center gap-5 h-full w-full bg-[var(--bg-secondary)] text-sm",
@@ -231,7 +251,7 @@ pub fn LiveChatWindowContent() -> Element {
                                         time {
                                             datetime: "{msg.timestamp}",
                                             class: "relative flex items-end flex-1 [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-secondary)] text-[10px] tracking-[0] leading-[normal]",
-                                            "{relative_time(&msg.timestamp)}"
+                                            "{relative_time(&msg.timestamp, s)}"
                                         }
                                     }
                                     if !msg.message.is_empty() {
@@ -244,7 +264,7 @@ pub fn LiveChatWindowContent() -> Element {
                                         img {
                                             class: "self-start max-w-full max-h-60 object-contain border-0",
                                             src: "{src}",
-                                            alt: "Lampiran dari {msg.username}",
+                                            alt: "{s.livechat.attachment_alt(&msg.username)}",
                                             onload: move |_| {
                                                 eval_js(SCROLL_BOTTOM_JS.to_string());
                                             },
@@ -264,12 +284,12 @@ pub fn LiveChatWindowContent() -> Element {
                         img {
                             class: "block max-w-[120px] max-h-[120px] object-contain",
                             src: "{src}",
-                            alt: "Pratinjau gambar yang akan dikirim",
+                            alt: s.livechat.preview_alt,
                         }
                         button {
                             r#type: "button",
-                            aria_label: "Remove attached image",
-                            title: "Remove image",
+                            aria_label: s.livechat.remove_attached,
+                            title: s.livechat.remove_image,
                             class: "absolute top-0 right-0 w-5 h-5 flex items-center justify-center text-[10px] bg-[var(--bg-secondary)] text-[var(--fg-main)] border border-solid border-[var(--fg-main)] cursor-pointer hover:bg-[var(--fg-main)] hover:text-[var(--bg-secondary)]",
                             onclick: move |_| attachment.set(None),
                             "x"
@@ -281,13 +301,13 @@ pub fn LiveChatWindowContent() -> Element {
                 p {
                     role: "alert",
                     class: "w-full px-2.5 text-[10px] text-[var(--red)] [font:'JetBrains_Mono-Regular',Helvetica]",
-                    "{err}"
+                    "{err.message(s)}"
                 }
             }
 
             // MAIN CONTENTS : LIVE CHAT
             form {
-                aria_label: "Message submission form",
+                aria_label: s.livechat.form_label,
                 class: "flex w-full max-w-[500px] items-center justify-center relative",
                 onsubmit: move |evt: FormEvent| {
                     evt.prevent_default();
@@ -298,20 +318,20 @@ pub fn LiveChatWindowContent() -> Element {
                 // Sebelum upload: ikon "+". Sesudah upload: avatar pengguna sendiri.
                 label {
                     r#for: "avatar-upload",
-                    aria_label: "Upload avatar",
+                    aria_label: s.livechat.upload_avatar,
                     class: "group flex flex-col w-[50px] h-[50px] m-2.5 items-center justify-center gap-2.5 relative border border-solid text-[var(--fg-main)] bg-[var(--bg-secondary)] border-[var(--fg-main)] aspect-[1] cursor-pointer overflow-hidden hover:text-[var(--bg-secondary)] hover:bg-[var(--fg-main)]",
                     if let Some(src) = avatar() {
                         img {
                             class: "w-full h-full object-cover",
-                            title: "Change avatar",
+                            title: s.livechat.change_avatar,
                             src: "{src}",
-                            alt: "Your avatar",
+                            alt: s.livechat.your_avatar,
                         }
                     } else {
                         img {
                             class: "group-hover:invert ",
                             alt: "",
-                            title: "Add avatar",
+                            title: s.livechat.add_avatar,
                             "aria-hidden": "true",
                             src: ICON_ADD,
                         }
@@ -338,25 +358,25 @@ pub fn LiveChatWindowContent() -> Element {
 
                 div { class: "flex flex-col items-start gap-2.5 pb-2.5 flex-1 grow border-b border-solid border-[var(--fg-secondary)] justify-center relative",
                     div { class: "flex w-full flex-row gap-2.5",
-                        label { class: "sr-only", r#for: "username", "Username" }
+                        label { class: "sr-only", r#for: "username", "{s.livechat.username_label}" }
                         input {
                             class: "relative w-full flex items-center self-stretch opacity-50 focus-within:opacity-100 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0",
                             id: "username",
                             name: "username",
                             r#type: "text",
-                            placeholder: "Set username",
+                            placeholder: s.livechat.username_placeholder,
                             autocomplete: "username",
                             value: "{username}",
                             oninput: move |evt: FormEvent| username.set(evt.value()),
                         }
-                        label { class: "sr-only", r#for: "url", "Website URL" }
+                        label { class: "sr-only", r#for: "url", "{s.livechat.url_label}" }
                         input {
                             class: "relative w-full flex items-center self-stretch opacity-50 focus-within:opacity-100 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0",
                             id: "url",
                             name: "url",
                             r#type: "text",
                             inputmode: "url",
-                            placeholder: "url (optional)",
+                            placeholder: s.livechat.url_placeholder,
                             autocomplete: "url",
                             value: "{url}",
                             oninput: move |evt: FormEvent| url.set(evt.value()),
@@ -364,13 +384,13 @@ pub fn LiveChatWindowContent() -> Element {
                     }
 
                     div { class: "flex w-full flex-row",
-                        label { class: "sr-only", r#for: "message", "Message" }
+                        label { class: "sr-only", r#for: "message", "{s.livechat.message_label}" }
                         textarea {
                             class: "relative w-full flex items-center self-stretch opacity-50 focus-within:opacity-100 [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-[var(--fg-main)] text-xs tracking-[0] leading-[normal] appearance-none bg-[var(--bg-secondary)] border-0 outline-none p-0 resize-none max-h-[calc(1.4em*5)] overflow-y-hidden",
                             id: "message",
                             name: "message",
                             rows: "1",
-                            placeholder: "Type your message here...",
+                            placeholder: s.livechat.message_placeholder,
                             value: "{draft}",
                             oninput: move |evt: FormEvent| {
                                 draft.set(evt.value());
@@ -389,11 +409,11 @@ pub fn LiveChatWindowContent() -> Element {
                         // Tombol tambah gambar media ke pesan (input file disembunyikan, dipicu oleh label)
                         label {
                             r#for: "image-upload",
-                            aria_label: "Add image file",
+                            aria_label: s.livechat.add_image_file,
                             class: "flex flex-col h-5 items-center justify-center gap-2.5 relative bg-[var(--bg-secondary)] aspect-[1] cursor-pointer opacity-50 hover:opacity-100",
                             img {
                                 alt: "",
-                                title: "Add Media",
+                                title: s.livechat.add_media,
                                 "aria-hidden": "true",
                                 src: ICON_ADD_MEDIA,
                             }
@@ -422,7 +442,7 @@ pub fn LiveChatWindowContent() -> Element {
                 button {
                     r#type: "submit",
                     class: "group text-[10px] sm:text-xs ml-2.5 inline-flex bg-[var(--bg-secondary)] border-0 hover:bg-[var(--fg-main)] items-center text-[var(--fg-main)] hover:text-[var(--bg-secondary)] gap-2.5 sm:ml-5 p-2.5 flex-[0_0_auto] justify-center relative cursor-pointer",
-                    "Send"
+                    "{s.livechat.send}"
                 }
             }
         }

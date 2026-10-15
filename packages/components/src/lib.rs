@@ -11,6 +11,7 @@ pub mod api;
 mod app;
 mod home;
 mod journal;
+pub mod languages;
 mod nixdesk;
 pub mod platform;
 mod shared;

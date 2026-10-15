@@ -1,30 +1,6 @@
+use crate::languages::{use_language, Calendar, Strings};
 use crate::platform::{Date, TimeoutFuture};
 use dioxus::prelude::*;
-
-const WEEKDAYS: [&str; 7] = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-];
-
-const MONTHS: [&str; 12] = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-];
 
 /// 24-hour ("19:52") or 12-hour ("07:52 PM") display. One value shared by
 /// the whole desktop simulation (navbar clock, terminal clock panel and the
@@ -50,10 +26,10 @@ impl ClockFormat {
     }
 
     /// What clicking the clock will switch *to* (for tooltip / aria-label).
-    pub fn switch_label(self) -> &'static str {
+    pub fn switch_label(self, s: &Strings) -> &'static str {
         match self {
-            ClockFormat::H24 => "Switch to 12-hour clock",
-            ClockFormat::H12 => "Switch to 24-hour clock",
+            ClockFormat::H24 => s.clock.switch_to_12h,
+            ClockFormat::H12 => s.clock.switch_to_24h,
         }
     }
 }
@@ -69,29 +45,30 @@ pub fn use_clock_format() -> Signal<ClockFormat> {
 }
 
 /// Pure formatter: `(19, 7, H24)` -> "19:07", `(19, 7, H12)` -> "07:07 PM".
-pub fn format_hm(hours24: u32, minutes: u32, format: ClockFormat) -> String {
+/// Sufiks AM/PM diambil dari `calendar` (bahasa aktif).
+pub fn format_hm(hours24: u32, minutes: u32, format: ClockFormat, calendar: &Calendar) -> String {
     match format {
         ClockFormat::H24 => format!("{hours24:02}:{minutes:02}"),
         ClockFormat::H12 => {
             let (hours12, suffix) = match hours24 {
-                0 => (12, "AM"),
-                1..=11 => (hours24, "AM"),
-                12 => (12, "PM"),
-                _ => (hours24 - 12, "PM"),
+                0 => (12, calendar.am),
+                1..=11 => (hours24, calendar.am),
+                12 => (12, calendar.pm),
+                _ => (hours24 - 12, calendar.pm),
             };
             format!("{hours12:02}:{minutes:02} {suffix}")
         }
     }
 }
 
-pub fn format_time(date: &Date, format: ClockFormat) -> String {
-    format_hm(date.get_hours(), date.get_minutes(), format)
+pub fn format_time(date: &Date, format: ClockFormat, s: &Strings) -> String {
+    format_hm(date.get_hours(), date.get_minutes(), format, &s.calendar)
 }
 
 /// "Monday, September 14, 2026"
-pub fn format_date(date: &Date) -> String {
-    let weekday = WEEKDAYS[date.get_day() as usize];
-    let month = MONTHS[date.get_month() as usize];
+pub fn format_date(date: &Date, s: &Strings) -> String {
+    let weekday = s.calendar.weekday(date.get_day() as usize);
+    let month = s.calendar.month(date.get_month() as usize);
     let day = date.get_date();
     let year = date.get_full_year();
     format!("{weekday}, {month} {day}, {year}")
@@ -103,15 +80,19 @@ pub fn format_date(date: &Date) -> String {
 /// same live signals.
 pub fn use_live_clock() -> (Signal<String>, Signal<String>) {
     let format = use_clock_format();
-    let mut time = use_signal(|| format_time(&Date::new_0(), format()));
-    let mut date = use_signal(|| format_date(&Date::new_0()));
+    let language = use_language();
+    let mut time = use_signal(|| format_time(&Date::new_0(), format(), language().strings()));
+    let mut date = use_signal(|| format_date(&Date::new_0(), language().strings()));
 
-    // Re-render the text right away when the format changes, instead of
-    // waiting up to a second for the next tick. Only `format` is tracked
-    // here (`time.set` is a write).
+    // Re-render the text right away when the format or the language changes,
+    // instead of waiting up to a second for the next tick. Only `format` and
+    // `language` are tracked here (`time.set` is a write).
     use_effect(move || {
         let f = format();
-        time.set(format_time(&Date::new_0(), f));
+        let s = language().strings();
+        let now = Date::new_0();
+        time.set(format_time(&now, f, s));
+        date.set(format_date(&now, s));
     });
 
     use_effect(move || {
@@ -119,8 +100,9 @@ pub fn use_live_clock() -> (Signal<String>, Signal<String>) {
             loop {
                 TimeoutFuture::new(1000).await;
                 let now = Date::new_0();
-                time.set(format_time(&now, *format.peek()));
-                date.set(format_date(&now));
+                let s = language.peek().strings();
+                time.set(format_time(&now, *format.peek(), s));
+                date.set(format_date(&now, s));
             }
         });
     });
@@ -131,23 +113,25 @@ pub fn use_live_clock() -> (Signal<String>, Signal<String>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::languages::{Language, EN};
 
     #[test]
     fn twenty_four_hour_is_zero_padded() {
-        assert_eq!(format_hm(0, 5, ClockFormat::H24), "00:05");
-        assert_eq!(format_hm(9, 30, ClockFormat::H24), "09:30");
-        assert_eq!(format_hm(19, 52, ClockFormat::H24), "19:52");
-        assert_eq!(format_hm(23, 59, ClockFormat::H24), "23:59");
+        assert_eq!(format_hm(0, 5, ClockFormat::H24, &EN.calendar), "00:05");
+        assert_eq!(format_hm(9, 30, ClockFormat::H24, &EN.calendar), "09:30");
+        assert_eq!(format_hm(19, 52, ClockFormat::H24, &EN.calendar), "19:52");
+        assert_eq!(format_hm(23, 59, ClockFormat::H24, &EN.calendar), "23:59");
     }
 
     #[test]
     fn twelve_hour_handles_midnight_noon_and_afternoon() {
-        assert_eq!(format_hm(0, 5, ClockFormat::H12), "12:05 AM");
-        assert_eq!(format_hm(1, 0, ClockFormat::H12), "01:00 AM");
-        assert_eq!(format_hm(11, 59, ClockFormat::H12), "11:59 AM");
-        assert_eq!(format_hm(12, 0, ClockFormat::H12), "12:00 PM");
-        assert_eq!(format_hm(13, 7, ClockFormat::H12), "01:07 PM");
-        assert_eq!(format_hm(23, 59, ClockFormat::H12), "11:59 PM");
+        let c = &EN.calendar;
+        assert_eq!(format_hm(0, 5, ClockFormat::H12, c), "12:05 AM");
+        assert_eq!(format_hm(1, 0, ClockFormat::H12, c), "01:00 AM");
+        assert_eq!(format_hm(11, 59, ClockFormat::H12, c), "11:59 AM");
+        assert_eq!(format_hm(12, 0, ClockFormat::H12, c), "12:00 PM");
+        assert_eq!(format_hm(13, 7, ClockFormat::H12, c), "01:07 PM");
+        assert_eq!(format_hm(23, 59, ClockFormat::H12, c), "11:59 PM");
     }
 
     #[test]
@@ -155,9 +139,10 @@ mod tests {
         assert_eq!(ClockFormat::default(), ClockFormat::H24);
         assert_eq!(ClockFormat::H24.toggled(), ClockFormat::H12);
         assert_eq!(ClockFormat::H12.toggled().toggled(), ClockFormat::H12);
+        let s = Language::En.strings();
         assert_ne!(
-            ClockFormat::H24.switch_label(),
-            ClockFormat::H12.switch_label()
+            ClockFormat::H24.switch_label(s),
+            ClockFormat::H12.switch_label(s)
         );
     }
 }

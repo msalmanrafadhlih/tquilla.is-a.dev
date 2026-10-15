@@ -18,9 +18,7 @@ fn clean(v: f64, sig: usize, zero_tol: f64) -> f64 {
 fn var_arg(e: &Expr) -> Result<char, CalcError> {
     match e {
         Expr::Var(c) => Ok(*c),
-        _ => Err(CalcError::Syntax(
-            "Argumen kedua harus berupa variabel (mis. x)".into(),
-        )),
+        _ => Err(CalcError::SecondArgNotVariable),
     }
 }
 
@@ -28,9 +26,7 @@ fn finite(v: f64) -> Result<f64, CalcError> {
     if v.is_finite() {
         Ok(v)
     } else {
-        Err(CalcError::Domain(
-            "Fungsi menghasilkan nilai tak hingga atau tak terdefinisi".into(),
-        ))
+        Err(CalcError::InfiniteOrUndefined)
     }
 }
 
@@ -41,9 +37,7 @@ pub fn diff(ctx: &mut Ctx, args: &[Expr]) -> Result<f64, CalcError> {
     let v = var_arg(&args[1])?;
     let a = ctx.eval(&args[2])?;
     if !a.is_finite() {
-        return Err(CalcError::Unsupported(
-            "Turunan di titik tak hingga tidak didukung".into(),
-        ));
+        return Err(CalcError::DerivativeAtInfinity);
     }
     let h = 1e-3 * a.abs().max(1.0);
     let mut f = |x: f64| -> Result<f64, CalcError> { finite(ctx.eval_at(&args[0], v, x)?) };
@@ -58,20 +52,16 @@ pub fn sum(ctx: &mut Ctx, args: &[Expr]) -> Result<f64, CalcError> {
     let a = ctx.eval(&args[2])?;
     let b = ctx.eval(&args[3])?;
     if !a.is_finite() || !b.is_finite() {
-        return Err(CalcError::Unsupported(
-            "Deret tak hingga belum didukung".into(),
-        ));
+        return Err(CalcError::InfiniteSeries);
     }
     if a.fract() != 0.0 || b.fract() != 0.0 {
-        return Err(CalcError::Domain("Batas Σ harus bilangan bulat".into()));
+        return Err(CalcError::SigmaBoundsNotInteger);
     }
     if b < a {
         return Ok(0.0);
     }
     if b - a >= 1_000_000.0 {
-        return Err(CalcError::Unsupported(
-            "Rentang Σ terlalu besar (maks. 1.000.000 suku)".into(),
-        ));
+        return Err(CalcError::SigmaRangeTooLarge);
     }
     let mut total = 0.0;
     let mut k = a;
@@ -103,7 +93,7 @@ fn one_sided(ctx: &mut Ctx, f: &Expr, v: char, a: f64, dir: f64) -> Result<f64, 
         };
         *slot = ctx.eval_at(f, v, x)?;
         if slot.is_nan() {
-            return Err(CalcError::Domain("Limit tidak terdefinisi".into()));
+            return Err(CalcError::LimitUndefined);
         }
     }
 
@@ -114,7 +104,7 @@ fn one_sided(ctx: &mut Ctx, f: &Expr, v: char, a: f64, dir: f64) -> Result<f64, 
         return Ok(last.signum() * f64::INFINITY);
     }
     if g.iter().any(|x| !x.is_finite()) {
-        return Err(CalcError::Domain("Limit tidak terdefinisi".into()));
+        return Err(CalcError::LimitUndefined);
     }
 
     // Tabel Neville (rasio langkah 2).
@@ -160,7 +150,7 @@ fn non_smooth(ctx: &mut Ctx, f: &Expr, v: char, a: f64, dir: f64) -> Result<f64,
     if g.iter().all(|x| x.is_finite()) && d2 <= d1 && d2 <= 1e-4 * (1.0 + g[2].abs()) {
         Ok(if g[2].abs() < 1e-6 { 0.0 } else { g[2] })
     } else {
-        Err(CalcError::Domain("Limit tidak konvergen".into()))
+        Err(CalcError::LimitNoConverge)
     }
 }
 
@@ -168,7 +158,7 @@ pub fn limit(ctx: &mut Ctx, name: &str, args: &[Expr]) -> Result<f64, CalcError>
     let v = var_arg(&args[1])?;
     let a = ctx.eval(&args[2])?;
     if a.is_nan() {
-        return Err(CalcError::Domain("Titik limit tidak valid".into()));
+        return Err(CalcError::LimitPointInvalid);
     }
     let f = &args[0];
     if a.is_infinite() {
@@ -185,11 +175,7 @@ pub fn limit(ctx: &mut Ctx, name: &str, args: &[Expr]) -> Result<f64, CalcError>
                 (false, false) if (l - r).abs() <= 1e-5 * (1.0 + l.abs().max(r.abs())) => {
                     (l + r) / 2.0
                 }
-                _ => {
-                    return Err(CalcError::Domain(
-                        "Limit tidak ada (sisi kiri ≠ sisi kanan)".into(),
-                    ))
-                }
+                _ => return Err(CalcError::LimitSidesDiffer),
             }
         }
     };
@@ -262,7 +248,7 @@ fn adaptive(f: &mut Integrand, a: f64, b: f64) -> Result<f64, CalcError> {
         if err <= tol * ((hi - lo) / (b - a)).abs().max(1e-3) || err <= 1e-14 * abs {
             total += r;
         } else if pieces > 3000 || (hi - lo).abs() < 1e-12 * (b - a).abs() {
-            return Err(CalcError::Domain("Integral tidak konvergen".into()));
+            return Err(CalcError::IntegralDiverges);
         } else {
             let m = 0.5 * (lo + hi);
             stack.push((lo, m));
@@ -277,7 +263,7 @@ pub fn integral(ctx: &mut Ctx, args: &[Expr]) -> Result<f64, CalcError> {
     let a = ctx.eval(&args[2])?;
     let b = ctx.eval(&args[3])?;
     if a.is_nan() || b.is_nan() {
-        return Err(CalcError::Domain("Batas integral tidak valid".into()));
+        return Err(CalcError::IntegralBoundsInvalid);
     }
     if a == b {
         return Ok(0.0);

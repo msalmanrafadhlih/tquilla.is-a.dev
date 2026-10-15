@@ -92,9 +92,7 @@ pub fn lex(input: &str) -> Result<Vec<Tok>, CalcError> {
                 // ',' atau '.' hanya valid bila diikuti/didahului angka
                 let starts_with_sep = c == '.' || c == ',';
                 if starts_with_sep && !chars.get(i + 1).is_some_and(|d| d.is_ascii_digit()) {
-                    return Err(CalcError::Syntax(
-                        "Tanda desimal tidak pada tempatnya".into(),
-                    ));
+                    return Err(CalcError::MisplacedDecimal);
                 }
                 let mut s = String::new();
                 while i < chars.len() && chars[i].is_ascii_digit() {
@@ -115,9 +113,7 @@ pub fn lex(input: &str) -> Result<Vec<Tok>, CalcError> {
                 if s.ends_with('.') {
                     s.push('0');
                 }
-                let v: f64 = s
-                    .parse()
-                    .map_err(|_| CalcError::Syntax("Angka tidak valid".into()))?;
+                let v: f64 = s.parse().map_err(|_| CalcError::InvalidNumber)?;
                 out.push(Tok::Num(v));
             }
             '+' => {
@@ -220,11 +216,7 @@ pub fn lex(input: &str) -> Result<Vec<Tok>, CalcError> {
                     i += 1;
                 }
             }
-            other => {
-                return Err(CalcError::Syntax(format!(
-                    "Karakter tidak dikenali: {other}"
-                )))
-            }
+            other => return Err(CalcError::UnexpectedChar(other)),
         }
     }
     Ok(out)
@@ -235,8 +227,8 @@ pub fn parse(toks: Vec<Tok>) -> Result<Expr, CalcError> {
     let e = p.parse_cmp()?;
     match p.peek() {
         None => Ok(e),
-        Some(Tok::RParen) => Err(CalcError::Syntax("Kurung tutup berlebih".into())),
-        Some(_) => Err(CalcError::Syntax("Ekspresi tidak valid".into())),
+        Some(Tok::RParen) => Err(CalcError::ExtraCloseParen),
+        Some(_) => Err(CalcError::InvalidExpression),
     }
 }
 
@@ -259,7 +251,7 @@ impl Parser {
     }
 
     fn incomplete() -> CalcError {
-        CalcError::Syntax("Ekspresi belum lengkap".into())
+        CalcError::Incomplete
     }
 
     fn parse_cmp(&mut self) -> Result<Expr, CalcError> {
@@ -361,7 +353,7 @@ impl Parser {
                 Ok(())
             }
             None => Ok(()),
-            Some(_) => Err(CalcError::Syntax("Ekspresi tidak valid".into())),
+            Some(_) => Err(CalcError::InvalidExpression),
         }
     }
 
@@ -379,9 +371,7 @@ impl Parser {
                     return Ok(Expr::Const(n));
                 }
                 if !matches!(self.peek(), Some(Tok::LParen)) {
-                    return Err(CalcError::Syntax(format!(
-                        "Fungsi {n} membutuhkan tanda kurung"
-                    )));
+                    return Err(CalcError::NeedsParens(n));
                 }
                 self.bump();
                 let mut args = vec![self.parse_add()?];
@@ -392,17 +382,13 @@ impl Parser {
                 self.close_paren()?;
                 let (lo, hi) = arity(n);
                 if args.len() < lo || args.len() > hi {
-                    return Err(CalcError::Syntax(if lo == hi {
-                        format!("{n} membutuhkan {lo} argumen (pisahkan dengan ;)")
-                    } else {
-                        format!("{n} membutuhkan {lo}–{hi} argumen (pisahkan dengan ;)")
-                    }));
+                    return Err(CalcError::ArgCount { name: n, lo, hi });
                 }
                 Ok(Expr::Call(n, args))
             }
             None => Err(Self::incomplete()),
-            Some(Tok::RParen) => Err(CalcError::Syntax("Kurung tutup berlebih".into())),
-            Some(_) => Err(CalcError::Syntax("Ekspresi tidak valid".into())),
+            Some(Tok::RParen) => Err(CalcError::ExtraCloseParen),
+            Some(_) => Err(CalcError::InvalidExpression),
         }
     }
 }

@@ -24,6 +24,12 @@ pub const PLAYFAIR_FONT_URL: &str = "https://fonts.googleapis.com/css2?family=Pl
 pub const SITE_URL: &str = "https://tquilla.is-a.dev";
 pub const SITE_NAME: &str = "tquilla.is-a.dev";
 
+/// Nama tampilan pemilik desktop (layar login).
+pub const USER_NAME: &str = "Tquilla";
+
+/// Alamat kontak di `/profile`.
+pub const CONTACT_EMAIL: &str = "tquilla1938@gmail.com";
+
 pub const GITHUB_URL: &str = "https://github.com/msalmanrafadhlih";
 pub const LINKEDIN_URL: &str = "https://linkedin.com/in/msalmanrafadhlih";
 // Sengaja: ini invite server komunitas "Motion IME" (sama seperti di

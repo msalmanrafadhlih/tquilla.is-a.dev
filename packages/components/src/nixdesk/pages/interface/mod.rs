@@ -14,6 +14,7 @@ use crate::nixdesk::gui::{
     SettingsWindowContent, AUDIO_JS,
 };
 
+use crate::languages::use_strings;
 use crate::nixdesk::clock::use_live_clock;
 
 /// Picks which app's UI fills a `WindowFrame`. A few apps aren't built
@@ -57,6 +58,7 @@ fn AppContent(id: AppId) -> Element {
 /// canvas of draggable/resizable app windows, and a launcher dock.
 #[component]
 pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
+    let s = use_strings();
     let mut loaded = use_signal(|| false);
     let open_windows: Signal<Vec<OpenWindow>> = use_signal(Vec::new);
     let next_z = use_signal(|| 1i32);
@@ -95,7 +97,7 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
 
             Navbar { time, date, on_toggle, brightness }
 
-            section { class: "relative overflow-hidden flex flex-col items-center gap-2.5 relative flex-1 self-stretch w-full h-full grow", "aria-label": "Desktop workspace",
+            section { class: "relative overflow-hidden flex flex-col items-center gap-2.5 relative flex-1 self-stretch w-full h-full grow", "aria-label": s.window.workspace,
                 for ow in open_windows() {
                     WindowFrame {
                         key: "{ow.id.key()}",

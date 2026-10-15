@@ -6,6 +6,7 @@ mod coming_soon;
 mod nav_rail;
 mod shell;
 
+use crate::languages::use_strings;
 use chat_preview::{use_chat_cycle, ChatPreviewPanel};
 use clock::{use_live_clock, ClockPanel};
 use coming_soon::ComingSoonPanel;
@@ -28,6 +29,7 @@ enum MobileTab {
 /// single-popup layout on narrow screens.
 #[component]
 pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
+    let s = use_strings();
     let mut loaded = use_signal(|| false);
 
     // Single source of truth for the shell — shared by both the desktop
@@ -71,8 +73,8 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                 div { class: "w-[300px] xl:w-[340px] shrink-0 flex flex-col gap-2.5",
                     div { class: "flex-1 min-h-0", ClockPanel { time, date } }
                     div { class: "flex-1 min-h-0", ChatPreviewPanel { index: chat_index } }
-                    div { class: "flex-1 min-h-0", ComingSoonPanel { label: "SHELL 5" } }
-                    div { class: "flex-1 min-h-0", ComingSoonPanel { label: "SHELL 6" } }
+                    div { class: "flex-1 min-h-0", ComingSoonPanel { label: s.terminal.panel(5) } }
+                    div { class: "flex-1 min-h-0", ComingSoonPanel { label: s.terminal.panel(6) } }
                 }
                 NavRail { on_toggle, vertical: true }
             }
@@ -96,15 +98,15 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                     } else if mobile_tab() == MobileTab::Shell4 {
                         ChatPreviewPanel { index: chat_index }
                     } else {
-                        ComingSoonPanel { label: "SHELL 5" }
+                        ComingSoonPanel { label: s.terminal.panel(5) }
                     }
                 }
                 div { class: "flex shrink-0 border border-white/15",
                     for (label , tab) in [
-                        ("SHELL 2", MobileTab::Shell2),
-                        ("SHELL 3", MobileTab::Shell3),
-                        ("SHELL 4", MobileTab::Shell4),
-                        ("SHELL 5", MobileTab::Shell5),
+                        (s.terminal.panel(2), MobileTab::Shell2),
+                        (s.terminal.panel(3), MobileTab::Shell3),
+                        (s.terminal.panel(4), MobileTab::Shell4),
+                        (s.terminal.panel(5), MobileTab::Shell5),
                     ]
                     {
                         button {

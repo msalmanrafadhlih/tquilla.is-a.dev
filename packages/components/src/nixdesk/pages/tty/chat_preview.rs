@@ -1,5 +1,6 @@
 use std::sync::OnceLock;
 
+use crate::languages::use_strings;
 use crate::platform::TimeoutFuture;
 use crate::time::relative_time;
 use dioxus::prelude::*;
@@ -51,6 +52,7 @@ pub fn use_chat_cycle() -> Signal<usize> {
 /// "shell 4" — the auto-cycling Live Chat preview.
 #[component]
 pub fn ChatPreviewPanel(index: Signal<usize>) -> Element {
+    let s = use_strings();
     let messages = load_messages();
     let total = messages.len();
     let current = if total > 0 {
@@ -67,12 +69,12 @@ pub fn ChatPreviewPanel(index: Signal<usize>) -> Element {
         .unwrap_or_default();
     let relative = current
         .as_ref()
-        .map(|m| relative_time(&m.timestamp))
+        .map(|m| relative_time(&m.timestamp, s))
         .unwrap_or_default();
     let message_text = current
         .as_ref()
         .map(|m| m.message.clone())
-        .unwrap_or_else(|| "No messages yet.".to_string());
+        .unwrap_or_else(|| s.terminal.no_messages.to_string());
 
     rsx! {
         div { class: "flex flex-col h-full justify-center gap-2 border border-white/15 px-5 py-6 overflow-hidden",
@@ -87,7 +89,7 @@ pub fn ChatPreviewPanel(index: Signal<usize>) -> Element {
                     p { class: "text-sm text-white/70 leading-snug line-clamp-3", "{message_text}" }
                 }
             } else {
-                p { class: "text-white/30 text-sm", "No messages yet." }
+                p { class: "text-white/30 text-sm", "{s.terminal.no_messages}" }
             }
         }
     }

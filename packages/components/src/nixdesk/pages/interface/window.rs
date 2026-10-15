@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::languages::{use_strings, Strings};
+
 /// Which app a window instance represents — also the stable identity used
 /// by the open-window registry (open/close/focus/minimize/maximize).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -31,17 +33,18 @@ impl AppId {
         }
     }
 
-    pub fn title(self) -> &'static str {
+    /// Judul window dalam bahasa aktif.
+    pub fn title(self, s: &Strings) -> &'static str {
         match self {
-            AppId::Calculator => "Calculator",
-            AppId::About => "About",
-            AppId::Settings => "Settings",
-            AppId::FileManager => "File Manager",
-            AppId::Radio => "Radio Indonesia",
-            AppId::Browser => "Locked Browser",
-            AppId::Embience => "Embience",
-            AppId::LiveChat => "Live Chat!",
-            AppId::AiAssistant => "Ai Asistant",
+            AppId::Calculator => s.apps.calculator,
+            AppId::About => s.apps.about,
+            AppId::Settings => s.apps.settings,
+            AppId::FileManager => s.apps.file_manager,
+            AppId::Radio => s.apps.radio,
+            AppId::Browser => s.apps.browser,
+            AppId::Embience => s.apps.embience,
+            AppId::LiveChat => s.apps.live_chat,
+            AppId::AiAssistant => s.apps.ai_assistant,
         }
     }
 
@@ -506,6 +509,7 @@ pub fn WindowFrame(
     next_z: Signal<i32>,
     children: Element,
 ) -> Element {
+    let s = use_strings();
     let id = window.id;
     let dom_id = format!("win-{}", id.key());
     let handle_id = format!("win-{}-handle", id.key());
@@ -582,11 +586,11 @@ pub fn WindowFrame(
                 div { class: "flex items-center gap-2.5 relative flex-1 grow",
                     img { class: "relative w-5 h-5 aspect-[1]",
                         src: "{icon}",
-                        alt: "{id.title()}",
+                        alt: "{id.title(s)}",
                         "aria-hidden": "true",
                     }
                     h1 { class: "relative flex items-center justify-center w-max [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-fg-main text-[12px] text-start tracking-[0] leading-[normal] whitespace-nowrap",
-                        "{id.title()}"
+                        "{id.title(s)}"
                     }
                 }
 
@@ -595,19 +599,19 @@ pub fn WindowFrame(
                     class: "inline-flex items-center justify-end gap-2.5 relative flex-[0_0_auto] grow",
                     button {
                         r#type: "button",
-                        title: "Minimize",
+                        title: s.window.minimize,
                         class: "relative w-3 h-3 bg-yellow-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
                         onclick: move |_| request_minimize(open_windows, id),
                     }
                     button {
                         r#type: "button",
-                        title: "Maximize",
+                        title: s.window.maximize,
                         class: "hidden md:block relative w-3 h-3 bg-green-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
                         onclick: move |_| toggle_maximize(open_windows, id),
                     }
                     button {
                         r#type: "button",
-                        title: "Close",
+                        title: s.window.close,
                         class: "relative w-3 h-3 bg-red-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
                         onclick: move |_| request_close(open_windows, id),
                     }
@@ -669,7 +673,9 @@ mod tests {
         for a in ALL {
             let (_, _, w, h) = a.default_geometry();
             assert!(w > 0.0 && h > 0.0, "{a:?} has an empty default size");
-            assert!(!a.title().is_empty());
+            for lang in crate::languages::Language::ALL {
+                assert!(!a.title(lang.strings()).is_empty());
+            }
         }
     }
 

@@ -6,11 +6,13 @@ mod pages;
 use crate::platform::TimeoutFuture;
 use dioxus::prelude::*;
 
+use crate::languages::use_strings;
 use crate::shared::PageMeta;
 use pages::*;
 
 #[component]
 pub fn DesktopPage() -> Element {
+    let s = use_strings();
     let mut is_booting = use_signal(|| true);
     let mut is_logged_in = use_signal(|| false);
 
@@ -23,8 +25,8 @@ pub fn DesktopPage() -> Element {
 
     rsx! {
         PageMeta {
-            title: "Deisktify",
-            description: "Deisktify: a desktop operating system simulated in the browser, with a window manager, calculator, radio, ambient sounds, AI chat and live chat. Built with Rust and Dioxus.",
+            title: s.meta.desktop_title,
+            description: s.meta.desktop_description,
             path: "/deisktify",
         }
 

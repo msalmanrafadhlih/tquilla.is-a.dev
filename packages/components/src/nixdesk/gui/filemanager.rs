@@ -1,23 +1,66 @@
+use crate::languages::{use_strings, Strings};
 use dioxus::prelude::*;
 
 const IMG: Asset = asset!("/assets/logo-FileManager.svg");
-const FOLDER_NAMES: [&str; 5] = ["Documents", "Downloads", "Musics", "Pictures", "Videos"];
+
+/// Folder di bawah `home/tquilla`. Nama tampilannya mengikuti bahasa aktif
+/// (`Strings::filemanager`); identitasnya tetap varian enum ini.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Folder {
+    Documents,
+    Downloads,
+    Musics,
+    Pictures,
+    Videos,
+}
+
+impl Folder {
+    const ALL: [Folder; 5] = [
+        Folder::Documents,
+        Folder::Downloads,
+        Folder::Musics,
+        Folder::Pictures,
+        Folder::Videos,
+    ];
+
+    fn name(self, s: &Strings) -> &'static str {
+        match self {
+            Folder::Documents => s.filemanager.documents,
+            Folder::Downloads => s.filemanager.downloads,
+            Folder::Musics => s.filemanager.musics,
+            Folder::Pictures => s.filemanager.pictures,
+            Folder::Videos => s.filemanager.videos,
+        }
+    }
+
+    /// Stable key for rsx `key`s (not translated).
+    fn key(self) -> &'static str {
+        match self {
+            Folder::Documents => "documents",
+            Folder::Downloads => "downloads",
+            Folder::Musics => "musics",
+            Folder::Pictures => "pictures",
+            Folder::Videos => "videos",
+        }
+    }
+}
 
 #[component]
 pub fn FileManagerWindowContent() -> Element {
     const NAV_BUTTON_CLASS: &str = "relative flex items-end justify-center w-fit mt-[-1.00px] appearance-none border-0 bg-[var(--bg-secondary)] p-0 cursor-pointer [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-xs text-center tracking-[0] leading-[normal]";
-    let mut current = use_signal(|| Option::<&'static str>::None);
+    let s = use_strings();
+    let mut current = use_signal(|| Option::<Folder>::None);
     let selected = current();
-    let breadcrumb_suffix = selected.unwrap_or("");
+    let breadcrumb_suffix = selected.map(|f| f.name(s)).unwrap_or("");
 
     rsx! {
         section {
-            "aria-label": "File browser",
+            "aria-label": s.filemanager.file_browser,
             class: "flex flex-row w-full h-full items-start justify-start flex relative overflow-hidden",
 
             // side panel
             aside {
-                "aria-label": "Places",
+                "aria-label": s.filemanager.places,
                 class: "inline-flex flex-col w-[30%] h-full min-w-max max-w-[150px] items-center relative border-r border-solid border-[var(--fg-secondary)] ",
 
                 button {
@@ -25,16 +68,16 @@ pub fn FileManagerWindowContent() -> Element {
                     class: nav_item_class(selected.is_none()),
                     "aria-current": if selected.is_none() { "page" } else { "false" },
                     onclick: move |_| current.set(None),
-                    "Desktops"
+                    "{s.filemanager.desktops}"
                 }
-                for name in FOLDER_NAMES {
+                for folder in Folder::ALL {
                     button {
-                        key: "{name}",
+                        key: "{folder.key()}",
                         r#type: "button",
-                        class: nav_item_class(selected == Some(name)),
-                        "aria-current": if selected == Some(name) { "page" } else { "false" },
-                        onclick: move |_| current.set(Some(name)),
-                        "{name}"
+                        class: nav_item_class(selected == Some(folder)),
+                        "aria-current": if selected == Some(folder) { "page" } else { "false" },
+                        onclick: move |_| current.set(Some(folder)),
+                        "{folder.name(s)}"
                     }
                 }
             }
@@ -42,7 +85,7 @@ pub fn FileManagerWindowContent() -> Element {
             // current directory
             section {
                 class: "flex-col items-start gap-2.5 flex-1 self-stretch grow flex relative",
-                "aria-label": "Current directory",
+                "aria-label": s.filemanager.current_directory,
 
                 // top bar: navigation + breadcrumb
                 header {
@@ -51,15 +94,15 @@ pub fn FileManagerWindowContent() -> Element {
                     button {
                         r#type: "button",
                         class: NAV_BUTTON_CLASS,
-                        "aria-label": "Go back",
-                        title: "Go back",
+                        "aria-label": s.filemanager.go_back,
+                        title: s.filemanager.go_back,
                         "<"
                     }
                     button {
                         r#type: "button",
                         class: NAV_BUTTON_CLASS,
-                        "aria-label": "Go forward",
-                        title: "Go forward",
+                        "aria-label": s.filemanager.go_forward,
+                        title: s.filemanager.go_forward,
                         ">"
                     }
 
@@ -76,32 +119,32 @@ pub fn FileManagerWindowContent() -> Element {
                 // workspace
                 div {
                     role: "list",
-                    "aria-label": "Folder contents",
+                    "aria-label": s.filemanager.folder_contents,
                     class: "flex flex-col min-[400px]:grid min-[400px]:grid-cols-[repeat(auto-fill,minmax(90px,max-content))] justify-start content-start items-start gap-[25px] p-5 w-full h-full max-h-full overflow-y-auto min-h-[200px] relative",
 
                     if selected.is_none() {
-                        for name in FOLDER_NAMES {
+                        for folder in Folder::ALL {
                             button {
-                                key: "{name}",
+                                key: "{folder.key()}",
                                 r#type: "button",
                                 role: "listitem",
                                 class: "flex flex-col shrink-0 items-center gap-1.5 p-0 cursor-pointer hover:opacity-50 border-0 bg-[var(--bg-secondary)] w-[90px] opacity-70",
-                                onclick: move |_| current.set(Some(name)),
+                                onclick: move |_| current.set(Some(folder)),
                                 img {
                                     src: IMG,
-                                    alt: name,
+                                    alt: folder.name(s),
                                     class: "hidden min-[400px]:block w-full",
                                 }
                                 span {
                                     class: "text-[var(--fg-main)] text-left min-[400px]:text-center text-xs w-full break-words",
-                                    "{name}"
+                                    "{folder.name(s)}"
                                 }
                             }
                         }
                     } else {
                         p {
                             class: "text-fg-secondary",
-                            "(empty)"
+                            "{s.filemanager.empty}"
                         }
                     }
                 }

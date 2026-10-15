@@ -13,7 +13,7 @@ fn num_a(s: &str, a: Angle) -> f64 {
 
 fn text(s: &str, a: Angle) -> String {
     match evaluate(s, a) {
-        Ok(o) => o.to_text(),
+        Ok(o) => o.display(Language::En.strings()),
         Err(e) => format!("ERR: {e}"),
     }
 }
@@ -27,7 +27,7 @@ macro_rules! assert_close {
         let got = num($expr);
         assert!(
             close(got, $want, $tol),
-            "{} = {} (harusnya {})",
+            "{} = {} (expected {})",
             $expr,
             got,
             $want
@@ -47,7 +47,7 @@ fn aritmetika_dasar() {
     assert_eq!(num("2^-1"), 0.5);
     assert_eq!(num("5!"), 120.0);
     assert_eq!(num("50%"), 0.5);
-    assert_eq!(num("0,1+0,2"), 0.1 + 0.2);
+    assert_eq!(num("0.1+0.2"), 0.1 + 0.2);
 }
 
 #[test]
@@ -61,14 +61,11 @@ fn perkalian_implisit_dan_kurung_terbuka() {
 
 #[test]
 fn error_aritmetika() {
-    assert_eq!(
-        text("1÷0", Angle::Rad),
-        "ERR: Tidak bisa membagi dengan nol"
-    );
+    assert_eq!(text("1÷0", Angle::Rad), "ERR: Cannot divide by zero");
     assert!(text("(-1)!", Angle::Rad).starts_with("ERR"));
     assert!(text("ln(0)", Angle::Rad).starts_with("ERR"));
     assert!(text("√(-4)", Angle::Rad).starts_with("ERR"));
-    assert!(text("x+1", Angle::Rad).contains("Variabel x"));
+    assert!(text("x+1", Angle::Rad).contains("Variable x"));
     assert!(text("2+", Angle::Rad).starts_with("ERR"));
     assert!(text("2+)", Angle::Rad).starts_with("ERR"));
     assert!(text("171!", Angle::Rad).starts_with("ERR"));
@@ -94,11 +91,11 @@ fn fungsi_aljabar() {
 #[test]
 fn perbandingan() {
     let t = |s: &str| text(s, Angle::Rad);
-    assert_eq!(t("2+2=4"), "Benar");
-    assert_eq!(t("2<1"), "Salah");
-    assert_eq!(t("3≤3"), "Benar");
-    assert_eq!(t("5≥6"), "Salah");
-    assert_eq!(t("0,1+0,2=0,3"), "Benar");
+    assert_eq!(t("2+2=4"), "True");
+    assert_eq!(t("2<1"), "False");
+    assert_eq!(t("3≤3"), "True");
+    assert_eq!(t("5≥6"), "False");
+    assert_eq!(t("0.1+0.2=0.3"), "True");
 }
 
 #[test]
@@ -111,7 +108,7 @@ fn trigonometri_radian_dan_derajat() {
     assert_eq!(num_a("sin(180)", Angle::Deg), 0.0);
     assert!(close(num_a("tan(45)", Angle::Deg), 1.0, 1e-12));
     assert!(text("tan(90)", Angle::Deg).starts_with("ERR"));
-    assert!(close(num_a("arcsin(0,5)", Angle::Deg), 30.0, 1e-12));
+    assert!(close(num_a("arcsin(0.5)", Angle::Deg), 30.0, 1e-12));
     assert!(close(num_a("arctan(1)", Angle::Deg), 45.0, 1e-12));
     assert!(close(num("arctan(1)"), std::f64::consts::FRAC_PI_4, 1e-12));
     assert!(close(num_a("sec(60)", Angle::Deg), 2.0, 1e-12));
@@ -174,13 +171,13 @@ fn limit_numerik() {
 #[test]
 fn format_angka() {
     assert_eq!(format_number(100.0), "100");
-    assert_eq!(format_number(0.1 + 0.2), "0,3");
-    assert_eq!(format_number(-2.5), "-2,5");
-    assert_eq!(format_number(1.0 / 3.0), "0,3333333333");
+    assert_eq!(format_number(0.1 + 0.2), "0.3");
+    assert_eq!(format_number(-2.5), "-2.5");
+    assert_eq!(format_number(1.0 / 3.0), "0.3333333333");
     assert_eq!(format_number(1e20), "1×10^20");
-    assert_eq!(format_number(1.5e-9), "1,5×10^-9");
+    assert_eq!(format_number(1.5e-9), "1.5×10^-9");
     assert_eq!(format_number(123456789012.0), "123456789012");
-    assert_eq!(format_number(2.0_f64.sqrt()), "1,414213562");
+    assert_eq!(format_number(2.0_f64.sqrt()), "1.414213562");
     // hasil yang diformat bisa dipakai lagi sebagai masukan
     for v in [1e20, 1.5e-9, -2.5, 1.0 / 3.0] {
         let s = format_number(v);
@@ -191,7 +188,13 @@ fn format_angka() {
 #[test]
 fn angka_polos() {
     assert!(is_plain_number("42"));
-    assert!(is_plain_number("-3,5"));
+    assert!(is_plain_number("-3.5"));
     assert!(!is_plain_number("2+3"));
     assert!(!is_plain_number("π"));
+}
+
+#[test]
+fn comma_still_accepted_as_decimal_input() {
+    assert_eq!(num("0,1+0,2"), 0.1 + 0.2);
+    assert_eq!(num("0,5+0.5"), 1.0);
 }

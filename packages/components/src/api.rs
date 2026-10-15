@@ -25,6 +25,7 @@ pub use api_types::{
     ApiErrorBody, ApiErrorDetail, ErrorCode, HealthResponse, ServiceStatus, API_PREFIX,
 };
 
+use crate::languages::{Language, Strings};
 use crate::platform::http;
 
 /// Everything that can go wrong with a call. `Display` is short, in English
@@ -69,22 +70,33 @@ impl ApiError {
     }
 }
 
+impl ApiError {
+    /// Short message in the given language (see `languages::Strings::api`).
+    /// Never contains URLs or response bodies, so it is safe to show.
+    pub fn message(&self, s: &Strings) -> &'static str {
+        let t = &s.api;
+        match self {
+            Self::NotConfigured => t.not_configured,
+            Self::InvalidPath => t.invalid_request,
+            Self::BodyTooLarge => t.too_large,
+            Self::Network(_) => t.unreachable,
+            Self::Status { status, detail } => match detail.as_ref().map(|d| d.code) {
+                Some(ErrorCode::RateLimited) => t.rate_limited,
+                Some(ErrorCode::PayloadTooLarge) => t.too_large,
+                Some(ErrorCode::NotFound) => t.not_found,
+                _ if *status >= 500 => t.server_error,
+                _ => t.rejected,
+            },
+            Self::Decode(_) => t.bad_response,
+        }
+    }
+}
+
+/// `Display` is the default language (English), for logs and tests; the UI
+/// should call [`ApiError::message`] with `use_strings()`.
 impl std::fmt::Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NotConfigured => f.write_str("The server address is not configured."),
-            Self::InvalidPath => f.write_str("Invalid request."),
-            Self::BodyTooLarge => f.write_str("The request is too large."),
-            Self::Network(_) => f.write_str("Could not reach the server."),
-            Self::Status { status, detail } => match detail.as_ref().map(|d| d.code) {
-                Some(ErrorCode::RateLimited) => f.write_str("Too many requests, try again later."),
-                Some(ErrorCode::PayloadTooLarge) => f.write_str("The request is too large."),
-                Some(ErrorCode::NotFound) => f.write_str("Not found."),
-                _ if *status >= 500 => f.write_str("The server had a problem, try again later."),
-                _ => f.write_str("The server rejected the request."),
-            },
-            Self::Decode(_) => f.write_str("The server sent an unexpected response."),
-        }
+        f.write_str(self.message(Language::default().strings()))
     }
 }
 

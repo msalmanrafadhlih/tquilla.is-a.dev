@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::languages::{use_strings, Strings};
+
 const GEMINI_35_FLASH: &str = "gemini-3.5-flash";
 const GEMINI_37_FLASH: &str = "gemini-3.7-flash";
 
@@ -58,6 +60,26 @@ struct ChatTurn {
     text: String,
 }
 
+/// Kenapa permintaan ke Gemini gagal. Diterjemahkan saat ditampilkan
+/// (`AiError::message`); teks dari Google atau dari jaringan ditampilkan apa adanya.
+#[derive(Clone, PartialEq, Debug)]
+enum AiError {
+    MissingKey,
+    HttpStatus(u16),
+    /// Pesan dari Google (`error.message`) atau dari lapisan jaringan.
+    Remote(String),
+}
+
+impl AiError {
+    fn message(&self, s: &Strings) -> String {
+        match self {
+            AiError::MissingKey => s.ai.missing_key.to_string(),
+            AiError::HttpStatus(status) => s.ai.http_failed(*status),
+            AiError::Remote(text) => text.clone(),
+        }
+    }
+}
+
 #[derive(Serialize)]
 struct GeminiRequest {
     contents: Vec<GeminiContent>,
@@ -99,7 +121,8 @@ async fn call_gemini(
     api_key: String,
     model: String,
     history: Vec<ChatTurn>,
-) -> Result<String, String> {
+    s: &'static Strings,
+) -> Result<String, AiError> {
     let contents: Vec<GeminiContent> = history
         .iter()
         .map(|turn| GeminiContent {
@@ -120,22 +143,23 @@ async fn call_gemini(
         format!("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent");
     let body = GeminiRequest { contents };
 
-    let payload = serde_json::to_string(&body).map_err(|e| e.to_string())?;
+    let payload = serde_json::to_string(&body).map_err(|e| AiError::Remote(e.to_string()))?;
 
     let response = crate::platform::http::post_json_with_headers(
         &url,
         payload,
         &[("x-goog-api-key", api_key.trim())],
     )
-    .await?;
+    .await
+    .map_err(AiError::Remote)?;
     let status = response.status;
     let parsed: GeminiResponse = serde_json::from_str(&response.body).unwrap_or_default();
 
     if let Some(err) = parsed.error {
-        return Err(err.message);
+        return Err(AiError::Remote(err.message));
     }
     if !(200..300).contains(&status) {
-        return Err(format!("Request failed (HTTP {status})."));
+        return Err(AiError::HttpStatus(status));
     }
 
     let text = parsed
@@ -144,7 +168,7 @@ async fn call_gemini(
         .first()
         .and_then(|c| c.content.parts.first())
         .map(|p| p.text.clone())
-        .unwrap_or_else(|| "(empty response)".to_string());
+        .unwrap_or_else(|| s.ai.empty_response.to_string());
     Ok(text)
 }
 
@@ -155,9 +179,10 @@ fn send_prompt(
     mut history: Signal<Vec<ChatTurn>>,
     mut draft: Signal<String>,
     mut sending: Signal<bool>,
-    mut error: Signal<Option<String>>,
+    mut error: Signal<Option<AiError>>,
     api_key: String,
     model: String,
+    s: &'static Strings,
 ) {
     if sending() {
         return;
@@ -167,7 +192,7 @@ fn send_prompt(
         return;
     }
     if api_key.trim().is_empty() {
-        error.set(Some("Enter your Gemini API key below first.".to_string()));
+        error.set(Some(AiError::MissingKey));
         return;
     }
     error.set(None);
@@ -181,7 +206,7 @@ fn send_prompt(
     sending.set(true);
 
     spawn(async move {
-        match call_gemini(api_key, model, list).await {
+        match call_gemini(api_key, model, list, s).await {
             Ok(reply) => {
                 let mut updated = history();
                 updated.push(ChatTurn {
@@ -196,7 +221,7 @@ fn send_prompt(
     });
 }
 
-fn clear_chat(mut history: Signal<Vec<ChatTurn>>, mut error: Signal<Option<String>>) {
+fn clear_chat(mut history: Signal<Vec<ChatTurn>>, mut error: Signal<Option<AiError>>) {
     history.set(vec![]);
     error.set(None);
 }
@@ -253,10 +278,11 @@ fn model_option_class(active: bool) -> &'static str {
 
 #[component]
 pub fn AiAssistantWindowContent() -> Element {
+    let s = use_strings();
     let history: Signal<Vec<ChatTurn>> = use_signal(Vec::new);
     let mut draft = use_signal(String::new);
     let sending = use_signal(|| false);
-    let error: Signal<Option<String>> = use_signal(|| None);
+    let error: Signal<Option<AiError>> = use_signal(|| None);
     let mut api_key = use_signal(String::new);
     let mut show_key = use_signal(|| false);
     let mut show_models = use_signal(|| false);
@@ -264,10 +290,14 @@ pub fn AiAssistantWindowContent() -> Element {
 
     let turns = history();
     let key_input_type = if show_key() { "text" } else { "password" };
-    let eye_label = if show_key() { "Hide" } else { "Show" };
+    let eye_label = if show_key() {
+        s.ai.hide_key
+    } else {
+        s.ai.show_key
+    };
     let models_expanded = if show_models() { "true" } else { "false" };
     let has_error = error().is_some();
-    let error_message = error().unwrap_or_default();
+    let error_message = error().map(|e| e.message(s)).unwrap_or_default();
 
     rsx! {
         div { class: ROOT_CLASS,
@@ -275,11 +305,11 @@ pub fn AiAssistantWindowContent() -> Element {
             // conversation — flex-col-reverse, so the DOM runs bottom to top:
             // the status indicators come first, then turns from newest to oldest
             section {
-                "aria-label": "Conversation",
+                "aria-label": s.ai.conversation,
                 class: CONVERSATION_CLASS,
 
                 if sending() {
-                    p { class: "text-[var(--fg-secondary)] text-xs", "Thinking..." }
+                    p { class: "text-[var(--fg-secondary)] text-xs", "{s.ai.thinking}" }
                 }
                 if has_error {
                     p { class: "text-[var(--red text)]-xs", "{error_message}" }
@@ -322,7 +352,7 @@ pub fn AiAssistantWindowContent() -> Element {
                                                         figure {
                                                             key: "code-{j}",
                                                             class: CODE_FIGURE_CLASS,
-                                                            figcaption { class: "sr-only", "Code block" }
+                                                            figcaption { class: "sr-only", "{s.ai.code_block}" }
                                                             div {
                                                                 class: CODE_GUTTER_CLASS,
                                                                 "aria-hidden": "true",
@@ -353,7 +383,7 @@ pub fn AiAssistantWindowContent() -> Element {
                 if turns.is_empty() {
                     p {
                         class: "text-[var(--fg-secondary)] text-xs",
-                        "Ask me anything — bring your own Gemini API key below."
+                        "{s.ai.empty_prompt}"
                     }
                 }
             }
@@ -363,17 +393,17 @@ pub fn AiAssistantWindowContent() -> Element {
                 class: FOOTER_CLASS,
 
                 form {
-                    "aria-label": "Ask the AI assistant",
+                    "aria-label": s.ai.form_label,
                     class: FORM_CLASS,
                     onsubmit: move |evt: FormEvent| {
                         evt.prevent_default();
-                        send_prompt(history, draft, sending, error, api_key(), model().to_string());
+                        send_prompt(history, draft, sending, error, api_key(), model().to_string(), s);
                     },
 
                     button {
                         r#type: "button",
-                        "aria-label": "Add files, and more",
-                        title: "Add Attachments",
+                        "aria-label": s.ai.add_attachments_aria,
+                        title: s.ai.add_attachments_title,
                         class: ICON_BUTTON_CLASS,
                         // salah ini,seharusnya add file gitu
                         onclick: move |_| clear_chat(history, error),
@@ -383,14 +413,14 @@ pub fn AiAssistantWindowContent() -> Element {
                     label {
                         r#for: "assistant-question",
                         class: "sr-only",
-                        "What would you like to know?"
+                        "{s.ai.question_prompt}"
                     }
                     input {
                         id: "assistant-question",
                         name: "question",
                         r#type: "text",
                         autocomplete: "off",
-                        placeholder: "What would you like to know?",
+                        placeholder: s.ai.question_prompt,
                         class: QUESTION_INPUT_CLASS,
                         value: "{draft}",
                         oninput: move |evt: FormEvent| draft.set(evt.value()),
@@ -398,7 +428,7 @@ pub fn AiAssistantWindowContent() -> Element {
 
                     button {
                         r#type: "submit",
-                        "aria-label": "Send question",
+                        "aria-label": s.ai.send_question,
                         class: ICON_BUTTON_CLASS,
                         img { src: ICON_SEND, alt: "", "aria-hidden": "true" }
                     }
@@ -412,7 +442,7 @@ pub fn AiAssistantWindowContent() -> Element {
                         label {
                             r#for: "api-key",
                             class: KEY_LABEL_CLASS,
-                            "Api key:"
+                            "{s.ai.api_key_label}"
                         }
 
                         div {
@@ -437,10 +467,10 @@ pub fn AiAssistantWindowContent() -> Element {
                             }
                             a {
                                 r#type: "button",
-                                "aria-label": "API Key information",
+                                "aria-label": s.ai.api_key_info,
                                 target: "_blank",
                                 href: "https://aistudio.google.com/app/api-keys",
-                                title: "Your key stays in memory for this session only and is sent straight from your browser to Google (as a request header). Never use a key you can't rotate.",
+                                title: s.ai.api_key_tooltip,
                                 class: INFO_BUTTON_CLASS,
                                 img {
                                     src: ICON_INFO,
@@ -457,7 +487,7 @@ pub fn AiAssistantWindowContent() -> Element {
                         class: SETTINGS_WRAP_CLASS,
                         button {
                             r#type: "button",
-                            "aria-label": "Open assistant settings",
+                            "aria-label": s.ai.open_settings,
                             "aria-expanded": "{models_expanded}",
                             class: SETTINGS_TOGGLE_CLASS,
                             onclick: move |_| show_models.set(!show_models()),
@@ -492,7 +522,7 @@ pub fn AiAssistantWindowContent() -> Element {
                 p {
                     id: "api-key-help",
                     class: "sr-only",
-                    "Your API key is only kept in memory for this session and hidden by default."
+                    "{s.ai.api_key_help}"
                 }
             }
         }

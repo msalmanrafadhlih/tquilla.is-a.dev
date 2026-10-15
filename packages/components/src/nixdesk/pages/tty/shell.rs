@@ -1,3 +1,4 @@
+use crate::languages::{use_strings, Strings};
 use crate::platform::Date;
 use dioxus::prelude::*;
 
@@ -18,34 +19,12 @@ pub struct ShellEntry {
 const HOME_DIRS: &[&str] = &["Documents", "Downloads", "Musics", "Pictures", "Videos"];
 const HOME: &str = "/home/tquilla";
 
-const HELP_TEXT: &[&str] = &[
-    "Available commands:",
-    "  help            show this message",
-    "  pwd             print working directory",
-    "  whoami          print current user",
-    "  ls              list directory contents",
-    "  cd <dir>        change directory (.. or no arg goes home)",
-    "  cat <file>      read a file (try: cat about.txt)",
-    "  neofetch        system info",
-    "  date            current date & time",
-    "  echo <text>     print text",
-    "  history         show command history",
-    "  switch          jump to Desktop Mode",
-    "  clear           clear the screen",
-];
-
-fn about_text() -> Vec<String> {
-    vec![
-        "NixOS 26.11 (Zakar)".to_string(),
-        "-------------------".to_string(),
-        "OS:         NixOS 26.11 (Zakar)".to_string(),
-        "Kernel:     Linux 6.18.38".to_string(),
-        "Arch:       x86_64".to_string(),
-        "DE:         DeistifyNix (Wayland)".to_string(),
-        "Built in:   Dioxus (Rust) + Tailwind".to_string(),
-        "Design:     Black & White".to_string(),
-        "Philosophy: Declaratif Desktop OS (Joke)".to_string(),
-    ]
+fn about_text(s: &Strings) -> Vec<String> {
+    s.terminal
+        .neofetch_lines()
+        .iter()
+        .map(|line| line.to_string())
+        .collect()
 }
 
 /// Runs one line of input against the fake shell. Returns the output
@@ -56,6 +35,7 @@ fn run_command(
     cwd: &str,
     history: &[ShellEntry],
     clock_format: ClockFormat,
+    s: &Strings,
     on_toggle: EventHandler<()>,
 ) -> (Vec<String>, Option<String>, bool) {
     let trimmed = raw.trim();
@@ -70,7 +50,11 @@ fn run_command(
 
     match cmd {
         "help" => (
-            HELP_TEXT.iter().map(|s| s.to_string()).collect(),
+            s.terminal
+                .help_lines()
+                .iter()
+                .map(|line| line.to_string())
+                .collect(),
             None,
             false,
         ),
@@ -78,7 +62,7 @@ fn run_command(
         "whoami" => (vec!["tquilla".to_string()], None, false),
         "ls" => {
             if in_subdir {
-                (vec!["(empty)".to_string()], None, false)
+                (vec![s.terminal.empty_dir.to_string()], None, false)
             } else {
                 (vec![HOME_DIRS.join("  ")], None, false)
             }
@@ -88,25 +72,25 @@ fn run_command(
             Some(dir) if !in_subdir && HOME_DIRS.contains(&dir) => {
                 (vec![], Some(format!("{HOME}/{dir}")), false)
             }
-            Some(dir) => (vec![format!("cd: no such directory: {dir}")], None, false),
+            Some(dir) => (vec![s.terminal.cd_no_such_dir(dir)], None, false),
         },
         "cat" => match args.first().copied() {
-            Some("about.txt") | Some("README") | Some("README.md") => (about_text(), None, false),
-            Some(name) => (
-                vec![format!("cat: {name}: No such file or directory")],
+            Some("about.txt") | Some("README") | Some("README.md") => (about_text(s), None, false),
+            Some(name) => (vec![s.terminal.cat_no_such_file(name)], None, false),
+            None => (
+                vec![s.terminal.cat_missing_operand.to_string()],
                 None,
                 false,
             ),
-            None => (vec!["cat: missing file operand".to_string()], None, false),
         },
-        "neofetch" | "about" => (about_text(), None, false),
+        "neofetch" | "about" => (about_text(s), None, false),
         "date" => {
             let now = Date::new_0();
             (
                 vec![format!(
                     "{}, {}",
-                    format_date(&now),
-                    format_time(&now, clock_format)
+                    format_date(&now, s),
+                    format_time(&now, clock_format, s)
                 )],
                 None,
                 false,
@@ -115,7 +99,7 @@ fn run_command(
         "echo" => (vec![args.join(" ")], None, false),
         "history" => {
             if history.is_empty() {
-                (vec!["(no history yet)".to_string()], None, false)
+                (vec![s.terminal.no_history.to_string()], None, false)
             } else {
                 let lines = history
                     .iter()
@@ -125,27 +109,13 @@ fn run_command(
                 (lines, None, false)
             }
         }
-        "sudo" => (
-            vec!["tquilla is not in the sudoers file. This incident will be reported.".to_string()],
-            None,
-            false,
-        ),
+        "sudo" => (vec![s.terminal.sudo_denied.to_string()], None, false),
         "switch" | "desktop" => {
             on_toggle.call(());
-            (
-                vec!["switching to Desktop Mode...".to_string()],
-                None,
-                false,
-            )
+            (vec![s.terminal.switching.to_string()], None, false)
         }
         "clear" => (vec![], None, true),
-        other => (
-            vec![format!(
-                "command not found: {other}. Type 'help' for a list."
-            )],
-            None,
-            false,
-        ),
+        other => (vec![s.terminal.command_not_found(other)], None, false),
     }
 }
 
@@ -159,6 +129,7 @@ pub fn ShellPanel(
     on_toggle: EventHandler<()>,
     compact: bool,
 ) -> Element {
+    let s = use_strings();
     let clock_format = use_clock_format();
     let mut draft = use_signal(String::new);
     let mut log_cursor = use_signal(|| Option::<usize>::None);
@@ -183,7 +154,7 @@ pub fn ShellPanel(
 
         let entries = history();
         let (output, new_cwd, should_clear) =
-            run_command(&raw, &cwd(), &entries, clock_format(), on_toggle);
+            run_command(&raw, &cwd(), &entries, clock_format(), s, on_toggle);
 
         if should_clear {
             history.set(vec![]);
@@ -222,9 +193,9 @@ pub fn ShellPanel(
             },
 
             p { class: "text-white/40 mb-1",
-                "Welcome to NixOS 26.11 (Zakar) — Dioxus terminal simulator. Type "
+                "{s.terminal.welcome_before}"
                 span { class: "text-white/70", "help" }
-                " to get started."
+                "{s.terminal.welcome_after}"
             }
 
             for entry in history() {
@@ -298,10 +269,11 @@ pub fn ShellPanel(
 /// tab, which doesn't have room for a second full input line.
 #[component]
 pub fn ShellHistoryPeek(history: Signal<Vec<ShellEntry>>) -> Element {
+    let s = use_strings();
     rsx! {
         div { class: "h-full overflow-y-auto px-4 py-3 text-[11px] leading-relaxed",
             if history().is_empty() {
-                p { class: "text-white/30", "No commands run yet." }
+                p { class: "text-white/30", "{s.terminal.no_commands}" }
             } else {
                 for entry in history() {
                     div { key: "{entry.id}", class: "text-white/60 truncate", "$ {entry.input}" }

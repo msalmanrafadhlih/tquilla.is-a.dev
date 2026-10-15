@@ -34,7 +34,7 @@ Cek yang sama dengan CI (semuanya harus hijau sebelum commit):
 ```sh
 cargo fmt --all -- --check
 cargo clippy -p components --all-targets -- -D warnings
-cargo test -p components                                   # 53 test: engine kalkulator, window manager, parsing data, URL, waktu, format jam
+cargo test -p components                                   # 73 test: engine kalkulator, window manager, parsing data, URL, API, waktu, format jam, teks UI
 node --test "packages/components/js/tests/*.test.js"       # 13 test JS dengan DOM tiruan
 python3 -m unittest discover -s scripts -p "test_*.py"     # 6 test postbuild
 ```
@@ -87,7 +87,7 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
   - [ ] Uji dengan screen reader (NVDA/VoiceOver) dan navigasi keyboard penuh
 - [x] **#13** Auto-boot di Home dibatalkan oleh interaksi apa pun (tombol, hover, klik, sentuh); teks berubah jadi "Auto boot cancelled"
 - [x] **#14** `LINKEDIN_URL` memakai profilmu dari `generations.json` (`linkedin.com/in/msalmanrafadhlih`). `DISCORD_URL` **sengaja** tetap invite komunitas "Motion IME" (keputusan 2026-10-09, jangan diganti)
-- [x] **#15** Bahasa UI: **Inggris** untuk semua teks antarmuka (hint di Home sekarang berbahasa Inggris, sama seperti AI chat, login, dan banner). Pengecualian disengaja: **kalkulator tetap berbahasa Indonesia** (Aljabar/Trigonometri/Kalkulus, "Benar/Salah", koma desimal) karena memang dibuat dengan locale Indonesia. Ubah keputusan ini kalau mau kalkulator juga berbahasa Inggris (perlu menyesuaikan `engine/tests.rs`)
+- [x] **#15** Bahasa UI: **Inggris** untuk semua teks antarmuka (hint di Home sekarang berbahasa Inggris, sama seperti AI chat, login, dan banner). Kalkulator ikut Inggris sejak L1 (Algebra/Trigonometry/Calculus, True/False, titik desimal)
 
 > Catatan: P3 dicek dengan `cargo check`, `cargo test`, dan uji `postbuild.py` pada `index.html` tiruan (termasuk dijalankan dua kali, dan kasus gagal). Belum dijalankan di browser. Uji manual: (1) `/`: biarkan 10 detik (redirect ke `/deisktify`), lalu ulangi dan tekan tombol apa saja (hitungan berhenti); navigasi ↑/↓/j/k/Enter; klik area kosong lalu tekan ↓; (2) cek judul tab tiap route; (3) setelah deploy: "view-source" dan cek `og:*`, `lang="en"`, `robots.txt`, `sitemap.xml`; (4) aktifkan "reduce motion" di OS dan cek boot, login, dan jendela.
 
@@ -253,19 +253,20 @@ Rencana isi repo backend: `crates/api-types` (dites native), `crates/api` (Worke
 ### Rencana bertahap
 
 - [x] **D0** Putuskan opsi hosting dan database produksi (lihat tabel di atas)
-- [ ] **D1** Fondasi, dipecah dua: **D1a** (repo backend, selesai di sisi kode) dan **D1b** (sisi repo ini, menunggu repo backend di-push dan di-tag)
+- [x] **D1** Fondasi, dipecah dua: **D1a** (repo backend) dan **D1b** (sisi repo ini). Keduanya selesai dan sudah dicek Moch (2026-10-15): `Cargo.lock` sudah di-commit, variable `API_BASE_URL` sudah di-set
   - [x] **D1a** Repo backend `tquilla-api` (zip terpisah): workspace Cargo, `crates/api-types`, `crates/turso-http` (klien Hrana-over-HTTP, tanpa dependensi native), `crates/api` (Axum + `workers-rs`, `GET /api/v1/health`, CORS allowlist, header keamanan, batas body 16 KiB), `wrangler.toml`, CI (fmt, clippy, test native, build wasm32, fixture dari klien referensi). Terverifikasi native: fmt, clippy `-D warnings`, 41 test. **Terverifikasi oleh Moch (2026-10-14):** CI hijau, `worker-build` + `wrangler dev` jalan, `GET /api/v1/health` → 200 `{"status":"ok","db":true}` (`SELECT 1` lewat protokol Hrana ke server libSQL). **Belum:** `batch`/transaksi (baru dipakai di D2), `wrangler deploy` ke Cloudflare, batas plan gratis. Temuan di jalan: `strip = true` membuat `worker-build` gagal (`externref table required for catch wrappers`), diganti `strip = "debuginfo"`; `turso dev` butuh `sqld`; `worker-build` dari `cargo install` gagal di NixOS (`libssl.so.3`), pakai paket nixpkgs + `WASM_OPT_BIN`
   - [x] D1a Dev lokal: `turso dev` + `wrangler dev`; `.dev.vars.example` (tanpa kredensial asli); `flake.nix`/`devenv.nix` backend (turso-cli, wrangler; sintaks dicek, evaluasi belum)
   - [x] **D1b** Repo ini (kode selesai, 2026-10-14): `packages/components/src/api.rs` (`pub mod api`): base URL dari `option_env!("API_BASE_URL")` (hanya `http(s)://host[:port]`, tanpa path; kalau kosong/salah → `ApiError::NotConfigured`, bukan host tebakan), `ApiError` (`NotConfigured`, `InvalidPath`, `BodyTooLarge`, `Network`, `Status{status, detail}`, `Decode`; `Display` singkat berbahasa Inggris dan tidak membocorkan URL/body), `get`/`post` bertipe di atas `platform::http`, `health()` (503 `degraded` dianggap data). Path hanya boleh di bawah `/api/v1/`. `api-types` jadi git dependency di `[workspace.dependencies]` (`tag = "v0.1.1"`). `API_BASE_URL` diteruskan ke `dx bundle` di `deploy-page.yml`. 9 test baru (62 total). Terverifikasi di sandbox dengan `api-types` lewat `path` (clippy `-D warnings` + test); lewat git belum, lihat langkah di bawah
-    - [ ] **Tindakanmu 1:** `cargo check -p components` sekali (butuh internet), lalu commit `Cargo.lock` yang berubah. Hasil yang diharapkan: hanya `api-types` yang ditambahkan (+ satu baris dependensi di `components`); paket lain tidak boleh naik. Tanpa ini `platforms.yml` (`--locked`) merah
-    - [ ] **Tindakanmu 2:** set variable repo `API_BASE_URL` (Settings → Secrets and variables → Actions → **Variables**) ke alamat `https://tquilla-api.<subdomain>.workers.dev` (tanpa `/` di akhir). Bukan secret. Setelah itu jalankan deploy sekali
-    - [ ] Dev lokal web: `API_BASE_URL=http://127.0.0.1:8787 dx serve --package web --platform web` (backend: `db-dev` + `api-dev`; tambahkan `http://127.0.0.1:8080` ke `ALLOWED_ORIGINS` di `.dev.vars`)
-    - [ ] Belum ada UI yang memakai `api` (tahap D3). `api::health()` belum dipanggil dari mana pun
-  - [ ] Update `devenv.nix` dan `flake.nix` repo ini untuk `turso-cli` dan `wrangler` (hanya kalau dev backend memang dijalankan dari repo ini; sementara tinggal di repo backend)
-- [ ] **L1** Bahasa UI (tepat setelah D1)
-  - [ ] Modul `languages/language.rs` di `components`: semua teks UI default **Inggris** terkumpul di satu tempat
-  - [ ] Kalkulator ikut Inggris (label mode, `Benar/Salah` → `True/False`, pemisah desimal); sesuaikan `engine/tests.rs`
-  - [ ] Rancangan agar nanti bisa multi-bahasa dari preferences di Settings (`Signal<Language>` lewat context, seperti `ClockFormat`)
+    - Dev lokal web: `API_BASE_URL=http://127.0.0.1:8787 dx serve --package web --platform web` (backend: `db-dev` + `api-dev`; tambahkan `http://127.0.0.1:8080` ke `ALLOWED_ORIGINS` di `.dev.vars`)
+    - Belum ada UI yang memakai `api` (tahap D3). `api::health()` belum dipanggil dari mana pun
+  - Tidak dikerjakan: `devenv.nix`/`flake.nix` repo ini tidak perlu `turso-cli` dan `wrangler` selama dev backend dijalankan dari repo backend
+- [x] **L1** Bahasa UI (kode selesai 2026-10-15; lihat uji manual di bawah)
+  - [x] Modul `languages/` di `components` (`mod.rs` + `language.rs`): semua teks UI default **Inggris** terkumpul di satu tabel `Strings`/`EN` (grup `home`, `login`, `navbar`, `terminal`, `calc`, `calc_err`, dst.), ditulis lewat macro `strings!` supaya struct, tabel, dan daftar kunci untuk test lahir dari satu daftar. Template memakai `{nama}` dan diisi lewat method bertipe (`Time::ago`, `Home::generation_line`, ...), bukan `format!` di komponen
+  - [x] Kalkulator ikut Inggris: mode **Algebra/Trigonometry/Calculus**, `True/False`, pemisah desimal `.`. Mesin kalkulator netral-locale (angka kanonik `.`; tampilan lewat `Strings.calc.decimal_separator`), input `,` tetap diterima. `CalcError` kini enum bertipe dan baru diterjemahkan saat tampil (`message(&Strings)`), `engine/tests.rs` disesuaikan
+  - [x] Multi-bahasa: `enum Language` (sekarang hanya `En`) + `Signal<Language>` lewat context (`use_language_provider()` di `App`, `use_language()`, `use_strings()`), pola yang sama dengan `ClockFormat`. Menambah bahasa = varian baru di `Language` + satu literal `Strings { .. }` (compiler memaksa semua kunci terisi). Pesan error lain juga bertipe: `ApiError::message`, `Notice`, `UploadError`, `AiError`. **Belum ada** pemilih bahasa di Settings dan belum ada penyimpanan ke localStorage (sesuai rencana)
+  - [x] Test (`languages/tests.rs`, 9 test): semua kunci terisi dan unik, kurung `{}` seimbang dan nama placeholder dikenal, semua method template tanpa sisa placeholder, kode bahasa unik, dan **pemindai sumber** yang gagal bila ada teks tampilan (teks node rsx, `title`/`alt`/`placeholder`/`aria-label`/`label`, literal berhuruf kapital/berkalimat) tertinggal di luar `languages/`. Pengecualian harus didaftarkan dengan alasan di `ALLOWED_LITERALS`/`ALLOWED_CONSTS`
+  - Bukan teks UI (sengaja tidak dipindah): nama perintah shell, nama ikon Material Symbols, URL, id/kunci DOM, nama file/folder dari filesystem simulasi terminal, nama model AI, `BOOT_LOG` (log `systemd` palsu di layar boot), `MONTHS_SHORT` di `journal/util.rs` (kunci data "Sep 14" yang dicocokkan dengan data Worker), dan isi `data/*.json`
+  - [ ] **Uji manual (Moch):** buka `/`, `/profile`, `/deisktify`; cek login, boot menu, navbar (menu dan hint), dock, Settings, File Manager, Radio, Embience, Live Chat (kirim teks, unggah gambar terlalu besar), AI chat (tanpa key dan key salah), terminal (`help`, `neofetch`, `cd`/`cat` salah, perintah tak dikenal), jam (ganti 12/24 jam), jurnal; kalkulator (tiga mode, `1/0`, `x+1`, `2+2=4`, `0.1+0.2`, mengetik `,`)
 - [ ] **D2** Skema dan migrasi dari JSON ke tabel
 
   | File JSON (dummy) | Tabel | Kolom utama |

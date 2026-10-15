@@ -1,3 +1,4 @@
+use crate::languages::use_strings;
 use dioxus::prelude::*;
 
 /// One line of the simulated `systemd` boot log.
@@ -97,6 +98,7 @@ const BOOT_LOG: &[(&str, &str, u32)] = &[
 /// button, so the ~5 s intro never blocks someone who just wants the desktop.
 #[component]
 pub fn Booting(on_skip: EventHandler<()>) -> Element {
+    let s = use_strings();
     // Small pause before the very first line, then walk through BOOT_LOG
     // accumulating each line's reveal time from the previous line's hold.
     let mut elapsed: u32 = 200;
@@ -115,7 +117,7 @@ pub fn Booting(on_skip: EventHandler<()>) -> Element {
             id: "boot-screen",
             class: "outline-none",
             tabindex: "0",
-            "aria-label": "System boot log. Press any key to skip.",
+            "aria-label": s.booting.screen_label,
             onkeydown: move |_| on_skip.call(()),
             onmounted: move |evt| {
                 let data = evt.data();
@@ -130,7 +132,7 @@ pub fn Booting(on_skip: EventHandler<()>) -> Element {
                 r#type: "button",
                 class: "absolute bottom-4 right-4 z-10 cursor-pointer border border-solid border-[var(--fg-secondary)] bg-transparent px-3 py-1.5 font-mono text-xs text-[var(--fg-main)] opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100",
                 onclick: move |_| on_skip.call(()),
-                "Skip ⏎"
+                "{s.booting.skip}"
             }
 
             div { id: "boot-console",

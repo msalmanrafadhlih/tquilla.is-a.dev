@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use serde::Deserialize;
 
 use crate::app::Route;
+use crate::languages::use_strings;
 use crate::platform::{use_platform, PlatformServices, TimeoutFuture};
 use crate::shared::PageMeta;
 
@@ -46,6 +47,7 @@ fn open_link(platform: PlatformServices, url: &str) {
 
 #[component]
 pub fn Home() -> Element {
+    let s = use_strings();
     let platform = use_platform();
     let open = use_callback(move |url: String| open_link(platform, &url));
     // Di-parse sekali per sesi (bukan tiap render: komponen ini re-render
@@ -139,8 +141,8 @@ pub fn Home() -> Element {
 
     rsx! {
         PageMeta {
-            title: "Generation Menu",
-            description: "A NixOS-style boot menu that links to my GitHub, LinkedIn, GitHub journal and a desktop OS simulated in the browser, built with Rust and Dioxus (WebAssembly).",
+            title: s.meta.home_title,
+            description: s.meta.home_description,
             path: "/",
         }
 
@@ -165,7 +167,7 @@ pub fn Home() -> Element {
                 // fokus, sekali oleh handler keyboard).
                 ul {
                     role: "listbox",
-                    "aria-label": "Boot generations",
+                    "aria-label": s.home.list_label,
                     "aria-activedescendant": "{active_id}",
                     tabindex: "0",
                     class: "flex flex-col outline-none",
@@ -205,7 +207,7 @@ pub fn Home() -> Element {
                             if hovered() == Some(idx) {
                                 "{gen.label}"
                             } else {
-                                "NixOS (Generation {gen.number} 22.11.2979.47c003416{number}, Linux Kernel {gen.kernel}, Built on {gen.date})"
+                                "{s.home.generation_line(gen.number, &number, &gen.kernel, &gen.date)}"
                                 { number += 0.01 }
                             }
                         }
@@ -213,20 +215,20 @@ pub fn Home() -> Element {
                 }
                 p {
                     class: "text-center text-[11px] sm:text-sm py-2 border-t border-neutral-700 text-neutral-500",
-                    "Reboot Into Firmware Interface"
+                    "{s.home.reboot_firmware}"
                 }
             }
             p {
                 class: "mt-6 text-center text-[10px] sm:text-xs text-neutral-600 max-w-md",
                 if cancelled() {
-                    "Auto boot cancelled"
+                    "{s.home.auto_boot_cancelled}"
                 } else {
-                    "Boot in {counting}s · any key or tap cancels"
+                    "{s.home.auto_boot_countdown(counting())}"
                 }
             }
             p {
                 class: "mt-6 text-center text-[10px] sm:text-xs text-neutral-600 max-w-md",
-                "Use ↑ / ↓ or j / k to move · Enter or click to open"
+                "{s.home.hint}"
             }
         }
     }

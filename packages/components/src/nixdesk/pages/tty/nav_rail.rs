@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use crate::languages::use_strings;
 use crate::shared::{DISCORD_URL, GITHUB_URL, LINKEDIN_URL};
 
 const GITHUB_ICON: Asset = asset!("/assets/icon-github-2.svg");
@@ -14,10 +15,21 @@ const DISCORD_ICON_HOVER: Asset = asset!("/assets/icon-discord.svg");
 /// on mobile (bottom row) depending on `vertical`.
 #[component]
 pub fn NavRail(on_toggle: EventHandler<()>, vertical: bool) -> Element {
+    let s = use_strings();
     let links: [(&str, &str, Asset, Asset); 3] = [
-        ("Discord", DISCORD_URL, DISCORD_ICON, DISCORD_ICON_HOVER),
-        ("LinkedIn", LINKEDIN_URL, LINKEDIN_ICON, LINKEDIN_ICON_HOVER),
-        ("Github", GITHUB_URL, GITHUB_ICON, GITHUB_ICON_HOVER),
+        (
+            s.common.discord,
+            DISCORD_URL,
+            DISCORD_ICON,
+            DISCORD_ICON_HOVER,
+        ),
+        (
+            s.common.linkedin,
+            LINKEDIN_URL,
+            LINKEDIN_ICON,
+            LINKEDIN_ICON_HOVER,
+        ),
+        (s.common.github, GITHUB_URL, GITHUB_ICON, GITHUB_ICON_HOVER),
     ];
 
     let wrapper_class = if vertical {
@@ -32,9 +44,9 @@ pub fn NavRail(on_toggle: EventHandler<()>, vertical: bool) -> Element {
                 r#type: "button",
                 class: "text-[9px] leading-tight tracking-wide text-white/60 hover:text-black hover:bg-white transition-colors duration-150 sm:h-[50px] px-2 py-2 text-center cursor-pointer border border-white/15",
                 onclick: move |_| on_toggle.call(()),
-                "Switch"
+                "{s.terminal.switch}"
                 br {}
-                "Desktop"
+                "{s.terminal.desktop}"
             }
             div { class: "h-full w-full w-full border border-white/15" }
 

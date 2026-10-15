@@ -26,7 +26,7 @@ pub fn compare(op: CmpOp, a: f64, b: f64) -> bool {
 /// Hasil operasi hingga bila operandnya hingga; selain itu error.
 fn check(a: f64, b: f64, r: f64) -> Result<f64, CalcError> {
     if r.is_nan() {
-        return Err(CalcError::Domain("Hasil tidak terdefinisi".into()));
+        return Err(CalcError::Undefined);
     }
     if r.is_infinite() && a.is_finite() && b.is_finite() {
         return Err(CalcError::Overflow);
@@ -84,9 +84,7 @@ impl Ctx {
                 }
                 match c {
                     'e' => Ok(E),
-                    'i' => Err(CalcError::Unsupported(
-                        "Bilangan kompleks (i) belum didukung".into(),
-                    )),
+                    'i' => Err(CalcError::ComplexUnsupported),
                     _ => Err(CalcError::UnknownVar(*c)),
                 }
             }
@@ -109,9 +107,7 @@ impl Ctx {
                             return Err(CalcError::DivZero);
                         }
                         if a < 0.0 && b.is_finite() && b.fract() != 0.0 {
-                            return Err(CalcError::Domain(
-                                "Pangkat pecahan dari bilangan negatif belum didukung".into(),
-                            ));
+                            return Err(CalcError::FractionalPowerOfNegative);
                         }
                         a.powf(b)
                     }
@@ -128,9 +124,7 @@ impl Ctx {
                     Angle::Rad => v * PI / 180.0,
                 })
             }
-            Expr::Cmp(..) => Err(CalcError::Unsupported(
-                "Perbandingan (=, <, ≤, …) hanya boleh di tingkat teratas".into(),
-            )),
+            Expr::Cmp(..) => Err(CalcError::ComparisonNotTopLevel),
             Expr::Call(name, args) => self.call(name, args),
         }
     }
@@ -151,9 +145,7 @@ impl Ctx {
         match name {
             "sqrt" => {
                 if x < 0.0 {
-                    return Err(CalcError::Domain(
-                        "Akar kuadrat bilangan negatif belum didukung".into(),
-                    ));
+                    return Err(CalcError::SqrtNegative);
                 }
                 Ok(x.sqrt())
             }
@@ -168,7 +160,7 @@ impl Ctx {
                     let b = x;
                     let v = self.arg(args, 1)?;
                     if b <= 0.0 || b == 1.0 {
-                        return Err(CalcError::Domain("Basis logaritma tidak valid".into()));
+                        return Err(CalcError::InvalidLogBase);
                     }
                     Ok(snap_int(ln(v)? / ln(b)?))
                 }
@@ -194,21 +186,21 @@ impl Ctx {
                 let r = self.to_rad(x);
                 let c = snap(r.cos());
                 if c == 0.0 {
-                    return Err(CalcError::Domain("tan tidak terdefinisi di sini".into()));
+                    return Err(CalcError::FnUndefinedHere("tan"));
                 }
                 Ok(snap(r.sin()) / c)
             }
             "csc" => {
                 let s = snap(self.to_rad(x).sin());
                 if s == 0.0 {
-                    return Err(CalcError::Domain("csc tidak terdefinisi di sini".into()));
+                    return Err(CalcError::FnUndefinedHere("csc"));
                 }
                 Ok(1.0 / s)
             }
             "sec" => {
                 let c = snap(self.to_rad(x).cos());
                 if c == 0.0 {
-                    return Err(CalcError::Domain("sec tidak terdefinisi di sini".into()));
+                    return Err(CalcError::FnUndefinedHere("sec"));
                 }
                 Ok(1.0 / c)
             }
@@ -216,15 +208,13 @@ impl Ctx {
                 let r = self.to_rad(x);
                 let s = snap(r.sin());
                 if s == 0.0 {
-                    return Err(CalcError::Domain("cot tidak terdefinisi di sini".into()));
+                    return Err(CalcError::FnUndefinedHere("cot"));
                 }
                 Ok(snap(r.cos()) / s)
             }
             "arcsin" | "asin" | "arccos" | "acos" => {
                 if !(-1.0..=1.0).contains(&x) {
-                    return Err(CalcError::Domain(
-                        "arcsin/arccos hanya untuk nilai antara -1 dan 1".into(),
-                    ));
+                    return Err(CalcError::ArcDomain);
                 }
                 let r = if name.ends_with("sin") {
                     x.asin()
@@ -234,7 +224,7 @@ impl Ctx {
                 Ok(snap(self.angle_from_rad(r)))
             }
             "arctan" | "atan" => Ok(snap(self.angle_from_rad(x.atan()))),
-            _ => Err(CalcError::Syntax(format!("Fungsi {name} tidak dikenal"))),
+            _ => Err(CalcError::UnknownFunction(name.to_string())),
         }
     }
 }
@@ -251,18 +241,14 @@ fn snap_int(x: f64) -> f64 {
 
 fn ln(x: f64) -> Result<f64, CalcError> {
     if x <= 0.0 {
-        return Err(CalcError::Domain(
-            "Logaritma hanya untuk bilangan positif".into(),
-        ));
+        return Err(CalcError::LogNotPositive);
     }
     Ok(x.ln())
 }
 
 fn factorial(x: f64) -> Result<f64, CalcError> {
     if x < 0.0 || x.fract() != 0.0 {
-        return Err(CalcError::Domain(
-            "Faktorial hanya untuk bilangan bulat ≥ 0".into(),
-        ));
+        return Err(CalcError::FactorialDomain);
     }
     if x > 170.0 {
         return Err(CalcError::Overflow);
@@ -272,15 +258,11 @@ fn factorial(x: f64) -> Result<f64, CalcError> {
 
 fn root(n: f64, x: f64) -> Result<f64, CalcError> {
     if n == 0.0 || n.fract() != 0.0 {
-        return Err(CalcError::Domain(
-            "Indeks akar harus bilangan bulat bukan nol".into(),
-        ));
+        return Err(CalcError::RootIndex);
     }
     if x < 0.0 {
         if (n as i64) % 2 == 0 {
-            return Err(CalcError::Domain(
-                "Akar genap bilangan negatif belum didukung".into(),
-            ));
+            return Err(CalcError::EvenRootOfNegative);
         }
         return Ok(snap_int(-(-x).powf(1.0 / n)));
     }
@@ -292,9 +274,7 @@ fn root(n: f64, x: f64) -> Result<f64, CalcError> {
 
 fn combinatorics(comb: bool, n: f64, k: f64) -> Result<f64, CalcError> {
     if n < 0.0 || k < 0.0 || n.fract() != 0.0 || k.fract() != 0.0 || k > n {
-        return Err(CalcError::Domain(
-            "n dan k harus bilangan bulat dengan 0 ≤ k ≤ n".into(),
-        ));
+        return Err(CalcError::CombinatoricsDomain);
     }
     let (n, k) = (n as u64, k as u64);
     let k_eff = if comb { k.min(n - k) } else { k };

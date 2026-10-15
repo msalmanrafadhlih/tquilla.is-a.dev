@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 
 use crate::home::Home;
 use crate::journal::JournalPage;
+use crate::languages::use_language_provider;
 use crate::nixdesk::DesktopPage;
 
 // Hanya font yang dipakai di SEMUA route (boot menu, desktop). Font yang
@@ -32,6 +33,9 @@ pub enum Route {
 
 #[component]
 pub fn App() -> Element {
+    // Bahasa UI aktif, dibaca lewat `use_strings()` di semua route.
+    use_language_provider();
+
     rsx! {
         document::Link { rel: "preconnect", href: "https://fonts.googleapis.com" }
         document::Link { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }

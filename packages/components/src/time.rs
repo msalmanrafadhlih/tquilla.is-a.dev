@@ -2,19 +2,12 @@
 //! Terminal. Sebelumnya fungsi ini disalin di dua file; sekarang satu
 //! implementasi murni (`relative_time_between`) yang bisa diuji tanpa jam.
 
+use crate::languages::{Strings, TimeUnit};
 use crate::platform::Date;
-
-fn plural(n: u32) -> &'static str {
-    if n == 1 {
-        ""
-    } else {
-        "s"
-    }
-}
 
 /// Selisih `then_ms` -> `now_ms` (milidetik epoch) dalam kata-kata.
 /// Waktu di masa depan atau tak valid (NaN) dianggap "just now".
-pub fn relative_time_between(then_ms: f64, now_ms: f64) -> String {
+pub fn relative_time_between(then_ms: f64, now_ms: f64, s: &Strings) -> String {
     let diff_secs = ((now_ms - then_ms) / 1000.0).max(0.0);
 
     let minutes = diff_secs / 60.0;
@@ -25,36 +18,31 @@ pub fn relative_time_between(then_ms: f64, now_ms: f64) -> String {
     let years = days / 365.0;
 
     if minutes < 1.0 {
-        "just now".to_string()
+        s.time.just_now.to_string()
     } else if minutes < 60.0 {
-        let n = minutes as u32;
-        format!("{n} minute{} ago", plural(n))
+        s.time.ago(minutes as u32, TimeUnit::Minute)
     } else if hours < 24.0 {
-        let n = hours as u32;
-        format!("{n} hour{} ago", plural(n))
+        s.time.ago(hours as u32, TimeUnit::Hour)
     } else if days < 7.0 {
-        let n = days as u32;
-        format!("{n} day{} ago", plural(n))
+        s.time.ago(days as u32, TimeUnit::Day)
     } else if weeks < 5.0 {
-        let n = weeks as u32;
-        format!("{n} week{} ago", plural(n))
+        s.time.ago(weeks as u32, TimeUnit::Week)
     } else if months < 12.0 {
-        let n = months as u32;
-        format!("{n} month{} ago", plural(n))
+        s.time.ago(months as u32, TimeUnit::Month)
     } else {
-        let n = years as u32;
-        format!("{n} year{} ago", plural(n))
+        s.time.ago(years as u32, TimeUnit::Year)
     }
 }
 
 /// `iso` (RFC 3339) terhadap waktu sekarang.
-pub fn relative_time(iso: &str) -> String {
-    relative_time_between(Date::from_iso(iso).get_time(), Date::now())
+pub fn relative_time(iso: &str, s: &Strings) -> String {
+    relative_time_between(Date::from_iso(iso).get_time(), Date::now(), s)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::languages::Language;
 
     const MIN: f64 = 60.0 * 1000.0;
     const HOUR: f64 = 60.0 * MIN;
@@ -62,15 +50,16 @@ mod tests {
     const NOW: f64 = 2_000_000_000_000.0;
 
     fn ago(ms: f64) -> String {
-        relative_time_between(NOW - ms, NOW)
+        relative_time_between(NOW - ms, NOW, Language::En.strings())
     }
 
     #[test]
     fn just_now_covers_under_a_minute_future_and_invalid() {
         assert_eq!(ago(0.0), "just now");
         assert_eq!(ago(59_000.0), "just now");
-        assert_eq!(relative_time_between(NOW + HOUR, NOW), "just now");
-        assert_eq!(relative_time_between(f64::NAN, NOW), "just now");
+        let s = Language::En.strings();
+        assert_eq!(relative_time_between(NOW + HOUR, NOW, s), "just now");
+        assert_eq!(relative_time_between(f64::NAN, NOW, s), "just now");
     }
 
     #[test]
@@ -98,7 +87,8 @@ mod tests {
     #[test]
     fn iso_input_goes_through_the_same_buckets() {
         // an ancient timestamp must read as years, an invalid one as "just now"
-        assert!(relative_time("2001-01-01T00:00:00Z").ends_with("years ago"));
-        assert_eq!(relative_time("not a date"), "just now");
+        let s = Language::En.strings();
+        assert!(relative_time("2001-01-01T00:00:00Z", s).ends_with("years ago"));
+        assert_eq!(relative_time("not a date", s), "just now");
     }
 }

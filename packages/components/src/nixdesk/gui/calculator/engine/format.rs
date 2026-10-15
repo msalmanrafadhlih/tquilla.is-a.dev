@@ -1,9 +1,10 @@
-//! Pemformatan angka: 10 digit signifikan, koma desimal, notasi `m×10^e` untuk angka ekstrem.
+//! Pemformatan angka: 10 digit signifikan, titik desimal, notasi `m×10^e` untuk angka ekstrem.
+//! Bentuk kanonik (tidak bergantung bahasa); tampilan memakai `localize_number`.
 //! Hasilnya sengaja berupa ekspresi yang valid, sehingga bisa dipakai lagi sebagai masukan.
 
 pub fn format_number(v: f64) -> String {
     if v.is_nan() {
-        return "Error".to_string();
+        return "NaN".to_string();
     }
     if v.is_infinite() {
         return if v > 0.0 { "∞" } else { "-∞" }.to_string();
@@ -26,9 +27,9 @@ pub fn format_number(v: f64) -> String {
         let rounded: f64 = sci.parse().unwrap_or(v);
         let decimals = (9 - exp).max(0) as usize;
         let s = format!("{:.*}", decimals, rounded);
-        trim_zeros(&s).replace('.', ",")
+        trim_zeros(&s)
     } else {
-        let m = trim_zeros(mant).replace('.', ",");
+        let m = trim_zeros(mant);
         format!("{m}×10^{exp}")
     }
 }

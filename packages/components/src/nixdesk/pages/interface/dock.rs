@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 use super::window::{toggle_window, AppId, OpenWindow};
+use crate::languages::use_strings;
 use crate::shared::{DISCORD_URL, GITHUB_URL, LINKEDIN_URL};
 
 const GITHUB_ICON: Asset = asset!("/assets/icon-github.svg");
@@ -23,6 +24,7 @@ const IMG_CLASS: &str = "relative w-5 h-5 aspect-[1] group-hover:invert transiti
 
 #[component]
 pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Element {
+    let s = use_strings();
     let mut social_menu_open = use_signal(|| false);
     let mut chat_menu_open = use_signal(|| false);
 
@@ -35,9 +37,9 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
         (CALCULATOR_ICON, AppId::Calculator),
     ];
     let socials: [(Asset, &str, &str); 3] = [
-        (GITHUB_ICON, "Github", GITHUB_URL),
-        (DISCORD_ICON, "Discord", DISCORD_URL),
-        (LINKEDIN_ICON, "LinkedIn", LINKEDIN_URL),
+        (GITHUB_ICON, s.common.github, GITHUB_URL),
+        (DISCORD_ICON, s.common.discord, DISCORD_URL),
+        (LINKEDIN_ICON, s.common.linkedin, LINKEDIN_URL),
     ];
 
     // Indikator tetap tampil selama window masih ada (terbuka ATAU minimized).
@@ -51,7 +53,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
             // LEFT DOCK — social links. jika button `Open social menu` di klick, maka akan memunculkan tag list anchor diatasnya
             section {
                 class: "flex flex-col md:flex-row w-10 md:w-full md:justify-start md:items-center md:gap-0 h-10 items-start justify-end gap-5 relative",
-                "aria-label": "Social links",
+                "aria-label": s.dock.social_links,
                 div {
                     class: if social_menu_open() {
                         "grid grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 md:flex md:overflow-visible"
@@ -79,7 +81,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                 }
                 button {
                     r#type: "button",
-                    "aria-label": "Open social menu",
+                    "aria-label": s.dock.open_social_menu,
                     "aria-expanded": if social_menu_open() { "true" } else { "false" },
                     class: "inline-flex items-center md:hidden gap-2.5 relative flex-[0_0_auto] z-0 border-0 p-0 shrink-0",
                     onclick: move |_| social_menu_open.set(!social_menu_open()),
@@ -99,11 +101,11 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
             // strip scrolls horizontally instead of wrapping.
             nav {
                 class: "flex w-full min-w-0 flex-1 items-center justify-center gap-2 sm:gap-5 self-stretch px-2.5 md:pb-2.5 md:w-fit md:flex-none",
-                "aria-label": "Application dock",
+                "aria-label": s.dock.app_dock,
 
                 button {
                     r#type: "button",
-                    "aria-label": "Open settings",
+                    "aria-label": s.dock.open_settings,
                     class: "relative h-[30px] w-[30px] flex-none border-0 p-0",
                     onclick: move |_| toggle_window(open_windows, next_z, AppId::Settings),
                     img { src: SETTINGS_ICON, alt: "", class: "h-full w-full" }
@@ -116,10 +118,10 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                         button {
                             key: "{app_id.key()}",
                             r#type: "button",
-                            title: "{app_id.title()}",
+                            title: "{app_id.title(s)}",
                             class: if has_window(app_id) { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 border-b-[0.5px] border-white bg-[var(--linear-b)] px-0 pb-[5px] pt-0" } else { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 px-0 pb-[5px] pt-0 transition-transform duration-150 ease-out hover:scale-125 active:scale-90" },
                             onclick: move |_| toggle_window(open_windows, next_z, app_id),
-                            img { src: icon, alt: "{app_id.title()}", class: "h-10 w-10" }
+                            img { src: icon, alt: "{app_id.title(s)}", class: "h-10 w-10" }
                         }
                     }
                 }
@@ -128,7 +130,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
 
                 button {
                     r#type: "button",
-                    "aria-label": "About NixDesktop",
+                    "aria-label": s.dock.about_nixdesktop,
                     class: "relative h-[30px] w-[30px] flex-none border-0 p-0",
                     onclick: move |_| toggle_window(open_windows, next_z, AppId::About),
                     img { src: NIXOS_ICON, alt: "", class: "h-full w-full" }
@@ -138,7 +140,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
             // RIGHT DOCK — live chat. jika button `Open chat menu` di klick, maka akan memunculkan tag list button atasnya
             section {
                 class: "flex flex-col md:flex-row md:gap-1 w-10 md:w-full h-10 items-end justify-end md:items-center gap-5 relative md:aspect-[1]",
-                "aria-label": "Chat",
+                "aria-label": s.dock.chat,
                 div {
                     class: if chat_menu_open() {
                         "grid grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out shrink-0 md:flex overflow-hidden md:overflow-visible"
@@ -152,7 +154,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                             onclick: move |_| toggle_window(open_windows, next_z, AppId::LiveChat),
                             span { class: "grid grid-cols-[0fr] group-hover:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out overflow-hidden",
                                 span { class: "overflow-hidden whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] font-normal text-white text-sm text-center tracking-[0] leading-[normal] group-hover:text-black",
-                                    "Live Chat"
+                                    "{s.dock.live_chat}"
                                 }
                             }
                             img { src: LIVE_CHAT_ICON, alt: "", class: IMG_CLASS }
@@ -161,7 +163,7 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                 }
                 button {
                     r#type: "button",
-                    "aria-label": "Open chat menu",
+                    "aria-label": s.dock.open_chat_menu,
                     "aria-expanded": if chat_menu_open() { "true" } else { "false" },
                     class: "inline-flex md:hidden items-center justify-end gap-2.5 relative flex-[0_0_auto] z-0 border-0 p-0 shrink-0",
                     onclick: move |_| chat_menu_open.set(!chat_menu_open()),

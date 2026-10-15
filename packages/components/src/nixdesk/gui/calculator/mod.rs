@@ -1,4 +1,4 @@
-//! Kalkulator multi-mode (Aljabar, Trigonometri, Kalkulus) bergaya kalkulator Google.
+//! Kalkulator multi-mode (Algebra, Trigonometry, Calculus) bergaya kalkulator Google.
 //!
 //! Struktur:
 //! - `engine/`  : tokenizer, parser, evaluator, kalkulus numerik (tanpa Dioxus, ada tes unit)
@@ -16,18 +16,20 @@ mod render;
 mod state;
 
 use engine::Angle;
-use keypad::{Aljabar, Kalkulus, KeyPad, ModeTab, Trigonometri, MAIN};
+use keypad::{Algebra, Calculus, KeyPad, ModeTab, Trigonometry, MAIN};
 use state::{CalcState, Mode};
 
+use crate::languages::use_strings;
 use crate::shared::PLAYFAIR_FONT_URL;
 
 #[component]
 pub fn Calculator() -> Element {
+    let s = use_strings();
     let expr = use_signal(String::new);
     let history = use_signal(String::new);
     let fresh = use_signal(|| false);
-    let notice = use_signal(|| Option::<String>::None);
-    let mode = use_signal(|| Mode::Aljabar);
+    let notice = use_signal(|| Option::<state::Notice>::None);
+    let mode = use_signal(|| Mode::Algebra);
     let angle = use_signal(|| Angle::Rad);
     let state = use_context_provider(|| CalcState {
         expr,
@@ -39,29 +41,30 @@ pub fn Calculator() -> Element {
     });
 
     // Baris utama: ekspresi yang sedang diketik, dirender sebagai MathML.
-    let main_html = render::to_mathml(&state.expr.read());
+    let sep = s.calc.decimal_separator;
+    let main_html = render::to_mathml(&state.expr.read(), sep);
 
-    // Baris kedua: pesan (error / Benar / Salah), atau "ekspresi =" setelah menekan "=",
+    // Baris kedua: pesan (error / True / False), atau "ekspresi =" setelah menekan "=",
     // atau pratinjau hasil selagi mengetik.
-    let secondary_html = if let Some(msg) = state.notice.read().clone() {
-        format!("<span>{}</span>", render::html_escape(&msg))
+    let secondary_html = if let Some(notice) = state.notice.read().clone() {
+        format!("<span>{}</span>", render::html_escape(&notice.text(s)))
     } else if *state.fresh.read() && !state.history.read().is_empty() {
-        render::to_mathml(&format!("{}=", state.history.read()))
+        render::to_mathml(&format!("{}=", state.history.read()), sep)
     } else {
         let e = state.expr.read().clone();
         if e.is_empty() || engine::is_plain_number(&e) {
             String::new()
         } else {
             match engine::evaluate(&e, *state.angle.read()) {
-                Ok(outcome) => format!("<span>{}</span>", render::html_escape(&outcome.to_text())),
+                Ok(outcome) => format!("<span>{}</span>", render::html_escape(&outcome.display(s))),
                 Err(_) => String::new(), // ekspresi belum lengkap: jangan tampilkan error
             }
         }
     };
 
     let angle_label = match *state.angle.read() {
-        Angle::Rad => "RAD",
-        Angle::Deg => "DEG",
+        Angle::Rad => s.calc.angle_rad,
+        Angle::Deg => s.calc.angle_deg,
     };
 
     rsx! {
@@ -70,42 +73,42 @@ pub fn Calculator() -> Element {
         document::Stylesheet { href: PLAYFAIR_FONT_URL }
         section {
             class: "flex flex-col items-center h-full w-full gap-2.5 relative",
-            title: "Calculator",
+            title: s.calc.title,
             header {
                 class: "flex flex-col px-2.5 py-3 relative self-stretch w-full flex-[0_0_auto] rounded-[5px] border-[0.5px] border-solid border-[var(--fg-secondary)] bg-[image:var(--linear-lr)]",
                 button {
                     r#type: "button",
                     class: "self-start appearance-none bg-[var(--bg-secondary)] text-xs opacity-50 hover:opacity-100",
-                    title: "Ganti satuan sudut",
+                    title: s.calc.toggle_angle_title,
                     onclick: move |_| state.toggle_angle(),
                     "{angle_label}"
                 }
                 output {
                     class: "relative w-full min-h-8 text-2xl flex items-center justify-end overflow-x-auto [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-center tracking-[0] leading-[normal]",
-                    title: "output",
+                    title: s.calc.output_title,
                     dangerous_inner_html: "{main_html}",
                 }
                 output {
                     class: "relative flex items-center justify-end w-full min-h-5 opacity-50 [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-sm text-center tracking-[0] leading-[normal]",
-                    title: "Runtime preview: result",
+                    title: s.calc.preview_title,
                     dangerous_inner_html: "{secondary_html}",
                 }
             }
             KeyPad { keys: MAIN, cols: "grid-cols-4" }
             div { class: "flex flex-row w-full h-max py-2 gap-2 border-b border-solid border-[var(--fg-secondary)]",
-                ModeTab { mode: Mode::Aljabar, label: "Aljabar" }
-                ModeTab { mode: Mode::Trigonometri, label: "Trigonometri" }
-                ModeTab { mode: Mode::Kalkulus, label: "Kalkulus" }
+                ModeTab { mode: Mode::Algebra, label: s.calc.mode_algebra }
+                ModeTab { mode: Mode::Trigonometry, label: s.calc.mode_trigonometry }
+                ModeTab { mode: Mode::Calculus, label: s.calc.mode_calculus }
             }
             match *state.mode.read() {
-                Mode::Aljabar => rsx! {
-                    Aljabar {}
+                Mode::Algebra => rsx! {
+                    Algebra {}
                 },
-                Mode::Trigonometri => rsx! {
-                    Trigonometri {}
+                Mode::Trigonometry => rsx! {
+                    Trigonometry {}
                 },
-                Mode::Kalkulus => rsx! {
-                    Kalkulus {}
+                Mode::Calculus => rsx! {
+                    Calculus {}
                 },
             }
         }

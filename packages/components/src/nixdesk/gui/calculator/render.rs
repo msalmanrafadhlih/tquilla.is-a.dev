@@ -7,10 +7,13 @@ use super::engine::parser::match_name;
 
 const EMPTY: &str = "<mi style=\"opacity:.4\">□</mi>";
 
-pub fn to_mathml(expr: &str) -> String {
+/// `decimal_sep` adalah pemisah desimal pada tampilan (bahasa aktif); ekspresi
+/// sendiri memakai `.` (koma juga diterima).
+pub fn to_mathml(expr: &str, decimal_sep: &str) -> String {
     let mut cur = Cursor {
         chars: expr.chars().collect(),
         i: 0,
+        decimal_sep: decimal_sep.to_string(),
     };
     let body = cur.row(true);
     if body.is_empty() {
@@ -27,6 +30,7 @@ pub fn html_escape(s: &str) -> String {
 struct Cursor {
     chars: Vec<char>,
     i: usize,
+    decimal_sep: String,
 }
 
 fn esc(c: char) -> String {
@@ -127,7 +131,7 @@ impl Cursor {
                 s.push(c);
             } else if (c == ',' || c == '.') && !seen_sep {
                 seen_sep = true;
-                s.push(',');
+                s.push_str(&self.decimal_sep);
             } else {
                 break;
             }
@@ -331,73 +335,89 @@ fn mrow_one(atom: &str) -> String {
 mod tests {
     use super::*;
 
+    /// Tampilan dengan titik desimal (bahasa Inggris).
+    fn mathml(expr: &str) -> String {
+        to_mathml(expr, ".")
+    }
+
     #[test]
     fn kosong_dan_angka() {
-        assert_eq!(to_mathml(""), "<math><mn>0</mn></math>");
-        assert_eq!(to_mathml("12,5"), "<math><mn>12,5</mn></math>");
+        assert_eq!(mathml(""), "<math><mn>0</mn></math>");
+        assert_eq!(mathml("12.5"), "<math><mn>12.5</mn></math>");
+        // koma tetap diterima sebagai masukan
+        assert_eq!(mathml("12,5"), "<math><mn>12.5</mn></math>");
+    }
+
+    #[test]
+    fn pemisah_desimal_mengikuti_bahasa() {
+        assert_eq!(to_mathml("12.5", ","), "<math><mn>12,5</mn></math>");
+        assert_eq!(
+            to_mathml("1.5×10^2.5", ","),
+            "<math><mn>1,5</mn><mo>×</mo><msup><mrow><mn>10</mn></mrow><mrow><mn>2,5</mn></mrow></msup></math>"
+        );
     }
 
     #[test]
     fn pangkat_dan_pecahan() {
-        let m = to_mathml("2^3+1");
+        let m = mathml("2^3+1");
         assert!(
             m.contains("<msup><mrow><mn>2</mn></mrow><mrow><mn>3</mn></mrow></msup>"),
             "{m}"
         );
         assert!(m.ends_with("<mo>+</mo><mn>1</mn></math>"), "{m}");
-        let m = to_mathml("frac(1;2)");
+        let m = mathml("frac(1;2)");
         assert!(
             m.contains("<mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac>"),
             "{m}"
         );
-        let m = to_mathml("1,5×10^20");
+        let m = mathml("1.5×10^20");
         assert!(
             m.contains("<msup><mrow><mn>10</mn></mrow><mrow><mn>20</mn></mrow></msup>"),
             "{m}"
         );
-        let m = to_mathml("2^-3");
+        let m = mathml("2^-3");
         assert!(m.contains("<mo>−</mo><mn>3</mn>"), "{m}");
     }
 
     #[test]
     fn belum_lengkap_tetap_dirender() {
-        let m = to_mathml("sin(");
+        let m = mathml("sin(");
         assert!(m.contains("<mi>sin</mi>") && m.contains("□"), "{m}");
-        let m = to_mathml("frac(1;");
+        let m = mathml("frac(1;");
         assert!(m.contains("<mfrac>") && m.contains("□"), "{m}");
-        let m = to_mathml("(2+3");
+        let m = mathml("(2+3");
         assert!(m.contains("opacity:.35"), "{m}");
-        let m = to_mathml("3^");
+        let m = mathml("3^");
         assert!(m.contains("<msup>") && m.contains("□"), "{m}");
-        let m = to_mathml("^");
+        let m = mathml("^");
         assert!(m.contains("<msup>"), "{m}");
     }
 
     #[test]
     fn kalkulus() {
-        let m = to_mathml("int(x^2;x;0;1)");
+        let m = mathml("int(x^2;x;0;1)");
         assert!(
             m.contains("<msubsup><mo>∫</mo>") && m.contains("<mi>d</mi><mi>x</mi>"),
             "{m}"
         );
-        let m = to_mathml("sum(k;k;1;10)");
+        let m = mathml("sum(k;k;1;10)");
         assert!(m.contains("<munderover><mo>∑</mo>"), "{m}");
-        let m = to_mathml("limr(1÷x;x;0)");
+        let m = mathml("limr(1÷x;x;0)");
         assert!(
             m.contains("<munder><mi>lim</mi>") && m.contains("<mo>+</mo>"),
             "{m}"
         );
-        let m = to_mathml("diff(x^2;x;3)");
+        let m = mathml("diff(x^2;x;3)");
         assert!(m.contains("<mfrac><mi>d</mi>"), "{m}");
-        let m = to_mathml("root(3;x)");
+        let m = mathml("root(3;x)");
         assert!(m.contains("<mroot>"), "{m}");
-        let m = to_mathml("log(2;8)");
+        let m = mathml("log(2;8)");
         assert!(m.contains("<msub><mi>log</mi>"), "{m}");
     }
 
     #[test]
     fn karakter_khusus_di_escape() {
-        let m = to_mathml("2<3");
+        let m = mathml("2<3");
         assert!(m.contains("&lt;"), "{m}");
         assert!(!m.contains("<mo><</mo>"));
     }

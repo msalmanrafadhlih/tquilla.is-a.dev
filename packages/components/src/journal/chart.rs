@@ -1,5 +1,6 @@
 use super::data::Chronicle;
 use super::util::format_short_date;
+use crate::languages::Strings;
 
 const WIDTH: f64 = 1200.0;
 const HEIGHT: f64 = 400.0;
@@ -10,7 +11,7 @@ const TOOLTIP_H: f64 = 90.0;
 /// including the gradient area, stroke path, and collision-avoided tooltips
 /// for each entry in `top_activities`. Rendered via `dangerous_inner_html`
 /// so we don't need typed RSX bindings for `<foreignObject>`/`<linearGradient>`.
-pub fn build_chart_svg(chronicle: &Chronicle) -> String {
+pub fn build_chart_svg(chronicle: &Chronicle, s: &Strings) -> String {
     let timeline = &chronicle.stats.timeline;
 
     let mut svg = format!(
@@ -113,8 +114,9 @@ pub fn build_chart_svg(chronicle: &Chronicle) -> String {
             placed.push((fx, fy, TOOLTIP_W, TOOLTIP_H));
 
             svg.push_str(&format!(
-                r#"<foreignObject x="{fx}" y="{fy}" width="{TOOLTIP_W}" height="{TOOLTIP_H}"><div xmlns="http://www.w3.org/1999/xhtml" class="bg-primary text-paper p-4 shadow-2xl border border-white/10"><div class="font-serif italic text-lg opacity-80 mb-1">{}</div><div class="font-mono text-xl font-bold tracking-tight">{} Commits</div></div></foreignObject>"#,
-                activity.date, activity.count
+                r#"<foreignObject x="{fx}" y="{fy}" width="{TOOLTIP_W}" height="{TOOLTIP_H}"><div xmlns="http://www.w3.org/1999/xhtml" class="bg-primary text-paper p-4 shadow-2xl border border-white/10"><div class="font-serif italic text-lg opacity-80 mb-1">{}</div><div class="font-mono text-xl font-bold tracking-tight">{}</div></div></foreignObject>"#,
+                activity.date,
+                s.journal.chart_commits(activity.count)
             ));
             svg.push_str("</g>");
         }

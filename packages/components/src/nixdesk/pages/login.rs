@@ -1,5 +1,6 @@
+use crate::languages::use_strings;
 use crate::platform::TimeoutFuture;
-use crate::shared::AVATAR;
+use crate::shared::{AVATAR, USER_NAME};
 use dioxus::prelude::*;
 
 const TYPE_DELAY_MS: u32 = 150;
@@ -13,6 +14,7 @@ enum TypingMode {
 
 #[component]
 pub fn Login(on_unlocked: EventHandler<()>) -> Element {
+    let s = use_strings();
     let mut loaded = use_signal(|| false);
     let mut value = use_signal(String::new);
     let mut mode = use_signal(|| TypingMode::Auto);
@@ -65,13 +67,13 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
 
                     img {
                         src: AVATAR,
-                        alt: "Profile",
+                        alt: s.login.avatar_alt,
                         class: "w-20 h-20 sm:w-24 sm:h-24 outline outline-2 outline-white/90",
                     }
 
                     div { class: "flex flex-col items-center gap-1.5 sm:gap-2",
-                        p { class: "text-zinc-300 text-base sm:text-lg tracking-[0.2em]", "Tquilla" }
-                        p { class: "text-white/40 text-xs sm:text-sm font-extralight", "Keyboard: EN" }
+                        p { class: "text-zinc-300 text-base sm:text-lg tracking-[0.2em]", "{USER_NAME}" }
+                        p { class: "text-white/40 text-xs sm:text-sm font-extralight", "{s.login.keyboard}" }
                     }
 
                     form {
@@ -101,18 +103,18 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                                 button {
                                     r#type: "submit",
                                     class: "text-red-500 text-base sm:text-lg font-medium tracking-widest whitespace-nowrap rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
-                                    "[ Wrong ]"
+                                    "{s.login.wrong}"
                                 }
                             } else {
                                 button {
                                     r#type: "submit",
                                     class: "text-[var(--green)] text-base sm:text-lg font-medium tracking-widest whitespace-nowrap rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
-                                    "[ Unlock ]"
+                                    "{s.login.unlock}"
                                 }
                             }
 
                             div { class: "relative w-[100px] sm:w-[110px] h-10",
-                                label { class: "sr-only", r#for: "password-input", "Password" }
+                                label { class: "sr-only", r#for: "password-input", "{s.login.password_label}" }
                                 input {
                                     id: "password-input",
                                     r#type: "password",
@@ -157,15 +159,15 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                         p {
                             class: "text-white/30 text-[11px] text-center sm:text-xs h-4 transition-opacity duration-200",
                             if mode() == TypingMode::Auto {
-                                "logging in automatically…"
+                                "{s.login.auto_login}"
                             } else {
-                                "press enter, or click [ Unlock ]"
+                                "{s.login.press_enter}"
                             }
                         }
                     }
 
                     div { class: "flex flex-col items-center gap-1 mt-1",
-                        p { class: "text-white text-center text-[14px] sm:text-lg font-extralight", "Thu, 03 Sep 2026" }
+                        p { class: "text-white text-center text-[14px] sm:text-lg font-extralight", "{s.login.lock_date}" }
                         p { class: "text-white text-[11px] sm:text-sm font-extralight", "[ 19:35 ]" }
                     }
                 }
@@ -189,8 +191,8 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                         }
                     }
 
-                    p { class: "text-white text-base text-center sm:text-lg tracking-wide", "Welcome back, Tquilla" }
-                    p { class: "text-white/40 text-xs text-center sm:text-sm font-extralight", "access granted" }
+                    p { class: "text-white text-base text-center sm:text-lg tracking-wide", "{s.login.welcome_back(USER_NAME)}" }
+                    p { class: "text-white/40 text-xs text-center sm:text-sm font-extralight", "{s.login.access_granted}" }
                 }
             }
 

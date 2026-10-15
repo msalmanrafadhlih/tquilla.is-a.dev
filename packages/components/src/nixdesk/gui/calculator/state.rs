@@ -2,14 +2,15 @@
 
 use dioxus::prelude::*;
 
-use super::engine::{self, Angle, Outcome};
+use super::engine::{self, Angle, CalcError, Outcome};
 use super::input;
+use crate::languages::Strings;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Mode {
-    Aljabar,
-    Trigonometri,
-    Kalkulus,
+    Algebra,
+    Trigonometry,
+    Calculus,
 }
 
 /// Apa yang dilakukan sebuah tombol.
@@ -21,6 +22,23 @@ pub enum Action {
     Equals,
 }
 
+/// Pesan di baris kedua setelah "=": hasil True/False atau error. Disimpan
+/// sebagai data dan baru diterjemahkan saat ditampilkan.
+#[derive(Clone, PartialEq, Debug)]
+pub enum Notice {
+    Bool(bool),
+    Error(CalcError),
+}
+
+impl Notice {
+    pub fn text(&self, s: &Strings) -> String {
+        match self {
+            Notice::Bool(b) => Outcome::Bool(*b).display(s),
+            Notice::Error(e) => e.message(s),
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct CalcState {
     /// Ekspresi yang sedang diketik (string linear, lihat engine/mod.rs).
@@ -30,7 +48,7 @@ pub struct CalcState {
     /// `true` bila `expr` adalah hasil dari "=" (ketikan berikut memulai ekspresi baru).
     pub fresh: Signal<bool>,
     /// Pesan error atau hasil Benar/Salah setelah "=".
-    pub notice: Signal<Option<String>>,
+    pub notice: Signal<Option<Notice>>,
     pub mode: Signal<Mode>,
     pub angle: Signal<Angle>,
 }
@@ -80,11 +98,11 @@ impl CalcState {
             }
             Ok(Outcome::Bool(b)) => {
                 self.history.set(String::new());
-                self.notice.set(Some(Outcome::Bool(b).to_text()));
+                self.notice.set(Some(Notice::Bool(b)));
             }
             Err(err) => {
                 self.history.set(String::new());
-                self.notice.set(Some(err.to_string()));
+                self.notice.set(Some(Notice::Error(err)));
             }
         }
     }

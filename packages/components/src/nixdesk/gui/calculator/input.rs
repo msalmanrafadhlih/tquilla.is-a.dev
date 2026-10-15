@@ -35,7 +35,7 @@ pub fn insert(expr: &mut String, fresh: bool, text: &str) {
         }
     }
 
-    if text == "," {
+    if text == "." || text == "," {
         if last_number_has_decimal(expr) {
             return;
         }
@@ -96,11 +96,13 @@ mod tests {
 
     #[test]
     fn desimal() {
-        assert_eq!(run(&["1", ",", "5"]), "1,5");
-        assert_eq!(run(&["1", ",", "5", ","]), "1,5");
-        assert_eq!(run(&[","]), "0,");
-        assert_eq!(run(&["2", "+", ","]), "2+0,");
-        assert_eq!(run(&["1,5", "+", "2", ","]), "1,5+2,");
+        assert_eq!(run(&["1", ".", "5"]), "1.5");
+        assert_eq!(run(&["1", ".", "5", "."]), "1.5");
+        assert_eq!(run(&["."]), "0.");
+        assert_eq!(run(&["2", "+", "."]), "2+0.");
+        assert_eq!(run(&["1.5", "+", "2", "."]), "1.5+2.");
+        // koma tetap diterima sebagai tanda desimal
+        assert_eq!(run(&["1", ",", "5", "."]), "1,5");
     }
 
     #[test]
@@ -125,8 +127,8 @@ mod tests {
         insert(&mut s, true, "sin(");
         assert_eq!(s, "sin(");
         let mut s = "100".to_string();
-        insert(&mut s, true, ",");
-        assert_eq!(s, "0,");
+        insert(&mut s, true, ".");
+        assert_eq!(s, "0.");
         let mut s = "7".to_string();
         insert(&mut s, true, "!");
         assert_eq!(s, "7!");

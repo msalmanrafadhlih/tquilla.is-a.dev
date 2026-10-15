@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use serde::Deserialize;
 
+use crate::languages::use_strings;
+
 const BOOKMARKS_JSON: &str = include_str!("../../../data/browser.json");
 const ICON_LINK: Asset = asset!("/assets/icon-url.svg");
 
@@ -58,6 +60,7 @@ fn tab_class(active: bool) -> &'static str {
 
 #[component]
 pub fn BrowserWindowContent() -> Element {
+    let s = use_strings();
     let bookmarks = use_signal(load_bookmarks);
     let mut selected = use_signal(|| 0usize);
     let mut new_label = use_signal(String::new);
@@ -106,7 +109,7 @@ pub fn BrowserWindowContent() -> Element {
                         class: "w-full flex items-center gap-2",
                         input {
                             r#type: "text",
-                            placeholder: "placeholder...",
+                            placeholder: s.browser.name_placeholder,
                             class: "w-full py-2 bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
                             value: "{new_label}",
                             oninput: move |evt: FormEvent| new_label.set(evt.value()),
@@ -151,7 +154,7 @@ pub fn BrowserWindowContent() -> Element {
                     class: "flex shrink-0 items-center border-b border-solid border-[var(--fg-secondary)] px-3 pb-2 truncate text-[var(--fg-secondary)] gap-2 text-xs",
                     img {
                         src: ICON_LINK,
-                        alt: "link",
+                        alt: s.browser.link_alt,
                         class: "h-4",
                     }
                     "{current.url}"
@@ -173,7 +176,7 @@ pub fn BrowserWindowContent() -> Element {
                         rel: "noopener noreferrer",
                         href: "{current.url}",
                         class: "text-[var(--fg-secondary)] hover:text-[var(--fg-main)] transition-colors duration-150 text-xs",
-                        "Go to Website ↗"
+                        "{s.browser.go_to_website}"
                     }
                 }
             }

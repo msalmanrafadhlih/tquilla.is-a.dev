@@ -6,6 +6,7 @@ mod util;
 
 use dioxus::prelude::*;
 
+use crate::languages::use_strings;
 use crate::shared::{PageMeta, PLAYFAIR_FONT_URL};
 use components::{ChronicleSection, EndOfStream, Footer, Hero, PinnedSection};
 use data::AppData;
@@ -73,6 +74,7 @@ async fn load_data() -> Result<Loaded, String> {
 
 #[component]
 pub fn JournalPage() -> Element {
+    let s = use_strings();
     let mut data: Signal<Option<Loaded>> = use_signal(|| None);
     let mut load_error: Signal<Option<String>> = use_signal(|| None);
 
@@ -96,11 +98,11 @@ pub fn JournalPage() -> Element {
             Page { data: loaded.data, source: loaded.source }
         } else if let Some(err) = load_error() {
             div { class: "min-h-screen flex items-center justify-center bg-paper text-primary font-mono text-sm",
-                "Failed to load data: {err}"
+                "{s.journal.load_failed(&err)}"
             }
         } else {
             div { class: "min-h-screen flex items-center justify-center bg-paper text-primary font-mono text-sm",
-                "Loading…"
+                "{s.journal.loading}"
             }
         }
     }
@@ -108,9 +110,10 @@ pub fn JournalPage() -> Element {
 
 #[component]
 fn Page(data: AppData, source: DataSource) -> Element {
-    let today = util::today();
+    let s = use_strings();
+    let today = util::today(s);
     let date_label = format!("{} {}", today.month_upper, today.day);
-    let build_number = format!("NO. {}", today.day_of_year);
+    let build_number = s.journal.build_number(today.day_of_year);
 
     // Runs once, right after this page's real DOM (all `[data-reveal]`
     // sections) is mounted — see `scroll::init_scroll_reveal` for how the
@@ -121,8 +124,8 @@ fn Page(data: AppData, source: DataSource) -> Element {
 
     rsx! {
         PageMeta {
-            title: "GitHub Journal",
-            description: "A journal of my GitHub activity: pinned repositories, contribution volume, streaks, languages and stack.",
+            title: s.meta.journal_title,
+            description: s.meta.journal_description,
             path: "/profile",
         }
         div { class: "bg-paper text-primary font-sans antialiased flex flex-col selection:bg-accent selection:text-paper overflow-x-hidden",
@@ -130,7 +133,7 @@ fn Page(data: AppData, source: DataSource) -> Element {
                 div {
                     role: "status",
                     class: "w-full bg-accent text-paper font-mono text-xs text-center px-4 py-2",
-                    "Offline snapshot: live GitHub stats are unavailable right now, so the numbers below are sample data."
+                    "{s.journal.offline_snapshot}"
                 }
             }
             Hero { hero: data.hero.clone(), date_label, build_number }

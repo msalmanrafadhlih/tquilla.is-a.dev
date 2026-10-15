@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use serde::Deserialize;
 
 use super::audio::{load_and_play, pause_audio, resume_audio, set_audio_volume};
+use crate::languages::{use_strings, Strings};
 use crate::nixdesk::js_util::{eval_js, js_string_escape};
 
 const RADIO_JSON: &str = include_str!("../../../data/radio.json");
@@ -26,9 +27,9 @@ fn load_stations() -> Vec<Station> {
     serde_json::from_str(RADIO_JSON).unwrap_or_default()
 }
 
-fn empty_station() -> Station {
+fn empty_station(s: &Strings) -> Station {
     Station {
-        label: "No station".to_string(),
+        label: s.radio.no_station.to_string(),
         slogan: String::new(),
         url_stream: String::new(),
         official_link: "#".to_string(),
@@ -47,6 +48,7 @@ fn prime_station(audio_id: &str, url: &str) {
 
 #[component]
 pub fn RadioWindowContent() -> Element {
+    let s = use_strings();
     // Signal supaya Copy -> bisa dipakai di banyak closure tanpa clone manual.
     let stations = use_signal(load_stations);
     let mut selected = use_signal(|| 0usize);
@@ -58,10 +60,14 @@ pub fn RadioWindowContent() -> Element {
         .read()
         .get(selected())
         .cloned()
-        .unwrap_or_else(empty_station);
+        .unwrap_or_else(|| empty_station(s));
     let initial_url = current.url_stream.clone();
     let station_list = stations.read().clone();
-    let play_title = if playing() { "Pause" } else { "Play" };
+    let play_title = if playing() {
+        s.radio.pause
+    } else {
+        s.radio.play
+    };
     let volume_pct = (volume() * 100.0).round() as u32;
 
     // Satu-satunya tempat logika "pindah station + play", dipakai oleh
@@ -87,7 +93,7 @@ pub fn RadioWindowContent() -> Element {
             // SIDE PANEL
             nav {
                 class: "flex items-center @min-[643px]:flex-col justify-start @min-[643px]:p-0 p-2 relative self-stretch w-full h-max @min-[643px]:max-w-max max-w-full @min-[643px]:h-full overflow-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-b-[0.5px] @min-[643px]:border-0 @min-[643px]:border-r-[0.5px] border-solid border-white/30",
-                "aria-label": "Radio stations",
+                "aria-label": s.radio.stations_label,
                 for (idx , station) in station_list.iter().enumerate() {
                     {
                         let image = station.image.clone();
@@ -123,7 +129,7 @@ pub fn RadioWindowContent() -> Element {
                 div {
                     p { class: "text-sm text-white font-semibold", "{current.label}" }
                     p { class: "text-white/30 text-[10px] mt-1",
-                        "Radio Indonesia - {current.slogan}"
+                        "{s.radio.slogan_line(&current.slogan)}"
                     }
                 }
 
@@ -140,17 +146,17 @@ pub fn RadioWindowContent() -> Element {
 
                         section {
                             class: "flex flex-col @min-[643px]:flex-row w-[284px] items-center justify-center gap-5 relative flex-[0_0_auto]",
-                            "aria-label": "Audio player controls",
+                            "aria-label": s.radio.controls_label,
 
                             // PLAYBACK CONTROLS
                             nav {
                                 class: "flex items-center justify-center gap-5 relative w-max flex-[0_0_auto]",
-                                "aria-label": "Playback controls",
+                                "aria-label": s.radio.playback_controls,
                                 button {
                                     r#type: "button",
                                     class: "w-7 h-7 flex items-center bg-[var(--bg-secondary)] border-0 justify-center relative appearance-none p-0",
-                                    title: "Previous station",
-                                    "aria-label": "Previous station",
+                                    title: s.radio.previous_station,
+                                    "aria-label": s.radio.previous_station,
                                     onclick: move |_| {
                                         if total > 0 {
                                             play_station((selected() + total - 1) % total);
@@ -187,8 +193,8 @@ pub fn RadioWindowContent() -> Element {
                                 button {
                                     r#type: "button",
                                     class: "w-7 h-7 flex items-center bg-[var(--bg-secondary)] border-0 justify-center relative appearance-none p-0",
-                                    title: "Next station",
-                                    "aria-label": "Next station",
+                                    title: s.radio.next_station,
+                                    "aria-label": s.radio.next_station,
                                     onclick: move |_| {
                                         if total > 0 {
                                             play_station((selected() + 1) % total);
@@ -226,7 +232,7 @@ pub fn RadioWindowContent() -> Element {
                                         max: "1",
                                         step: "0.01",
                                         value: "{volume}",
-                                        "aria-label": "Volume",
+                                        "aria-label": s.radio.volume,
                                         oninput: move |evt: FormEvent| {
                                             let v: f64 = evt.value().parse().unwrap_or(0.7);
                                             volume.set(v);
@@ -241,7 +247,7 @@ pub fn RadioWindowContent() -> Element {
                     // STATUS (radio = live stream, jadi tidak ada seek/durasi)
                     section {
                         class: "flex flex-col h-10 items-center justify-end gap-2 w-full relative self-stretch",
-                        "aria-label": "Playback status",
+                        "aria-label": s.radio.playback_status,
                         div { class: "flex h-1 items-start w-full bg-white/30 relative self-stretch",
                             div {
                                 class: if playing() { "w-full bg-white relative self-stretch animate-pulse" } else { "w-0 bg-white relative self-stretch" },
@@ -250,13 +256,13 @@ pub fn RadioWindowContent() -> Element {
                         }
                         div { class: "flex items-end justify-between relative self-stretch w-full flex-[0_0_auto]",
                             span { class: "relative w-fit mt-[-1.00px] [font-family:'JetBrains_Mono-Regular',Helvetica] font-normal text-white text-[10px] tracking-[0] leading-[normal]",
-                                "LIVE"
+                                "{s.radio.live}"
                             }
                             span { class: "relative w-fit mt-[-1.00px] [font-family:'JetBrains_Mono-Regular',Helvetica] font-normal text-white text-[10px] tracking-[0] leading-[normal]",
                                 if playing() {
-                                    "ON AIR"
+                                    "{s.radio.on_air}"
                                 } else {
-                                    "PAUSED"
+                                    "{s.radio.paused}"
                                 }
                             }
                         }
@@ -268,7 +274,7 @@ pub fn RadioWindowContent() -> Element {
                     target: "_blank",
                     rel: "noopener noreferrer",
                     href: "{current.official_link}",
-                    "Radio Stations ↗"
+                    "{s.radio.stations_link}"
                 }
             }
         }

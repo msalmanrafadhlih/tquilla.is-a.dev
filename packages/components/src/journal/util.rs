@@ -1,11 +1,10 @@
 use super::data::TimelinePoint;
+use crate::languages::Strings;
 
+/// Nama bulan pendek bentuk **data**: dicocokkan dengan tanggal yang dikirim
+/// Worker (`"Sep 14"`, format `en-US`), jadi tidak ikut bahasa UI.
 const MONTHS_SHORT: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-const MONTHS_UPPER: [&str; 12] = [
-    "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
 ];
 
 /// Mirrors the JS `formatStars` helper: 1234 -> "1.2K", 42 -> "42".
@@ -46,8 +45,8 @@ pub fn format_short_date(iso_date: &str) -> String {
 }
 
 /// Rolling 12-month label row starting from the first timeline entry's month,
-/// same as the JS `months` generation.
-pub fn build_month_labels(timeline: &[TimelinePoint]) -> Vec<String> {
+/// same as the JS `months` generation. Labels follow the UI language.
+pub fn build_month_labels(timeline: &[TimelinePoint], s: &Strings) -> Vec<String> {
     let Some(first) = timeline.first() else {
         return vec![];
     };
@@ -59,13 +58,13 @@ pub fn build_month_labels(timeline: &[TimelinePoint]) -> Vec<String> {
         .saturating_sub(1)
         % 12;
     (0..12)
-        .map(|i| MONTHS_SHORT[(start_month + i) % 12].to_string())
+        .map(|i| s.calendar.month_short((start_month + i) % 12).to_string())
         .collect()
 }
 
 /// Today's date, computed from the local clock (`crate::platform::Date`, equivalent to JS `new Date()`).
 pub struct Today {
-    pub month_upper: &'static str,
+    pub month_upper: String,
     pub day: u32,
     pub year: i32,
     pub day_of_year: u32,
@@ -75,7 +74,7 @@ fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }
 
-pub fn today() -> Today {
+pub fn today(s: &Strings) -> Today {
     let now = crate::platform::Date::new_0();
     let month0 = now.get_month() as usize; // 0-indexed, like JS
     let day = now.get_date();
@@ -91,7 +90,7 @@ pub fn today() -> Today {
     }
 
     Today {
-        month_upper: MONTHS_UPPER[month0],
+        month_upper: s.calendar.month_short(month0).to_uppercase(),
         day,
         year,
         day_of_year,

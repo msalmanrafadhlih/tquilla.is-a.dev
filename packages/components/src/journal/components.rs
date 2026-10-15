@@ -3,10 +3,12 @@ use dioxus::prelude::*;
 use super::chart::build_chart_svg;
 use super::data::{Chronicle, Hero as HeroData, Repo};
 use super::util::{build_month_labels, format_stars, format_volume};
-use crate::shared::AVATAR;
+use crate::languages::use_strings;
+use crate::shared::{AVATAR, CONTACT_EMAIL};
 
 #[component]
 pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element {
+    let s = use_strings();
     rsx! {
         header { class: "w-full border-b border-line bg-paper",
             div { class: "max-w-[1400px] mx-auto flex flex-col lg:flex-row border-l border-r border-line",
@@ -15,24 +17,24 @@ pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element
                         div { class: "size-72 overflow-hidden bg-primary filter grayscale contrast-125 mix-blend-darken",
                             img {
                                 class: "w-full h-full object-cover",
-                                alt: "Profile",
+                                alt: s.journal.profile_alt,
                                 src: AVATAR,
                             }
                         }
                         div { class: "w-72 flex justify-between items-center border-t border-b border-line py-3 font-mono tracking-wider text-muted uppercase",
                             div { class: "flex flex-col items-center",
                                 span { class: "font-bold text-primary", "{hero.total_repos}" }
-                                span { "Repos" }
+                                span { "{s.journal.repos}" }
                             }
                             div { class: "w-px h-6 bg-line" }
                             div { class: "flex flex-col items-center",
                                 span { class: "font-bold text-primary", "{format_stars(hero.total_stars)}" }
-                                span { "Stars" }
+                                span { "{s.journal.stars}" }
                             }
                             div { class: "w-px h-6 bg-line" }
                             div { class: "flex flex-col items-center",
                                 span { class: "font-bold text-primary", "{hero.total_followers}" }
-                                span { "Readers" }
+                                span { "{s.journal.readers}" }
                             }
                         }
                     }
@@ -44,29 +46,29 @@ pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element
                         span { "{build_number}" }
                     }
                     div { class: "max-w-2xl",
-                        p { class: "font-mono text-accent text-sm tracking-widest mb-6 uppercase", "Profile / Editorial" }
+                        p { class: "font-mono text-accent text-sm tracking-widest mb-6 uppercase", "{s.journal.eyebrow}" }
                         h2 { class: "font-serif text-5xl sm:text-9xl leading-[0.85] text-primary mb-10 tracking-tighter",
-                            "Building the "
+                            "{s.journal.headline_1} "
                             br {}
-                            "Digital "
-                            span { class: "italic font-light", "Environment." }
+                            "{s.journal.headline_2} "
+                            span { class: "italic font-light", "{s.journal.headline_3}" }
                         }
                         div { class: "flex flex-col sm:flex-row gap-8 sm:gap-12 pt-8 border-t border-line text-sm",
                             div { class: "flex-1 max-w-[280px]",
                                 p { class: "font-sans font-medium leading-relaxed mb-1",
-                                    "By Moch (@msalmanrafadhlih) — Developer, Indonesia."
+                                    "{s.journal.byline}"
                                 }
                                 div { class: "flex gap-4 mt-4",
                                     a {
                                         class: "font-bold tracking-wider border-b border-transparent pb-0.5",
                                         href: "#",
-                                        "tquilla1938@gmail.com"
+                                        "{CONTACT_EMAIL}"
                                     }
                                 }
                             }
                             div { class: "flex-1",
                                 p { class: "font-serif text-xl leading-relaxed text-primary/80 italic",
-                                    "\"Code is not just functionality; it is a curated collection of logic and craftsmanship designed to be read.\""
+                                    "{s.journal.quote}"
                                 }
                             }
                         }
@@ -79,12 +81,13 @@ pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element
 
 #[component]
 pub fn ArticleCard(repo: Option<Repo>, class: String) -> Element {
+    let s = use_strings();
     rsx! {
         article { class: "{class}", "data-reveal": "true",
             if let Some(repo) = repo {
                 div { class: "flex justify-between items-start mb-4",
                     span { class: "font-sans font-bold uppercase text-sm tracking-[0.15em] text-ink/40",
-                        "{repo.topic.clone().unwrap_or_else(|| \"Project\".to_string())}"
+                        "{repo.topic.clone().unwrap_or_else(|| s.journal.default_topic.to_string())}"
                     }
                     div { class: "flex items-center gap-1 text-ink/40",
                         span { class: "material-symbols-outlined text-xs", "star" }
@@ -103,6 +106,7 @@ pub fn ArticleCard(repo: Option<Repo>, class: String) -> Element {
 
 #[component]
 pub fn PinnedSection(pinned: Vec<Repo>) -> Element {
+    let s = use_strings();
     let feat = pinned.first().cloned();
     let sec1 = pinned.get(1).cloned();
     let sec2 = pinned.get(2).cloned();
@@ -124,7 +128,7 @@ pub fn PinnedSection(pinned: Vec<Repo>) -> Element {
                             if let Some(repo) = &feat {
                                 div { class: "flex justify-between items-start mb-8",
                                     span { class: "font-sans font-bold uppercase tracking-[0.15em] text-ink/60",
-                                        "{repo.topic.clone().unwrap_or_else(|| \"Project\".to_string())}"
+                                        "{repo.topic.clone().unwrap_or_else(|| s.journal.default_topic.to_string())}"
                                     }
                                     div { class: "flex items-center gap-1 text-ink/60",
                                         span { class: "material-symbols-outlined text-xs", "star" }
@@ -173,6 +177,7 @@ pub fn PinnedSection(pinned: Vec<Repo>) -> Element {
 
 #[component]
 pub fn ChronicleSection(chronicle: Chronicle) -> Element {
+    let s = use_strings();
     let stack = chronicle.stack.clone().unwrap_or_else(|| {
         vec![
             "Linux".into(),
@@ -181,8 +186,8 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
             "Hyprland".into(),
         ]
     });
-    let months = build_month_labels(&chronicle.stats.timeline);
-    let chart_svg = build_chart_svg(&chronicle);
+    let months = build_month_labels(&chronicle.stats.timeline, s);
+    let chart_svg = build_chart_svg(&chronicle, s);
     let focus_html = chronicle.monthly_focus_html.clone();
     let focus_text = chronicle.monthly_focus.clone();
 
@@ -204,20 +209,20 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                         class: "flex flex-col md:flex-row md:items-end justify-between border-b border-line pb-8 mb-12",
                         "data-reveal": "true",
                         div { class: "max-w-2xl",
-                            span { class: "block text-accent font-mono text-sm mb-4", "03. — SECTION" }
+                            span { class: "block text-accent font-mono text-sm mb-4", "{s.journal.section_label}" }
                             h1 { class: "text-primary font-serif text-5xl md:text-8xl italic font-bold leading-tight mb-4",
-                                "The Chronicle"
+                                "{s.journal.chronicle_title}"
                             }
                             p { class: "text-primary/70 font-serif text-2xl md:text-3xl leading-relaxed max-w-lg",
-                                "Visualizing the cadence of code. A timeline of open source contributions and linguistic proficiency."
+                                "{s.journal.chronicle_subtitle}"
                             }
                         }
                         div { class: "flex flex-col gap-2 mt-8 md:mt-0 text-right",
-                            span { class: "text-sm font-bold uppercase tracking-widest text-primary/40", "Total Contribution Volume" }
+                            span { class: "text-sm font-bold uppercase tracking-widest text-primary/40", "{s.journal.total_volume}" }
                             span { class: "text-5xl md:text-6xl font-mono text-primary", "{format_volume(chronicle.total_contribution_volume)}" }
                             span { class: "text-sm font-medium text-accent flex justify-end items-center gap-1",
                                 span { class: "material-symbols-outlined", "trending_up" }
-                                " {chronicle.growth_percentage} vs last year"
+                                " {s.journal.growth_vs_last_year(&chronicle.growth_percentage)}"
                             }
                         }
                     }
@@ -225,7 +230,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                         div { class: "p-0 lg:pr-12 pb-12 lg:pb-0", "data-reveal": "true",
                             div { class: "flex items-center gap-3 mb-10",
                                 span { class: "material-symbols-outlined text-accent text-xl", "code" }
-                                h3 { class: "font-serif text-3xl text-primary italic", "Dialects." }
+                                h3 { class: "font-serif text-3xl text-primary italic", "{s.journal.dialects}" }
                             }
                             div { class: "space-y-10",
                                 for lang in chronicle.languages.iter() {
@@ -249,7 +254,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                                 }
                             }
                             div { class: "mt-16 pt-8 border-t border-line",
-                                h4 { class: "font-mono text-sm uppercase tracking-widest text-primary/40 mb-4", "Core Stack (Detected)" }
+                                h4 { class: "font-mono text-sm uppercase tracking-widest text-primary/40 mb-4", "{s.journal.core_stack}" }
                                 div { class: "flex flex-wrap gap-2",
                                     for s in stack.iter() {
                                         span { class: "px-2 py-1 border border-line text-sm font-medium text-primary/70", key: "{s}", "{s}" }
@@ -263,15 +268,15 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                             div { class: "flex items-center justify-between mb-10",
                                 div { class: "flex items-center gap-3",
                                     span { class: "material-symbols-outlined text-accent text-xl", "timeline" }
-                                    h3 { class: "font-serif text-3xl text-primary italic", "The Timeline." }
+                                    h3 { class: "font-serif text-3xl text-primary italic", "{s.journal.timeline}" }
                                 }
                                 div { class: "flex gap-6",
                                     div { class: "text-right",
-                                        span { class: "block text-sm font-bold uppercase tracking-widest text-primary/40", "Current Streak" }
-                                        span { class: "font-mono text-xl font-bold text-primary", "{chronicle.current_streak} Days" }
+                                        span { class: "block text-sm font-bold uppercase tracking-widest text-primary/40", "{s.journal.current_streak}" }
+                                        span { class: "font-mono text-xl font-bold text-primary", "{s.journal.streak_days(chronicle.current_streak)}" }
                                     }
                                     div { class: "text-right",
-                                        span { class: "block text-sm font-bold uppercase tracking-widest text-primary/40", "Peak Activity" }
+                                        span { class: "block text-sm font-bold uppercase tracking-widest text-primary/40", "{s.journal.peak_activity}" }
                                         span { class: "font-mono text-xl font-bold text-primary", "{chronicle.peak_activity_day.date}" }
                                     }
                                 }
@@ -293,23 +298,23 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                             }
                             div { class: "grid grid-cols-1 md:grid-cols-2 gap-8 mt-12",
                                 div { class: "p-6 bg-white border border-line", "data-reveal": "true",
-                                    h4 { class: "font-serif italic text-2xl mb-2 text-primary", "Monthly Focus" }
+                                    h4 { class: "font-serif italic text-2xl mb-2 text-primary", "{s.journal.monthly_focus}" }
                                     if let Some(html) = &focus_html {
                                         p { class: "text-sm leading-relaxed text-primary/70", dangerous_inner_html: "{html}" }
                                     } else {
-                                        p { class: "text-sm leading-relaxed text-primary/70", "Current heavy activity detected in {focus_text}." }
+                                        p { class: "text-sm leading-relaxed text-primary/70", "{s.journal.focus_text(&focus_text)}" }
                                     }
                                 }
                                 div {
                                     class: "p-6 bg-white border border-line flex flex-col justify-between",
                                     "data-reveal": "true",
                                     div { class: "flex justify-between items-start mb-4",
-                                        h4 { class: "font-serif italic text-2xl text-primary", "Most Productive" }
+                                        h4 { class: "font-serif italic text-2xl text-primary", "{s.journal.most_productive}" }
                                         span { class: "material-symbols-outlined text-accent", "bolt" }
                                     }
                                     div {
                                         div { class: "text-4xl font-serif font-bold italic text-primary", "{chronicle.most_productive_day}" }
-                                        div { class: "text-sm uppercase tracking-widest text-primary/50 mt-1", "Based on commit history" }
+                                        div { class: "text-sm uppercase tracking-widest text-primary/50 mt-1", "{s.journal.based_on_commits}" }
                                     }
                                 }
                             }
@@ -323,6 +328,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
 
 #[component]
 pub fn Footer(year: i32) -> Element {
+    let s = use_strings();
     rsx! {
         footer { class: "w-full relative border-t border-line mt-auto bg-paper",
             div { class: "absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-primary rotate-45" }
@@ -331,22 +337,22 @@ pub fn Footer(year: i32) -> Element {
                     div { class: "space-y-4",
                         span { class: "material-symbols-outlined text-primary text-3xl mb-2", "public" }
                         h4 { class: "font-display text-sm md:text-sm font-bold tracking-[0.2em] uppercase text-muted",
-                            "Published in Indonesia"
+                            "{s.journal.published_in}"
                         }
                     }
                     div { class: "max-w-lg",
                         p { class: "font-serif text-4xl italic text-ink leading-relaxed",
-                            "Crafting digital environments with a focus on typography and negative space."
+                            "{s.journal.tagline}"
                         }
                     }
                     div { class: "pt-12 mt-4 w-full flex flex-col md:flex-row justify-between items-center border-t border-line/30 gap-6",
                         div { class: "flex items-center gap-3",
-                            span { class: "font-mono text-muted uppercase tracking-tight", "Built with Rust, Dioxus & TailwindCSS" }
+                            span { class: "font-mono text-muted uppercase tracking-tight", "{s.journal.built_with}" }
                             span { class: "h-px w-8 bg-line" }
                             span { class: "font-mono text-muted uppercase tracking-tight", "v1.0.1" }
                         }
                         div { class: "text-center",
-                            p { class: "font-display text-muted tracking-wide", "© {year} msalmanrafadhlih. Open Source." }
+                            p { class: "font-display text-muted tracking-wide", "{s.journal.copyright(year)}" }
                         }
                     }
                 }
@@ -358,11 +364,12 @@ pub fn Footer(year: i32) -> Element {
 
 #[component]
 pub fn EndOfStream() -> Element {
+    let s = use_strings();
     rsx! {
         div { class: "flex-grow flex items-center justify-center py-10 opacity-20 pointer-events-none select-none",
             div { class: "text-center space-y-4",
                 div { class: "h-24 w-px bg-line mx-auto" }
-                p { class: "font-serif italic text-3xl text-primary", "End of content stream" }
+                p { class: "font-serif italic text-3xl text-primary", "{s.journal.end_of_stream}" }
             }
         }
     }

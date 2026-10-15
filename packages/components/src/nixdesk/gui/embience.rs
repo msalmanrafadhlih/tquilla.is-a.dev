@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use serde::Deserialize;
 
 use super::audio::set_audio_volume;
+use crate::languages::use_strings;
 use crate::nixdesk::js_util::{eval_js, js_string_escape};
 
 const EMBIENCE_JSON: &str =
@@ -131,6 +132,7 @@ fn turn_off(
 
 #[component]
 pub fn EmbienceWindowContent() -> Element {
+    let s = use_strings();
     let data = use_hook(load_data);
     let sounds = data.embiences;
     let presets = data.presets;
@@ -151,7 +153,7 @@ pub fn EmbienceWindowContent() -> Element {
     rsx! {
         main {
             class: "relative flex flex-col w-full h-full items-start gap-5 bg-[var(--bg-secondary)] text-[var(--fg-main,#fff)]",
-            "aria-label": "Embience",
+            "aria-label": s.embience.label,
 
             for sound in sounds.iter() {
                 audio { key: "{sound.embiences_id}", id: "{audio_id_for(sound.embiences_id)}", r#loop: true }
@@ -160,7 +162,7 @@ pub fn EmbienceWindowContent() -> Element {
             // MAIN CONTENTS : AVAILABLE AUDIOS
             section {
                 class: "grid w-full h-full min-h-0 content-start grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2.5 border-b border-solid border-[var(--fg-secondary,#808080)] justify-center overflow-y-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-                "aria-label": "Available ambient sound themes",
+                "aria-label": s.embience.themes_label,
 
                 for (idx , sound) in sounds.iter().enumerate() {
                     {
@@ -181,7 +183,7 @@ pub fn EmbienceWindowContent() -> Element {
                                 button {
                                     r#type: "button",
                                     class: "w-full flex flex-col items-center justify-center gap-5 appearance-none border-0 p-0 bg-transparent text-inherit cursor-pointer",
-                                    "aria-label": "Select {name} ambience",
+                                    "aria-label": "{s.embience.select_ambience(&name)}",
                                     "aria-pressed": "{is_active}",
                                     onclick: move |_| {
                                         if is_active {
@@ -226,7 +228,7 @@ pub fn EmbienceWindowContent() -> Element {
                                             max: "1",
                                             step: "0.01",
                                             value: "{vol}",
-                                            "aria-label": "{name} volume",
+                                            "aria-label": "{s.embience.volume_of(&name)}",
                                             class: "absolute left-0 -top-2 m-0 w-full h-[21px] opacity-0 cursor-pointer",
                                             oninput: move |evt: FormEvent| {
                                                 let v: f64 = evt.value().parse().unwrap_or(0.6);
@@ -307,13 +309,13 @@ pub fn EmbienceWindowContent() -> Element {
             // FOOTER: AUDIO PLAYBACK
             footer {
                 class: "flex items-center justify-center gap-[25px] relative self-stretch w-full flex-[0_0_auto]",
-                "aria-label": "Playback controls",
+                "aria-label": s.embience.playback_controls,
 
                 // MUTE/UNMUTE BUTTON
                 button {
                     r#type: "button",
                     class: "relative w-6 h-6 aspect-[1] border-0 p-0 bg-[var(--bg-secondary)] cursor-pointer",
-                    "aria-label": "Toggle volume",
+                    "aria-label": s.embience.toggle_volume,
                     "aria-pressed": "{muted()}",
                     onclick: move |_| {
                         let now_muted = !muted();
@@ -339,7 +341,7 @@ pub fn EmbienceWindowContent() -> Element {
                 button {
                     r#type: "button",
                     class: "group flex w-[50px] h-[50px] items-center justify-center relative bg-[var(--bg-secondary)] aspect-[1] border-0 p-0 cursor-pointer hover:bg-[var(--fg-main)] disabled:opacity-40 disabled:cursor-default",
-                    "aria-label": if is_playing { "Pause ambience" } else { "Play ambience" },
+                    "aria-label": if is_playing { s.embience.pause_ambience } else { s.embience.play_ambience },
                     disabled: !any_active,
                     onclick: move |_| {
                         let now_playing = !master_playing();
@@ -367,7 +369,7 @@ pub fn EmbienceWindowContent() -> Element {
                 button {
                     r#type: "button",
                     class: "relative w-6 h-6 aspect-[1] border-0 p-0 bg-[var(--bg-secondary)] cursor-pointer",
-                    "aria-label": "Open playlist",
+                    "aria-label": s.embience.open_playlist,
                     "aria-expanded": "{show_presets()}",
                     onclick: move |_| show_presets.set(!show_presets()),
                     img {
