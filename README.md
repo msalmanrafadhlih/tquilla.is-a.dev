@@ -15,7 +15,7 @@ Live: <https://tquilla.is-a.dev>
 | `packages/mobile` | Entry point Android (compile dan clippy lolos di host; build Android gagal di percobaan 1 karena SDK, perbaikan belum diuji) |
 | `site/` | File statis untuk deploy: `robots.txt`, `sitemap.xml`, snippet `<head>` (SEO/Open Graph) dan `<noscript>` |
 | `scripts/postbuild.py` | Langkah pasca-build di CI: menyuntik `site/*` ke output `dx bundle` (tes: `scripts/test_postbuild.py`) |
-| `.github/workflows/` | `ci.yml` (fmt, clippy, test Rust, test node/python; jalan di tiap PR dan sebelum deploy), `deploy-page.yml` (build + deploy ke Pages), dan `platforms.yml` (cek compile desktop/mobile; tidak menahan deploy) |
+| `.github/workflows/` | `ci.yml` (fmt, clippy, test Rust, test node/python; jalan di tiap PR dan sebelum deploy), `deploy-page.yml` (build + deploy ke Pages; jalan saat tag `generation_*` di-push atau lewat tombol manual, bukan tiap push), dan `platforms.yml` (cek compile desktop/mobile; tidak menahan deploy) |
 | `rust-toolchain.toml` | Versi Rust dikunci (1.97.0); naikkan bersama workflow |
 
 ## Menjalankan
@@ -290,13 +290,19 @@ Rencana isi repo backend: `crates/api-types` (dites native), `crates/api` (Worke
   - [x] Home bergantung pada API sekarang. Kalau gagal atau kosong, halaman menampilkan error + "Try again" + dua tautan biasa ke `/deisktify` dan `/profile`, jadi situs tetap bisa dijangkau saat server mati. Hitung mundur auto-boot baru mulai setelah data termuat. Link menu dari server diperiksa: rute yang tidak dikenal **tidak** lagi dibuka sebagai URL eksternal, tetapi diabaikan
   - [x] File `generations.json`, `browser.json`, `radio.json`, `embience.json` dan semua `include_str!`-nya dihapus (isi aslinya hidup di `seeds/source/` repo backend sebagai sumber seed). `chat_sample.json` dan `journal.sample.json` tetap sampai D4/D5
   - [x] Terverifikasi di sandbox: frontend fmt, clippy `-D warnings`, 78 test Rust, 13 test JS, 6 test Python; backend fmt, clippy workspace, 86 test Rust, 23 test node. **Belum:** build wasm32 dan `dx` (target tidak ada di sandbox), menjalankan UI di browser, endpoint terhadap `sqld`/Turso cloud, CI job `wasm`
-  - [ ] **Tindakanmu (urut):**
-    1. Backend: push, tunggu CI hijau (termasuk `wasm32`), beri tag **`v0.2.0`**
-    2. Repo ini: `cargo update -p api-types`, commit `Cargo.toml` (tag sudah `v0.2.0`) dan `Cargo.lock`
-    3. Deploy Worker: `wrangler deploy`; secret `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`; `ALLOWED_ORIGINS` harus memuat `https://tquilla.is-a.dev`
-    4. Isi database Turso cloud: `migrate up --yes` lalu `migrate seed --yes` (tanpa `--samples`)
-    5. **Baru setelah itu** deploy frontend (set `API_BASE_URL` ke alamat Worker). Kalau urutannya dibalik, boot menu menampilkan state error
-    6. Lokal: backend (`db-dev`, `api-dev`) lalu `API_BASE_URL=http://127.0.0.1:8787 dx serve --package web --platform web`, dengan `http://127.0.0.1:8080` di `ALLOWED_ORIGINS`. Desktop dan mobile juga butuh `API_BASE_URL` saat build
+  - Rilis frontend sekarang lewat tag: `git tag generation_N && git push origin generation_N` (atau "Run workflow" di tab Actions). Push biasa ke `main` tidak men-deploy. Backend sama: tag `v*` menjalankan cek + migrasi database + seed (lihat README backend, "Migrasi otomatis di CI")
+  - [x] Tindakanmu 1–3 selesai (tag backend `v0.2.0`, `Cargo.lock` frontend naik ke `v0.2.0`, Worker terdeploy dengan secret)
+  - [ ] **Temuan 2026-10-16 (laporan Moch):** Home menampilkan "The boot menu could not be loaded". Kodenya tidak salah; dua gejala berbeda, dua penyebab:
+    1. `GET /api/v1/generations` → **404** `{"error":{"code":"not_found"...}}` dari Worker production: itu Worker **lama** (sebelum D3) yang belum punya rute baru. Setelah Worker D3 terdeploy, gejalanya berganti jadi
+    2. **500** di `/radio`, `/embiences`, `/presets`, `/bookmarks`; di `wrangler dev` lokal pesannya `no such table: generations`. Artinya Worker sudah baru, tetapi **database yang dibacanya belum dimigrasi**. Migrasi yang kamu jalankan masuk ke database lain (kandidat: `turso dev` lokal, atau database Turso lain, mis. yang ada di `TURSO_DATABASE_URL2`), atau `turso dev` dijalankan ulang tanpa `--db-file` sehingga isinya hilang (mode memori)
+    - Cek: di repo backend, dengan `TURSO_DATABASE_URL` dan `TURSO_AUTH_TOKEN` yang **sama persis** dengan secret Worker, jalankan `cargo run -p migrate -- status`. Kalau `pending 0001_generations` dan seterusnya, database itu kosong. Untuk lokal: `set -a; . crates/api/.dev.vars; set +a` lalu perintah yang sama
+    - Perbaikan production: isi kedua secret GitHub di bawah dengan nilai yang sama seperti secret Worker, lalu jalankan job `migrate` (Run workflow dari `main`, atau tag `v*` baru). Perbaikan lokal: `cargo run -p migrate -- up` dan `seed --samples` ke database yang dipakai `.dev.vars`
+  - [ ] **Tindakanmu (setelah temuan di atas):**
+    1. Repo backend → Settings > Secrets and variables > Actions: tambah `TURSO_DATABASE_URL` dan `TURSO_AUTH_TOKEN` (nilai sama dengan secret Worker)
+    2. Push `ci.yml` baru, lalu jalankan job `migrate` (Run workflow dari `main`). Log harus berakhir "up to date (6 applied)"
+    3. Buka `https://<worker>.workers.dev/api/v1/generations`: harus `200` dengan 5 item. Lalu buka https://tquilla.is-a.dev (hard refresh)
+    4. Deploy frontend hanya lewat tag `generation_*` dengan `API_BASE_URL` = alamat Worker (variable repo)
+    5. Lokal: backend (`db-dev`, `api-dev`) lalu `API_BASE_URL=http://127.0.0.1:8787 dx serve --package web --platform web`, dengan `http://127.0.0.1:8080` di `ALLOWED_ORIGINS`. Desktop dan mobile juga butuh `API_BASE_URL` saat build
   - [ ] **Uji manual:** Home (loading, error saat Worker dimatikan, Try again, tautan cadangan, navigasi keyboard, auto-boot setelah termuat); Browser (bookmark tampil, tambah bookmark valid dan `javascript:...`); Radio (putar, ganti stasiun, stasiun tanpa gambar/tautan); Embience (nyalakan beberapa suara, preset, preset ikut menyala/mati); semua jendela saat API mati
 - [ ] **D4** LiveChat sungguhan (sekarang hanya seed lokal)
   - [ ] `GET/POST /api/v1/messages` (+ polling untuk pesan baru)
