@@ -21,10 +21,10 @@ const ICON_ADD: Asset = asset!("/assets/icon-add.svg");
 const MAX_AVATAR_BYTES: u64 = 1024 * 1024;
 const MAX_ATTACHMENT_BYTES: u64 = 5 * 1024 * 1024;
 
-const ARTICLE_BASE_CLASS: &str = "flex items-start gap-5 p-2.5 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[var(--fg-main)]";
+const ARTICLE_BASE_CLASS: &str = "flex items-start gap-5 p-2.5 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[var(--fg-secondary)]";
 const AUTHOR_CLASS: &str = "relative flex items-end w-fit mt-[-1.00px] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-main)] opacity-70 hover:opacity-100 text-xs tracking-[0] leading-[normal]";
-const BG_BLACK_TO_GRAY: &str = "bg-[image:var(--linear-l)]";
-const BG_GRAY_TO_BLACK: &str = "bg-[image:var(--linear-r)]";
+const BG_BLACK_TO_GRAY: &str = "bg-[image:var(--linear-l)] border-r";
+const BG_GRAY_TO_BLACK: &str = "bg-[image:var(--linear-r)] border-l";
 const RESIZE_MESSAGE_BOX_JS: &str = "const el = document.getElementById('message'); if (el) { el.style.height = 'auto'; const h = el.scrollHeight; el.style.height = h + 'px'; const max = parseFloat(getComputedStyle(el).maxHeight); el.style.overflowY = h > max ? 'auto' : 'hidden'; }";
 const AFTER_SEND_JS: &str = "setTimeout(() => { const list = document.getElementById('livechat-scroll'); if (list) list.scrollTop = list.scrollHeight; const el = document.getElementById('message'); if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; el.style.overflowY = 'hidden'; } }, 0);";
 const SCROLL_BOTTOM_JS: &str = "const list = document.getElementById('livechat-scroll'); if (list) list.scrollTop = list.scrollHeight;";
