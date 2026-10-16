@@ -1,63 +1,120 @@
-use std::sync::OnceLock;
-
+use api_types::validate::is_http_url;
 use dioxus::prelude::*;
-use serde::Deserialize;
 
+use crate::api::{self, ApiError, Generation};
 use crate::app::Route;
 use crate::languages::use_strings;
 use crate::platform::{use_platform, PlatformServices, TimeoutFuture};
+use crate::remote::{LoadFailed, Loading};
 use crate::shared::PageMeta;
 
-const GENERATIONS_JSON: &str = include_str!("../data/generations.json");
-
-#[derive(Debug, Clone, Deserialize, PartialEq)]
-struct Generation {
-    number: u32,
-    label: String,
-    link: String,
-    kernel: String,
-    date: String,
+/// What a menu entry's `link` turns into.
+// No `Debug`: `Route` does not implement it.
+#[derive(PartialEq)]
+enum LinkTarget {
+    /// A page of this app, opened through the router on every platform.
+    Route(Route),
+    /// A web address, handed to the platform package (same tab on web,
+    /// system browser on desktop, ...).
+    External(String),
+    /// Anything else: not opened. The link comes from the server, so an
+    /// unknown path or `javascript:` must not fall through to "open
+    /// externally".
+    Blocked,
 }
 
-/// Parsed once, then shared: the `Generation` list and, in the same order,
-/// just their links.
-fn generation_data() -> (&'static [Generation], &'static [String]) {
-    static DATA: OnceLock<(Vec<Generation>, Vec<String>)> = OnceLock::new();
-    let (generations, links) = DATA.get_or_init(|| {
-        let generations: Vec<Generation> =
-            serde_json::from_str(GENERATIONS_JSON).unwrap_or_default();
-        let links = generations.iter().map(|g| g.link.clone()).collect();
-        (generations, links)
-    });
-    (generations.as_slice(), links.as_slice())
-}
-
-/// Internal routes (`/profile`, `/deisktify`) go through the router on every
-/// platform; anything else is handed to the platform package, which knows how
-/// to open it (same tab on web, system browser on desktop, ...).
-fn open_link(platform: PlatformServices, url: &str) {
-    if url.starts_with('/') {
-        if let Ok(route) = url.parse::<Route>() {
-            navigator().push(route);
-            return;
+fn link_target(link: &str) -> LinkTarget {
+    if link.starts_with('/') {
+        // `//host` and `/\host` are absolute URLs for a browser, not paths.
+        if link.starts_with("//") || link.starts_with("/\\") {
+            return LinkTarget::Blocked;
         }
+        return link
+            .parse::<Route>()
+            .map_or(LinkTarget::Blocked, LinkTarget::Route);
     }
-    (platform.open_external)(url);
+    if is_http_url(link) {
+        LinkTarget::External(link.to_owned())
+    } else {
+        LinkTarget::Blocked
+    }
 }
 
+fn open_link(platform: PlatformServices, url: &str) {
+    match link_target(url) {
+        LinkTarget::Route(route) => {
+            navigator().push(route);
+        }
+        LinkTarget::External(url) => (platform.open_external)(&url),
+        LinkTarget::Blocked => {}
+    }
+}
+
+/// The boot menu comes from `GET /api/v1/generations`. While it loads, or if
+/// it cannot be loaded, the page shows that state plus two plain links, so the
+/// site stays reachable when the server is down.
 #[component]
 pub fn Home() -> Element {
     let s = use_strings();
+    let mut generations = use_resource(api::generations);
+    let state = generations.read_unchecked();
+
+    let body = match &*state {
+        None => rsx! {
+            Loading { label: s.home.loading }
+        },
+        Some(Ok(list)) if !list.is_empty() => rsx! {
+            BootMenu { generations: list.clone() }
+        },
+        other => {
+            // An empty list is as useless as an error: nothing to boot.
+            let error = match other {
+                Some(Err(e)) => e.clone(),
+                _ => ApiError::Decode("empty list".into()),
+            };
+            rsx! {
+                LoadFailed {
+                    error,
+                    headline: s.home.failed,
+                    on_retry: move |_| generations.restart(),
+                    nav {
+                        class: "flex flex-col gap-1 text-[var(--fg-main,#fff)] underline",
+                        "aria-label": s.home.list_label,
+                        Link { to: Route::DesktopPage {}, "{s.home.open_desktop}" }
+                        Link { to: Route::JournalPage {}, "{s.home.open_journal}" }
+                    }
+                }
+            }
+        }
+    };
+
+    rsx! {
+        PageMeta {
+            title: s.meta.home_title,
+            description: s.meta.home_description,
+            path: "/",
+        }
+        if matches!(&*state, Some(Ok(list)) if !list.is_empty()) {
+            {body}
+        } else {
+            section {
+                class: "min-h-screen w-full bg-[var(--bg-main)] text-neutral-200 font-mono flex items-center justify-center px-3 py-10",
+                {body}
+            }
+        }
+    }
+}
+
+#[component]
+fn BootMenu(generations: Vec<Generation>) -> Element {
+    let s = use_strings();
     let platform = use_platform();
     let open = use_callback(move |url: String| open_link(platform, &url));
-    // Di-parse sekali per sesi (bukan tiap render: komponen ini re-render
-    // setiap detik karena countdown dan setiap hover).
-    let (generations, links) = generation_data();
     let total = generations.len();
-    let mut number: f32 = 1.01;
     // `links` dipisah supaya handler keyboard bisa mengambil URL yang sedang
-    // dipilih tanpa meminjam `generations` melewati batas closure 'static
-    // (keduanya `&'static`, jadi `Copy`).
+    // dipilih tanpa meminjam `generations` ke dalam closure 'static.
+    let links: Vec<String> = generations.iter().map(|g| g.link.clone()).collect();
+    let mut number: f32 = 1.01;
     let mut selected = use_signal(|| 0usize);
     // Tracks which row the mouse is currently over, independent of
     // keyboard `selected`, so the label swap only reacts to hover.
@@ -140,12 +197,6 @@ pub fn Home() -> Element {
         .unwrap_or_default();
 
     rsx! {
-        PageMeta {
-            title: s.meta.home_title,
-            description: s.meta.home_description,
-            path: "/",
-        }
-
         section {
             class: "min-h-screen w-full bg-[var(--bg-main)] text-neutral-200 font-mono flex flex-col items-center justify-center px-3 py-10 outline-none select-none",
             // Klik di area kosong menghilangkan fokus dari daftar; kembalikan.
@@ -207,7 +258,7 @@ pub fn Home() -> Element {
                             if hovered() == Some(idx) {
                                 "{gen.label}"
                             } else {
-                                "{s.home.generation_line(gen.number, &number, &gen.kernel, &gen.date)}"
+                                "{s.home.generation_line(gen.number, &number, &gen.kernel, &gen.built_on)}"
                                 { number += 0.01 }
                             }
                         }
@@ -239,52 +290,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn generations_parse_and_links_stay_in_sync() {
-        let (gens, links) = generation_data();
+    fn internal_links_go_through_the_router() {
+        assert!(link_target("/deisktify") == LinkTarget::Route(Route::DesktopPage {}));
+        assert!(link_target("/profile") == LinkTarget::Route(Route::JournalPage {}));
+        assert!(link_target("/") == LinkTarget::Route(Route::Home {}));
+    }
+
+    #[test]
+    fn web_links_are_external() {
         assert!(
-            !gens.is_empty(),
-            "generations.json failed to parse or is empty"
-        );
-        assert_eq!(gens.len(), links.len());
-        for (g, l) in gens.iter().zip(links) {
-            assert_eq!(&g.link, l);
-        }
-        let mut nums: Vec<_> = gens.iter().map(|g| g.number).collect();
-        nums.sort_unstable();
-        nums.dedup();
-        assert_eq!(
-            nums.len(),
-            gens.len(),
-            "duplicate generation number (used as rsx key / DOM id)"
+            link_target("https://github.com/x")
+                == LinkTarget::External("https://github.com/x".into())
         );
     }
 
     #[test]
-    fn internal_links_are_real_routes_and_external_ones_are_http() {
-        // Renaming a route in `Route` without updating generations.json would
-        // silently turn a menu entry into an external "link" that goes nowhere.
-        let (gens, _) = generation_data();
-        for g in gens {
-            if g.link.starts_with('/') {
-                assert!(
-                    g.link.parse::<Route>().is_ok(),
-                    "{} is not a known route",
-                    g.link
-                );
-            } else {
-                assert!(
-                    g.link.starts_with("http://") || g.link.starts_with("https://"),
-                    "{}",
-                    g.link
-                );
-            }
+    fn links_from_the_server_never_fall_through_to_the_browser() {
+        // An unknown path used to be opened as an "external" URL.
+        for bad in [
+            "/no-such-page",
+            "//evil.example",
+            "/\\evil.example",
+            "javascript:alert(1)",
+            "data:text/html,x",
+            "file:///etc/passwd",
+            "HTTPS://shout.example",
+            "",
+            "github.com",
+        ] {
+            assert!(link_target(bad) == LinkTarget::Blocked, "{bad:?}");
         }
-    }
-
-    #[test]
-    fn the_auto_boot_target_is_the_desktop() {
-        // The countdown opens the first entry; that is the Deisktify desktop.
-        let (_, links) = generation_data();
-        assert_eq!(links.first().map(String::as_str), Some("/deisktify"));
     }
 }

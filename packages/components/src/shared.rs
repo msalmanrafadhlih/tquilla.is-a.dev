@@ -32,8 +32,8 @@ pub const CONTACT_EMAIL: &str = "tquilla1938@gmail.com";
 
 pub const GITHUB_URL: &str = "https://github.com/msalmanrafadhlih";
 pub const LINKEDIN_URL: &str = "https://linkedin.com/in/msalmanrafadhlih";
-// Sengaja: ini invite server komunitas "Motion IME" (sama seperti di
-// data/browser.json), bukan profil Discord pribadi. Jangan diganti.
+// Sengaja: ini invite server komunitas "Motion IME" (sama seperti bookmark di
+// seed backend `seeds/source/browser.json`), bukan profil Discord pribadi. Jangan diganti.
 pub const DISCORD_URL: &str = "https://discord.com/invite/motionime";
 
 /// Judul tab + metadata satu route, dirender ke `<head>` lewat

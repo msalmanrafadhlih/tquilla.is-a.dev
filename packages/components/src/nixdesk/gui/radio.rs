@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
-use serde::Deserialize;
 
 use super::audio::{load_and_play, pause_audio, resume_audio, set_audio_volume};
+use crate::api::{self, RadioStation};
 use crate::languages::{use_strings, Strings};
 use crate::nixdesk::js_util::{eval_js, js_string_escape};
+use crate::remote::{LoadFailed, Loading};
 
-const RADIO_JSON: &str = include_str!("../../../data/radio.json");
 const AUDIO_ID: &str = "radio-audio";
 const PLAY_ICON: Asset = asset!("/assets/icon-play.svg");
 const PAUSE_ICON: Asset = asset!("/assets/icon-pause.svg");
@@ -14,26 +14,16 @@ const SKIP_FORWARD_ICON: Asset = asset!("/assets/icon-skip-forward.svg");
 const VOLUME_ICON: Asset = asset!("/assets/icon-volume.svg");
 const WAVE_ICON: Asset = asset!("/assets/logo-soundwave.svg");
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
-struct Station {
-    label: String,
-    slogan: String,
-    url_stream: String,
-    official_link: String,
-    image: String,
-}
-
-fn load_stations() -> Vec<Station> {
-    serde_json::from_str(RADIO_JSON).unwrap_or_default()
-}
-
-fn empty_station(s: &Strings) -> Station {
-    Station {
+/// Stand-in for "no station selected" (empty list): no stream, no link, no
+/// image, so the player shows its label and does nothing else.
+fn empty_station(s: &Strings) -> RadioStation {
+    RadioStation {
+        id: 0,
         label: s.radio.no_station.to_string(),
         slogan: String::new(),
-        url_stream: String::new(),
-        official_link: "#".to_string(),
-        image: String::new(),
+        stream_url: String::new(),
+        official_link: None,
+        image_url: None,
     }
 }
 
@@ -46,11 +36,29 @@ fn prime_station(audio_id: &str, url: &str) {
     ));
 }
 
+/// Loads the stations, then hands them to [`RadioPlayer`].
 #[component]
 pub fn RadioWindowContent() -> Element {
+    let mut resource = use_resource(api::radio);
+    let state = resource.read_unchecked();
+    match &*state {
+        None => rsx! {
+            Loading {}
+        },
+        Some(Err(e)) => rsx! {
+            LoadFailed { error: e.clone(), on_retry: move |_| resource.restart() }
+        },
+        Some(Ok(list)) => rsx! {
+            RadioPlayer { initial: list.clone() }
+        },
+    }
+}
+
+#[component]
+fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
     let s = use_strings();
     // Signal supaya Copy -> bisa dipakai di banyak closure tanpa clone manual.
-    let stations = use_signal(load_stations);
+    let stations = use_signal(move || initial.clone());
     let mut selected = use_signal(|| 0usize);
     let mut playing = use_signal(|| false);
     let mut volume = use_signal(|| 0.7f64);
@@ -61,7 +69,7 @@ pub fn RadioWindowContent() -> Element {
         .get(selected())
         .cloned()
         .unwrap_or_else(|| empty_station(s));
-    let initial_url = current.url_stream.clone();
+    let initial_url = current.stream_url.clone();
     let station_list = stations.read().clone();
     let play_title = if playing() {
         s.radio.pause
@@ -73,7 +81,7 @@ pub fn RadioWindowContent() -> Element {
     // Satu-satunya tempat logika "pindah station + play", dipakai oleh
     // list station, tombol previous, dan tombol next.
     let mut play_station = move |idx: usize| {
-        let Some(url) = stations.read().get(idx).map(|s| s.url_stream.clone()) else {
+        let Some(url) = stations.read().get(idx).map(|s| s.stream_url.clone()) else {
             return;
         };
         selected.set(idx);
@@ -96,7 +104,7 @@ pub fn RadioWindowContent() -> Element {
                 "aria-label": s.radio.stations_label,
                 for (idx , station) in station_list.iter().enumerate() {
                     {
-                        let image = station.image.clone();
+                        let image = station.image_url.clone();
                         let label = station.label.clone();
                         let is_selected = selected() == idx;
                         rsx! {
@@ -106,10 +114,12 @@ pub fn RadioWindowContent() -> Element {
                                 class: "w-full max-w-[300px] flex flex-col @min-[643px]:flex-row items-center gap-2 px-3 py-2 text-left border-0",
                                 class: if is_selected { "bg-white text-black" } else { "bg-[var(--bg-secondary)] text-white/30 hover:text-white hover:bg-conic-gradient" },
                                 onclick: move |_| play_station(idx),
-                                img {
-                                    src: "{image}",
-                                    alt: "",
-                                    class: "@min-[643px]:w-6 @min-[643px]:h-6 w-[70px] h-[70px] object-cover shrink-0",
+                                if let Some(src) = image.as_deref() {
+                                    img {
+                                        src: "{src}",
+                                        alt: "",
+                                        class: "@min-[643px]:w-6 @min-[643px]:h-6 w-[70px] h-[70px] object-cover shrink-0",
+                                    }
                                 }
                                 span { class: "w-[70px] @min-[643px]:w-full text-center @min-[643px]:text-left truncate", "{label}" }
                             }
@@ -120,10 +130,12 @@ pub fn RadioWindowContent() -> Element {
 
             // CONTROL PLAYER
             div { class: "@container flex-1 w-full h-full min-w-0 flex flex-col items-center justify-start @min-[643px]:justify-center gap-4 px-6 py-6 text-center overflow-scroll [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-                img {
-                    src: "{current.image}",
-                    alt: "{current.label}",
-                    class: "w-28 h-28 object-cover border border-white/30",
+                if let Some(src) = current.image_url.as_deref() {
+                    img {
+                        src: "{src}",
+                        alt: "{current.label}",
+                        class: "w-28 h-28 object-cover border border-white/30",
+                    }
                 }
 
                 div {
@@ -269,12 +281,14 @@ pub fn RadioWindowContent() -> Element {
                     }
                 }
 
-                a {
-                    class: "text-white/30 hover:text-white transition-colors duration-150 text-[10px]",
-                    target: "_blank",
-                    rel: "noopener noreferrer",
-                    href: "{current.official_link}",
-                    "{s.radio.stations_link}"
+                if let Some(href) = current.official_link.as_deref() {
+                    a {
+                        class: "text-white/30 hover:text-white transition-colors duration-150 text-[10px]",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        href: "{href}",
+                        "{s.radio.stations_link}"
+                    }
                 }
             }
         }
@@ -284,22 +298,13 @@ pub fn RadioWindowContent() -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::languages::Language;
 
     #[test]
-    fn stations_parse_with_usable_urls() {
-        let stations = load_stations();
-        assert!(
-            !stations.is_empty(),
-            "radio.json failed to parse or is empty"
-        );
-        for s in &stations {
-            assert!(!s.label.is_empty());
-            assert!(
-                s.url_stream.starts_with("http"),
-                "{}: bad stream url",
-                s.label
-            );
-            assert!(s.official_link.starts_with("http"), "{}: bad link", s.label);
-        }
+    fn the_placeholder_station_has_nothing_to_play_or_open() {
+        let st = empty_station(Language::default().strings());
+        assert!(st.stream_url.is_empty());
+        assert!(st.official_link.is_none() && st.image_url.is_none());
+        assert!(!st.label.is_empty());
     }
 }

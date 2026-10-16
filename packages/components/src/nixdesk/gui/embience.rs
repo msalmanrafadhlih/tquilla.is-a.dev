@@ -1,12 +1,10 @@
 use dioxus::prelude::*;
-use serde::Deserialize;
 
 use super::audio::set_audio_volume;
+use crate::api::{self, Embience, Preset};
 use crate::languages::use_strings;
 use crate::nixdesk::js_util::{eval_js, js_string_escape};
-
-const EMBIENCE_JSON: &str =
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/data/embience.json"));
+use crate::remote::{LoadFailed, Loading};
 
 // Path icon footer (sama seperti di embience.html).
 // Ganti ke `asset!("/assets/icon-xxx.svg")` kalau project kamu memakai asset pipeline Dioxus.
@@ -50,40 +48,6 @@ fn icon_src(url: &str) -> String {
         _ => return url.to_string(),
     };
     local.to_string()
-}
-
-#[derive(Debug, Clone, Deserialize, PartialEq)]
-struct Sound {
-    embiences_id: u32,
-    embiences_name: String,
-    embiences_icon: String,
-    embiences_stream: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct EmbienceFile {
-    embiences: Vec<Sound>,
-    presets: Vec<Preset>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct Preset {
-    preset_label: String,
-    embience_list: Vec<String>,
-}
-
-fn load_data() -> EmbienceFile {
-    // Jaga-jaga kalau ada baris komentar `//` di file JSON, karena plain JSON
-    // gak support komentar.
-    let cleaned: String = EMBIENCE_JSON
-        .lines()
-        .filter(|line| !line.trim_start().starts_with("//"))
-        .collect::<Vec<_>>()
-        .join("\n");
-    serde_json::from_str(&cleaned).unwrap_or(EmbienceFile {
-        embiences: vec![],
-        presets: vec![],
-    })
 }
 
 fn audio_id_for(sound_id: u32) -> String {
@@ -130,12 +94,41 @@ fn turn_off(
     }
 }
 
+/// Loads the sounds and the presets, then hands them to [`EmbienceBoard`].
+///
+/// The sounds are required. The presets are a convenience: if only they fail,
+/// the board still opens, without the playlist buttons.
 #[component]
 pub fn EmbienceWindowContent() -> Element {
+    let mut sounds = use_resource(api::embiences);
+    let mut presets = use_resource(api::presets);
+    let sounds_state = sounds.read_unchecked();
+    let presets_state = presets.read_unchecked();
+    match (&*sounds_state, &*presets_state) {
+        (Some(Err(e)), _) => rsx! {
+            LoadFailed {
+                error: e.clone(),
+                on_retry: move |_| {
+                    sounds.restart();
+                    presets.restart();
+                },
+            }
+        },
+        (Some(Ok(list)), Some(loaded)) => {
+            let presets = api::sanitize_presets(loaded.clone().unwrap_or_default(), list);
+            rsx! {
+                EmbienceBoard { sounds: list.clone(), presets }
+            }
+        }
+        _ => rsx! {
+            Loading {}
+        },
+    }
+}
+
+#[component]
+fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
     let s = use_strings();
-    let data = use_hook(load_data);
-    let sounds = data.embiences;
-    let presets = data.presets;
     let sound_count = sounds.len();
 
     let active = use_signal(|| vec![false; sound_count]);
@@ -156,7 +149,7 @@ pub fn EmbienceWindowContent() -> Element {
             "aria-label": s.embience.label,
 
             for sound in sounds.iter() {
-                audio { key: "{sound.embiences_id}", id: "{audio_id_for(sound.embiences_id)}", r#loop: true }
+                audio { key: "{sound.id}", id: "{audio_id_for(sound.id)}", r#loop: true }
             }
 
             // MAIN CONTENTS : AVAILABLE AUDIOS
@@ -166,10 +159,10 @@ pub fn EmbienceWindowContent() -> Element {
 
                 for (idx , sound) in sounds.iter().enumerate() {
                     {
-                        let sound_id = sound.embiences_id;
-                        let url = sound.embiences_stream.clone();
-                        let name = sound.embiences_name.clone();
-                        let icon = icon_src(&sound.embiences_icon);
+                        let sound_id = sound.id;
+                        let url = sound.stream_url.clone();
+                        let name = sound.name.clone();
+                        let icon = icon_src(&sound.icon_url);
                         let is_active = active()[idx];
                         let vol = volumes()[idx];
                         let bar_width = if is_active { (vol * 100.0).round() } else { 0.0 };
@@ -253,20 +246,20 @@ pub fn EmbienceWindowContent() -> Element {
                 div { class: "flex flex-wrap items-center justify-center gap-2.5 w-full",
                     for preset in presets.iter() {
                         {
-                            let preset_names = preset.embience_list.clone();
-                            let label = preset.preset_label.clone();
+                            let preset_ids = preset.embience_ids.clone();
+                            let label = preset.label.clone();
                             let sounds_for_preset = sounds.clone();
 
                             // preset aktif = sound yang menyala persis sama dengan isi preset
                             let current = active();
                             let is_preset_active = any_active
                                 && sounds.iter().enumerate().all(|(i, s)| {
-                                    current[i] == preset_names.contains(&s.embiences_name)
+                                    current[i] == preset_ids.contains(&s.id)
                                 });
 
                             rsx! {
                                 button {
-                                    key: "{label}",
+                                    key: "{preset.id}",
                                     r#type: "button",
                                     "aria-pressed": "{is_preset_active}",
                                     class: if is_preset_active {
@@ -279,7 +272,7 @@ pub fn EmbienceWindowContent() -> Element {
                                         let was_playing = master_playing();
 
                                         for (i, s) in sounds_for_preset.iter().enumerate() {
-                                            let in_preset = preset_names.contains(&s.embiences_name);
+                                            let in_preset = preset_ids.contains(&s.id);
 
                                             if in_preset {
                                                 if !(currently_active[i] && was_playing) {
@@ -289,12 +282,12 @@ pub fn EmbienceWindowContent() -> Element {
                                                         muted,
                                                         master_playing,
                                                         i,
-                                                        s.embiences_id,
-                                                        s.embiences_stream.clone(),
+                                                        s.id,
+                                                        s.stream_url.clone(),
                                                     );
                                                 }
                                             } else if currently_active[i] {
-                                                turn_off(active, master_playing, i, s.embiences_id);
+                                                turn_off(active, master_playing, i, s.id);
                                             }
                                         }
                                     },
@@ -325,7 +318,7 @@ pub fn EmbienceWindowContent() -> Element {
                         for (i , s) in sounds_for_mute.iter().enumerate() {
                             if current_active[i] {
                                 let v = if now_muted { 0.0 } else { current_volumes[i] };
-                                set_audio_volume(&audio_id_for(s.embiences_id), v);
+                                set_audio_volume(&audio_id_for(s.id), v);
                             }
                         }
                     },
@@ -349,7 +342,7 @@ pub fn EmbienceWindowContent() -> Element {
                         let current_active = active();
                         for (i , s) in sounds_for_master.iter().enumerate() {
                             if current_active[i] {
-                                let audio_id = audio_id_for(s.embiences_id);
+                                let audio_id = audio_id_for(s.id);
                                 if now_playing {
                                     eval_js(format!("window.__audio && window.__audio.play('{audio_id}');"));
                                 } else {
@@ -387,56 +380,30 @@ pub fn EmbienceWindowContent() -> Element {
 mod tests {
     use super::*;
 
-    #[test]
-    fn data_parses_and_ids_are_unique() {
-        let data = load_data();
-        assert!(
-            !data.embiences.is_empty(),
-            "embience.json failed to parse or is empty"
-        );
-        let mut ids: Vec<_> = data.embiences.iter().map(|s| s.embiences_id).collect();
-        ids.sort_unstable();
-        ids.dedup();
-        assert_eq!(ids.len(), data.embiences.len());
-        for s in &data.embiences {
-            assert!(
-                s.embiences_stream.starts_with("http"),
-                "{}",
-                s.embiences_name
-            );
-        }
-    }
+    /// File names of the icons that ship with the app (see the `ICON_*`
+    /// constants above); the server stores them as `.../logo-<name>.svg`.
+    const LOCAL_ICONS: [&str; 12] = [
+        "birds",
+        "boat",
+        "city",
+        "coffee_shop",
+        "fireplace",
+        "rain",
+        "storm",
+        "stream",
+        "summer_night",
+        "train",
+        "wave",
+        "wind",
+    ];
 
     #[test]
-    fn every_icon_resolves_to_a_local_asset() {
+    fn every_shipped_icon_resolves_to_a_local_asset() {
         // icon_src falls back to the remote URL for unknown file names, so a
         // result equal to the input means a missing local mapping.
-        for s in load_data().embiences {
-            assert_ne!(
-                icon_src(&s.embiences_icon),
-                s.embiences_icon,
-                "no local icon for {}",
-                s.embiences_name
-            );
-        }
-    }
-
-    #[test]
-    fn presets_only_reference_existing_sounds() {
-        let data = load_data();
-        for p in &data.presets {
-            assert!(
-                !p.embience_list.is_empty(),
-                "preset {} is empty",
-                p.preset_label
-            );
-            for name in &p.embience_list {
-                assert!(
-                    data.embiences.iter().any(|s| &s.embiences_name == name),
-                    "preset {} references unknown sound {name}",
-                    p.preset_label
-                );
-            }
+        for name in LOCAL_ICONS {
+            let url = format!("https://raw.githubusercontent.com/x/y/main/logo-{name}.svg");
+            assert_ne!(icon_src(&url), url, "no local icon for {name}");
         }
     }
 
@@ -446,5 +413,10 @@ mod tests {
             icon_src("https://example.com/other.svg"),
             "https://example.com/other.svg"
         );
+    }
+
+    #[test]
+    fn audio_ids_follow_the_sound_id() {
+        assert_eq!(audio_id_for(7), "emb-7");
     }
 }

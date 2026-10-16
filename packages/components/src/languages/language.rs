@@ -179,8 +179,19 @@ strings! {
         bad_response: "The server sent an unexpected response.",
     },
 
+    // ------------------------- data dari server (loading / gagal / ulangi)
+    remote: Remote {
+        loading: "Loading…",
+        retry: "Try again",
+        failed: "Could not load this content.",
+    },
+
     // ------------------------------------------------ halaman Home
     home: Home {
+        loading: "Loading boot menu…",
+        failed: "The boot menu could not be loaded.",
+        open_desktop: "Open the desktop",
+        open_journal: "Open the GitHub journal",
         list_label: "Boot generations",
         /// `{number}`, `{build}`, `{kernel}`, `{date}`
         generation_line: "NixOS (Generation {number} 22.11.2979.47c003416{build}, Linux Kernel {kernel}, Built on {date})",

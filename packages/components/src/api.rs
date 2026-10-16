@@ -21,8 +21,10 @@ use std::sync::OnceLock;
 
 use serde::{de::DeserializeOwned, Serialize};
 
+use api_types::validate::{is_http_url, is_route_or_url};
 pub use api_types::{
-    ApiErrorBody, ApiErrorDetail, ErrorCode, HealthResponse, ServiceStatus, API_PREFIX,
+    ApiErrorBody, ApiErrorDetail, Bookmark, Embience, ErrorCode, Generation, HealthResponse, Items,
+    Preset, RadioStation, ServiceStatus, API_PREFIX,
 };
 
 use crate::languages::{Language, Strings};
@@ -211,9 +213,205 @@ pub async fn health() -> Result<HealthResponse, ApiError> {
     parse_health(resp.status, &resp.body)
 }
 
+// ---------------------------------------------------------------------------
+// Content (read-only lists)
+// ---------------------------------------------------------------------------
+//
+// The client does not trust what the server sends: every list passes through a
+// `sanitize_*` function that drops rows with unusable links before any
+// component can render them (an `<iframe src>`, an `<audio src>` or a menu
+// link must never be `javascript:` or `data:`). The server filters too; this is
+// the second, independent check.
+
+fn sanitize_generations(mut items: Vec<Generation>) -> Vec<Generation> {
+    items.retain(|g| is_route_or_url(&g.link));
+    items
+}
+
+fn sanitize_bookmarks(mut items: Vec<Bookmark>) -> Vec<Bookmark> {
+    items.retain(|b| is_http_url(&b.url));
+    items
+}
+
+fn sanitize_radio(mut items: Vec<RadioStation>) -> Vec<RadioStation> {
+    items.retain(|r| is_http_url(&r.stream_url));
+    for r in &mut items {
+        r.official_link.take_if(|u| !is_http_url(u));
+        r.image_url.take_if(|u| !is_http_url(u));
+    }
+    items
+}
+
+fn sanitize_embiences(mut items: Vec<Embience>) -> Vec<Embience> {
+    items.retain(|e| is_http_url(&e.icon_url) && is_http_url(&e.stream_url));
+    items
+}
+
+/// Keeps only ids that exist in `embiences` and drops presets left empty
+/// (an empty preset is a button that does nothing).
+pub fn sanitize_presets(mut items: Vec<Preset>, embiences: &[Embience]) -> Vec<Preset> {
+    for p in &mut items {
+        p.embience_ids
+            .retain(|id| embiences.iter().any(|e| e.id == *id));
+        let mut seen = Vec::new();
+        p.embience_ids.retain(|id| {
+            let fresh = !seen.contains(id);
+            seen.push(*id);
+            fresh
+        });
+    }
+    items.retain(|p| !p.embience_ids.is_empty());
+    items
+}
+
+/// `GET /api/v1/generations`, newest first.
+pub async fn generations() -> Result<Vec<Generation>, ApiError> {
+    let list: Items<Generation> = get(api_types::paths::GENERATIONS).await?;
+    Ok(sanitize_generations(list.items))
+}
+
+/// `GET /api/v1/bookmarks`.
+pub async fn bookmarks() -> Result<Vec<Bookmark>, ApiError> {
+    let list: Items<Bookmark> = get(api_types::paths::BOOKMARKS).await?;
+    Ok(sanitize_bookmarks(list.items))
+}
+
+/// `GET /api/v1/radio` (active stations).
+pub async fn radio() -> Result<Vec<RadioStation>, ApiError> {
+    let list: Items<RadioStation> = get(api_types::paths::RADIO).await?;
+    Ok(sanitize_radio(list.items))
+}
+
+/// `GET /api/v1/embiences`.
+pub async fn embiences() -> Result<Vec<Embience>, ApiError> {
+    let list: Items<Embience> = get(api_types::paths::EMBIENCES).await?;
+    Ok(sanitize_embiences(list.items))
+}
+
+/// `GET /api/v1/presets`, raw: pass the result through [`sanitize_presets`]
+/// together with the embience list.
+pub async fn presets() -> Result<Vec<Preset>, ApiError> {
+    let list: Items<Preset> = get(api_types::paths::PRESETS).await?;
+    Ok(list.items)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn generation(n: u32, link: &str) -> Generation {
+        Generation {
+            number: n,
+            label: "x".into(),
+            link: link.into(),
+            kernel: "1".into(),
+            built_on: "2026-01-01".into(),
+        }
+    }
+
+    fn embience(id: u32, stream: &str) -> Embience {
+        Embience {
+            id,
+            name: format!("e{id}"),
+            icon_url: "https://x/i.svg".into(),
+            stream_url: stream.into(),
+        }
+    }
+
+    #[test]
+    fn unsafe_menu_links_are_dropped_but_order_is_kept() {
+        let kept = sanitize_generations(vec![
+            generation(5, "/deisktify"),
+            generation(4, "javascript:alert(1)"),
+            generation(3, "//evil.example"),
+            generation(2, "https://github.com/x"),
+            generation(1, "data:text/html,x"),
+        ]);
+        assert_eq!(kept.iter().map(|g| g.number).collect::<Vec<_>>(), [5, 2]);
+    }
+
+    #[test]
+    fn only_http_bookmarks_survive() {
+        let b = |u: &str| Bookmark {
+            id: 1,
+            label: "x".into(),
+            url: u.into(),
+        };
+        let kept = sanitize_bookmarks(vec![b("https://a.b"), b("javascript:x"), b("/local")]);
+        assert_eq!(kept.len(), 1);
+    }
+
+    #[test]
+    fn radio_needs_a_good_stream_and_blanks_bad_optional_links() {
+        let r = |stream: &str, link: Option<&str>, image: Option<&str>| RadioStation {
+            id: 1,
+            label: "x".into(),
+            slogan: String::new(),
+            stream_url: stream.into(),
+            official_link: link.map(Into::into),
+            image_url: image.map(Into::into),
+        };
+        let kept = sanitize_radio(vec![
+            r(
+                "https://a.b/s",
+                Some("https://a.b"),
+                Some("https://a.b/i.png"),
+            ),
+            r(
+                "https://a.b/s",
+                Some("javascript:x"),
+                Some("data:image/png;base64,AAAA"),
+            ),
+            r("javascript:x", None, None),
+        ]);
+        assert_eq!(kept.len(), 2);
+        assert_eq!(kept[0].official_link.as_deref(), Some("https://a.b"));
+        assert_eq!(kept[1].official_link, None);
+        assert_eq!(kept[1].image_url, None);
+    }
+
+    #[test]
+    fn embiences_need_both_urls_to_be_http() {
+        let kept = sanitize_embiences(vec![
+            embience(1, "https://x/a.mp3"),
+            embience(2, "file:///etc/passwd"),
+        ]);
+        assert_eq!(kept.iter().map(|e| e.id).collect::<Vec<_>>(), [1]);
+    }
+
+    #[test]
+    fn presets_keep_only_known_unique_ids_and_drop_empty_ones() {
+        let sounds = [embience(6, "https://x/a"), embience(12, "https://x/b")];
+        let p = |id, ids: &[u32]| Preset {
+            id,
+            label: format!("p{id}"),
+            embience_ids: ids.to_vec(),
+        };
+        let kept = sanitize_presets(
+            vec![p(1, &[12, 6, 12]), p(2, &[]), p(3, &[99]), p(4, &[99, 6])],
+            &sounds,
+        );
+        let shape: Vec<_> = kept
+            .iter()
+            .map(|p| (p.id, p.embience_ids.clone()))
+            .collect();
+        assert_eq!(shape, vec![(1, vec![12, 6]), (4, vec![6])]);
+    }
+
+    #[test]
+    fn list_bodies_decode_from_the_documented_shape() {
+        let list: Items<Generation> = parse_response(
+            200,
+            r#"{"items":[{"number":5,"label":"Go","link":"/deisktify","kernel":"6","built_on":"2026-08-30"}]}"#,
+        )
+        .unwrap();
+        assert_eq!(list.items[0].number, 5);
+        // Bare arrays (the old JSON shape) are not what the API sends.
+        assert!(matches!(
+            parse_response::<Items<Generation>>(200, "[]"),
+            Err(ApiError::Decode(_))
+        ));
+    }
 
     #[test]
     fn base_url_accepts_only_plain_http_origins() {

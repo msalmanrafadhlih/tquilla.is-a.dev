@@ -1,23 +1,26 @@
+use api_types::validate::is_http_url;
 use dioxus::prelude::*;
-use serde::Deserialize;
 
+use crate::api::{self, Bookmark};
 use crate::languages::use_strings;
+use crate::remote::{LoadFailed, Loading};
 
-const BOOKMARKS_JSON: &str = include_str!("../../../data/browser.json");
 const ICON_LINK: Asset = asset!("/assets/icon-url.svg");
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
-struct Bookmark {
-    placeholder: String,
-    url: String,
+/// What the user typed becomes a tab only if it is an `http(s)` address
+/// (`https://` is added when the scheme is missing). This also keeps
+/// `javascript:` and `data:` out of the iframe.
+fn normalize_user_url(input: &str) -> Option<String> {
+    let input = input.trim();
+    let url = if input.starts_with("http://") || input.starts_with("https://") {
+        input.to_owned()
+    } else {
+        format!("https://{input}")
+    };
+    is_http_url(&url).then_some(url)
 }
 
-fn load_bookmarks() -> Vec<Bookmark> {
-    serde_json::from_str(BOOKMARKS_JSON).unwrap_or_default()
-}
-
-/// Session-only — new bookmarks don't persist across a reload, same as
-/// this app's other "no real backend" pieces (Live Chat's messages).
+/// Session-only: tabs the user adds are not saved or sent anywhere.
 fn add_bookmark(
     mut bookmarks: Signal<Vec<Bookmark>>,
     mut selected: Signal<usize>,
@@ -25,21 +28,16 @@ fn add_bookmark(
     mut new_url: Signal<String>,
 ) {
     let label = new_label().trim().to_string();
-    let url = new_url().trim().to_string();
-    if label.is_empty() || url.is_empty() {
+    let Some(url) = normalize_user_url(&new_url()) else {
+        return;
+    };
+    if label.is_empty() {
         return;
     }
-    let url = if url.starts_with("http://") || url.starts_with("https://") {
-        url
-    } else {
-        format!("https://{url}")
-    };
 
     let mut list = bookmarks();
-    list.push(Bookmark {
-        placeholder: label,
-        url,
-    });
+    // `id: 0` marks a tab that does not exist on the server.
+    list.push(Bookmark { id: 0, label, url });
     let idx = list.len() - 1;
     bookmarks.set(list);
     selected.set(idx);
@@ -58,10 +56,28 @@ fn tab_class(active: bool) -> &'static str {
     }
 }
 
+/// Loads the bookmarks, then hands them to [`BrowserBoard`].
 #[component]
 pub fn BrowserWindowContent() -> Element {
+    let mut resource = use_resource(api::bookmarks);
+    let state = resource.read_unchecked();
+    match &*state {
+        None => rsx! {
+            Loading {}
+        },
+        Some(Err(e)) => rsx! {
+            LoadFailed { error: e.clone(), on_retry: move |_| resource.restart() }
+        },
+        Some(Ok(list)) => rsx! {
+            BrowserBoard { initial: list.clone() }
+        },
+    }
+}
+
+#[component]
+fn BrowserBoard(initial: Vec<Bookmark>) -> Element {
     let s = use_strings();
-    let bookmarks = use_signal(load_bookmarks);
+    let bookmarks = use_signal(move || initial.clone());
     let mut selected = use_signal(|| 0usize);
     let mut new_label = use_signal(String::new);
     let mut new_url = use_signal(String::new);
@@ -69,7 +85,8 @@ pub fn BrowserWindowContent() -> Element {
 
     let list = bookmarks();
     let current = list.get(selected()).cloned().unwrap_or(Bookmark {
-        placeholder: String::new(),
+        id: 0,
+        label: String::new(),
         url: String::new(),
     });
 
@@ -86,11 +103,11 @@ pub fn BrowserWindowContent() -> Element {
                     class: "flex gap-1 min-h-0 h-max w-full @md:max-w-full overflow-y-auto flex-row @md:flex-col",
                     for (idx, bm) in list.iter().enumerate() {
                         button {
-                            key: "{bm.placeholder}-{idx}",
+                            key: "{bm.label}-{idx}",
                             r#type: "button",
                             class: tab_class(selected() == idx),
                             onclick: move |_| selected.set(idx),
-                            "{bm.placeholder}"
+                            "{bm.label}"
                         }
                     }
 
@@ -165,7 +182,7 @@ pub fn BrowserWindowContent() -> Element {
                     iframe {
                         src: "{current.url}",
                         class: "w-full h-full border-0",
-                        title: "{current.placeholder}",
+                        title: "{current.label}",
                     }
                 }
 
@@ -189,16 +206,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bookmarks_parse_and_point_to_http_urls() {
-        let list = load_bookmarks();
-        assert!(!list.is_empty(), "browser.json failed to parse or is empty");
-        for b in &list {
-            assert!(!b.placeholder.is_empty());
-            assert!(
-                b.url.starts_with("http://") || b.url.starts_with("https://"),
-                "{}",
-                b.url
-            );
+    fn typed_addresses_get_https_and_must_be_web_urls() {
+        assert_eq!(
+            normalize_user_url("  example.com/a ").as_deref(),
+            Some("https://example.com/a")
+        );
+        assert_eq!(
+            normalize_user_url("http://example.com").as_deref(),
+            Some("http://example.com")
+        );
+        // A scheme the user typed is never kept: "javascript:x" turns into
+        // "https://javascript:x", a harmless (invalid) web address.
+        for input in ["javascript:alert(1)", "data:text/html,x"] {
+            let url = normalize_user_url(input).unwrap();
+            assert!(url.starts_with("https://"), "{url}");
         }
+        assert_eq!(normalize_user_url(""), None);
+        assert_eq!(normalize_user_url("has space.com"), None);
+        assert_eq!(normalize_user_url("/local"), None);
     }
 }

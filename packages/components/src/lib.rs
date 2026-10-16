@@ -14,6 +14,7 @@ mod journal;
 pub mod languages;
 mod nixdesk;
 pub mod platform;
+mod remote;
 mod shared;
 mod time;
 
