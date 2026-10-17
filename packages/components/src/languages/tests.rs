@@ -125,7 +125,10 @@ fn template_methods_leave_no_placeholder() {
         out.push(s.radio.slogan_line("x"));
         out.push(s.embience.select_ambience("Rain"));
         out.push(s.embience.volume_of("Rain"));
-        out.push(s.livechat.attachment_alt("Moch"));
+        out.push(s.guestbook.avatar_alt("Moch"));
+        out.push(s.guestbook.chars_left(12));
+        out.push(s.guestbook.chars_over(3));
+        out.push(s.guestbook.image_link("cat"));
         out.push(s.ai.http_failed(500));
         out.push(s.journal.build_number(42));
         out.push(s.journal.load_failed("boom"));
@@ -228,6 +231,11 @@ const ALLOWED_LITERALS: &[(&str, &str, &str)] = &[
         "name of a build-time env variable",
     ),
     ("platform.rs", "Content-Type", "HTTP header name"),
+    (
+        "markdown/mod.rs",
+        "www.",
+        "URL prefix recognised in text, not UI text",
+    ),
 ];
 
 /// Konstanta berisi data/log yang sengaja bukan teks UI: (file, nama const, alasan).

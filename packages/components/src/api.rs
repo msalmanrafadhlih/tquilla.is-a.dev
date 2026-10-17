@@ -307,14 +307,32 @@ pub async fn presets() -> Result<Vec<Preset>, ApiError> {
 }
 
 // ---------------------------------------------------------------------------
-// Live Chat
+// Guestbook
 // ---------------------------------------------------------------------------
+//
+// The server still calls these "messages" (route and table names stayed when
+// Live Chat became the Guestbook, so the Worker could be replaced without a
+// breaking rename); the UI calls them entries.
+
+/// Which slice of the guestbook to ask for. At most one of the two cursors.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Page {
+    /// The newest entries.
+    #[default]
+    Latest,
+    /// Entries newer than this id (a cheap "refresh").
+    After(u32),
+    /// Entries just older than this id (the "load older" button).
+    Before(u32),
+}
 
 /// The query string for `GET /messages`. Numbers only, so it is always safe.
-fn messages_query(after: Option<u32>, limit: Option<u32>) -> String {
+fn messages_query(page: Page, limit: Option<u32>) -> String {
     let mut parts = Vec::new();
-    if let Some(id) = after {
-        parts.push(format!("after={id}"));
+    match page {
+        Page::Latest => {}
+        Page::After(id) => parts.push(format!("after={id}")),
+        Page::Before(id) => parts.push(format!("before={id}")),
     }
     if let Some(n) = limit {
         parts.push(format!("limit={n}"));
@@ -323,38 +341,46 @@ fn messages_query(after: Option<u32>, limit: Option<u32>) -> String {
 }
 
 /// Same idea as the content sanitizers, for rows that anybody on the internet
-/// could have written: links the page would render must be `http(s)` (the
-/// server only stores `https://` avatars and attachments, so those are
-/// checked with `is_http_url` too, which is the looser rule).
+/// could have written: the link a page would render must be `http(s)`.
 fn sanitize_messages(mut items: Vec<ChatMessage>) -> Vec<ChatMessage> {
     for m in &mut items {
         m.url.take_if(|u| !is_http_url(u));
-        m.avatar_url.take_if(|u| !is_http_url(u));
-        m.attachment_url.take_if(|u| !is_http_url(u));
     }
     items
 }
 
-/// `GET /api/v1/messages`, oldest first. `after` asks only for messages newer
-/// than that id (what the poll loop uses); without it the server answers with
-/// the latest ones.
-pub async fn messages(
-    after: Option<u32>,
-    limit: Option<u32>,
-) -> Result<Vec<ChatMessage>, ApiError> {
-    let query = messages_query(after, limit);
+/// `GET /api/v1/messages`, oldest first within the page.
+pub async fn messages(page: Page, limit: Option<u32>) -> Result<Vec<ChatMessage>, ApiError> {
+    let query = messages_query(page, limit);
     let list: Items<ChatMessage> = get_with_query(api_types::paths::MESSAGES, &query).await?;
     Ok(sanitize_messages(list.items))
 }
 
 /// `POST /api/v1/messages`. The server cleans and validates everything again
-/// and answers with the stored message.
+/// and answers with the stored entry.
 pub async fn post_message(new: &NewMessage) -> Result<ChatMessage, ApiError> {
     let mut sent: ChatMessage = post(api_types::paths::MESSAGES, new).await?;
     sent.url.take_if(|u| !is_http_url(u));
-    sent.avatar_url.take_if(|u| !is_http_url(u));
-    sent.attachment_url.take_if(|u| !is_http_url(u));
     Ok(sent)
+}
+
+/// A `2xx` with no body to read (`204`), or the documented error.
+fn parse_empty(status: u16, body: &str) -> Result<(), ApiError> {
+    if (200..300).contains(&status) {
+        Ok(())
+    } else {
+        parse_response::<()>(status, body)
+    }
+}
+
+/// `POST /api/v1/messages/{id}/report`. The server answers `204` whether or
+/// not the entry still exists, so success only means "received".
+pub async fn report_message(id: u32) -> Result<(), ApiError> {
+    let url = join_url(base_url()?, &api_types::paths::message_report(id))?;
+    let resp = http::post_json(&url, "{}".to_owned())
+        .await
+        .map_err(ApiError::Network)?;
+    parse_empty(resp.status, &resp.body)
 }
 
 #[cfg(test)]
@@ -366,48 +392,64 @@ mod tests {
             id,
             username: "u".into(),
             url: None,
-            avatar_url: None,
             message: "m".into(),
-            attachment_url: None,
             created_at: "2026-01-01T00:00:00Z".into(),
         }
     }
 
     #[test]
     fn messages_query_has_numbers_only() {
-        assert_eq!(messages_query(None, None), "");
-        assert_eq!(messages_query(Some(7), None), "after=7");
-        assert_eq!(messages_query(None, Some(50)), "limit=50");
-        assert_eq!(messages_query(Some(7), Some(50)), "after=7&limit=50");
+        assert_eq!(messages_query(Page::Latest, None), "");
+        assert_eq!(messages_query(Page::After(7), None), "after=7");
+        assert_eq!(messages_query(Page::Before(7), None), "before=7");
+        assert_eq!(messages_query(Page::Latest, Some(50)), "limit=50");
+        assert_eq!(messages_query(Page::After(7), Some(50)), "after=7&limit=50");
+        assert_eq!(
+            messages_query(Page::Before(7), Some(20)),
+            "before=7&limit=20"
+        );
     }
 
     #[test]
-    fn unsafe_chat_links_are_blanked_but_the_message_stays() {
+    fn unsafe_guestbook_links_are_blanked_but_the_entry_stays() {
         let mut bad = chat_message(1);
         bad.url = Some("javascript:alert(1)".into());
-        bad.avatar_url = Some("data:image/png;base64,AAAA".into());
-        bad.attachment_url = Some("//evil.example/x.png".into());
         let mut good = chat_message(2);
         good.url = Some("https://a.dev".into());
         let kept = sanitize_messages(vec![bad, good]);
         assert_eq!(kept.len(), 2);
         assert_eq!(kept[0].url, None);
-        assert_eq!(kept[0].avatar_url, None);
-        assert_eq!(kept[0].attachment_url, None);
         assert_eq!(kept[1].url.as_deref(), Some("https://a.dev"));
     }
 
     #[test]
-    fn chat_list_decodes_the_documented_shape() {
-        let body = r#"{"items":[{"id":3,"username":"Moch","url":null,"avatar_url":null,
-            "message":"hi","attachment_url":null,"created_at":"2026-01-01T00:00:00Z"}]}"#;
+    fn guestbook_list_decodes_the_documented_shape_and_the_one_from_the_chat_era() {
+        let body = r#"{"items":[{"id":3,"username":"Moch","url":null,
+            "message":"hi","created_at":"2026-01-01T00:00:00Z"}]}"#;
         let list: Items<ChatMessage> = parse_response(200, body).unwrap();
         assert_eq!(list.items[0].id, 3);
+        // A server that has not been updated yet still sends the image columns.
+        let old = r#"{"items":[{"id":3,"username":"Moch","url":null,"avatar_url":null,
+            "message":"hi","attachment_url":null,"created_at":"2026-01-01T00:00:00Z"}]}"#;
+        assert!(parse_response::<Items<ChatMessage>>(200, old).is_ok());
         let limited: Result<Items<ChatMessage>, _> = parse_response(
             429,
             r#"{"error":{"code":"rate_limited","message":"Too many messages."}}"#,
         );
         assert_eq!(limited.unwrap_err().code(), Some(ErrorCode::RateLimited));
+    }
+
+    #[test]
+    fn an_empty_204_is_success_and_errors_keep_their_code() {
+        assert_eq!(parse_empty(204, ""), Ok(()));
+        assert_eq!(parse_empty(200, "ignored"), Ok(()));
+        let limited = parse_empty(
+            429,
+            r#"{"error":{"code":"rate_limited","message":"Too many requests."}}"#,
+        );
+        assert_eq!(limited.unwrap_err().code(), Some(ErrorCode::RateLimited));
+        let forbidden = parse_empty(403, "<html>proxy</html>");
+        assert_eq!(forbidden.unwrap_err().code(), None);
     }
 
     fn generation(n: u32, link: &str) -> Generation {

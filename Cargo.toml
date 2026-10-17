@@ -19,7 +19,12 @@ serde = { version = "1", features = ["derive"] }
 
 # Kontrak API bersama (repo backend, publik). Dikunci ke TAG, bukan branch, supaya
 # perubahan di backend tidak masuk diam-diam; naikkan tag-nya sengaja.
-api-types = { git = "https://github.com/msalmanrafadhlih/deisktify-worker.rs", tag = "v0.3.0" }
+api-types = { git = "https://github.com/msalmanrafadhlih/deisktify-worker.rs", tag = "v0.4.0" }
+
+# Parser Markdown untuk entri Guestbook. `default-features = false` membuang
+# renderer HTML dan `getopts` (CLI): kita tidak pernah membuat string HTML,
+# peristiwa parser langsung jadi pohon (`markdown.rs`) lalu elemen Dioxus.
+pulldown-cmark = { version = "0.13", default-features = false }
 
 components = { path = "packages/components" }
 

@@ -16,7 +16,7 @@ const BROWSER_ICON: Asset = asset!("/assets/logo-Browser.svg");
 const AI_ICON: Asset = asset!("/assets/logo-Ai-Assistent.svg");
 const CALCULATOR_ICON: Asset = asset!("/assets/logo-calculator.svg");
 const NIXOS_ICON: Asset = asset!("/assets/Icon-nixos.svg");
-const LIVE_CHAT_ICON: Asset = asset!("/assets/logo-livechat.svg");
+const GUESTBOOK_ICON: Asset = asset!("/assets/logo-guestbook.svg");
 
 #[allow(dead_code)]
 const LABEL_CLASS: &str = "relative flex items-center justify-center group-hover:block md:hidden w-auto max-w-max whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] font-normal text-white text-sm text-center tracking-[0] leading-[normal] group-hover:text-black";
@@ -137,10 +137,10 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                 }
             }
 
-            // RIGHT DOCK — live chat. jika button `Open chat menu` di klick, maka akan memunculkan tag list button atasnya
+            // RIGHT DOCK — guestbook. jika button `Open guestbook menu` di klick, maka akan memunculkan tag list button atasnya
             section {
                 class: "flex flex-col md:flex-row md:gap-1 w-10 md:w-full h-10 items-end justify-end md:items-center gap-5 relative md:aspect-[1]",
-                "aria-label": s.dock.chat,
+                "aria-label": s.dock.guestbook_group,
                 div {
                     class: if chat_menu_open() {
                         "grid grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out shrink-0 md:flex overflow-hidden md:overflow-visible"
@@ -151,19 +151,19 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                         button {
                             r#type: "button",
                             class: "group inline-flex w-max items-center gap-2.5 relative flex-[0_0_auto] z-[3] px-2 py-1 rounded-xl hover:bg-white transition-colors duration-300 ease-out",
-                            onclick: move |_| toggle_window(open_windows, next_z, AppId::LiveChat),
+                            onclick: move |_| toggle_window(open_windows, next_z, AppId::Guestbook),
                             span { class: "grid grid-cols-[0fr] group-hover:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out overflow-hidden",
                                 span { class: "overflow-hidden whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] font-normal text-white text-sm text-center tracking-[0] leading-[normal] group-hover:text-black",
-                                    "{s.dock.live_chat}"
+                                    "{s.dock.guestbook}"
                                 }
                             }
-                            img { src: LIVE_CHAT_ICON, alt: "", class: IMG_CLASS }
+                            img { src: GUESTBOOK_ICON, alt: "", class: IMG_CLASS }
                         }
                     }
                 }
                 button {
                     r#type: "button",
-                    "aria-label": s.dock.open_chat_menu,
+                    "aria-label": s.dock.open_guestbook_menu,
                     "aria-expanded": if chat_menu_open() { "true" } else { "false" },
                     class: "inline-flex md:hidden items-center justify-end gap-2.5 relative flex-[0_0_auto] z-0 border-0 p-0 shrink-0",
                     onclick: move |_| chat_menu_open.set(!chat_menu_open()),

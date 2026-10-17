@@ -13,7 +13,7 @@ pub enum AppId {
     Radio,
     Browser,
     Embience,
-    LiveChat,
+    Guestbook,
     AiAssistant,
 }
 
@@ -28,7 +28,7 @@ impl AppId {
             AppId::Radio => (114.0, 45.0, 425.0, 755.0),
             AppId::Browser => (0.0, 12.0, 1250.0, 820.0),
             AppId::Embience => (1035.0, 12.0, 540.0, 610.0),
-            AppId::LiveChat => (1315.0, 12.0, 505.0, 820.0),
+            AppId::Guestbook => (1315.0, 12.0, 505.0, 820.0),
             AppId::AiAssistant => (0.0, 12.0, 505.0, 820.0),
         }
     }
@@ -43,7 +43,7 @@ impl AppId {
             AppId::Radio => s.apps.radio,
             AppId::Browser => s.apps.browser,
             AppId::Embience => s.apps.embience,
-            AppId::LiveChat => s.apps.live_chat,
+            AppId::Guestbook => s.apps.guestbook,
             AppId::AiAssistant => s.apps.ai_assistant,
         }
     }
@@ -61,7 +61,7 @@ impl AppId {
             AppId::Radio => asset!("/assets/logo-radio.svg"),
             AppId::Browser => asset!("/assets/logo-Browser.svg"),
             AppId::Embience => asset!("/assets/logo-Embience.svg"),
-            AppId::LiveChat => asset!("/assets/logo-livechat.svg"),
+            AppId::Guestbook => asset!("/assets/logo-guestbook.svg"),
             AppId::AiAssistant => asset!("/assets/logo-Ai-Assistent.svg"),
         }
     }
@@ -78,7 +78,7 @@ impl AppId {
             AppId::Radio => "radio",
             AppId::Browser => "browser",
             AppId::Embience => "embience",
-            AppId::LiveChat => "live-chat",
+            AppId::Guestbook => "guestbook",
             AppId::AiAssistant => "ai-assistant",
         }
     }
@@ -646,7 +646,7 @@ mod tests {
         AppId::Radio,
         AppId::Browser,
         AppId::Embience,
-        AppId::LiveChat,
+        AppId::Guestbook,
         AppId::AiAssistant,
     ];
 

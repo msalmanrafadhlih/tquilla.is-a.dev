@@ -9,10 +9,11 @@
 
 pub mod api;
 mod app;
-mod chat;
+mod guestbook;
 mod home;
 mod journal;
 pub mod languages;
+mod markdown;
 mod nixdesk;
 pub mod platform;
 mod remote;

@@ -1,15 +1,18 @@
-use crate::api::{self, ChatMessage};
-use crate::chat::tab_hidden;
+use crate::api::{self, ChatMessage, Page};
+use crate::guestbook::tab_hidden;
 use crate::languages::use_strings;
+use crate::markdown::plain_text;
 use crate::platform::TimeoutFuture;
 use crate::time::relative_time;
 use dioxus::prelude::*;
 
 /// Time each message stays on screen.
 const CYCLE_MS: u32 = 3000;
+/// The preview shows plain text, cut here (CSS clamps the lines as well).
+const PREVIEW_CHARS: usize = 240;
 /// How many of the latest messages the preview rotates through.
 const PREVIEW_COUNT: u32 = 10;
-/// The preview is decoration, not the chat: it looks for news every 2 minutes
+/// The preview is decoration, not the guestbook: it looks for news every 2 minutes
 /// (never while the tab is in the background).
 const REFRESH_MS: u32 = 120_000;
 
@@ -23,7 +26,7 @@ pub struct ChatFeed {
 }
 
 /// Loads the latest messages (a failure just leaves the panel on its "no
-/// messages" text) and cycles the active index every 3s — mirrors the "shell
+/// entries" text) and cycles the active index every 3s — mirrors the "shell
 /// 4 - chat preview transition interval 3s" layer from the Terminal Figma frame.
 pub fn use_chat_feed() -> ChatFeed {
     let mut index = use_signal(|| 0usize);
@@ -33,7 +36,7 @@ pub fn use_chat_feed() -> ChatFeed {
         let mut first = true;
         loop {
             if first || !tab_hidden().await {
-                if let Ok(latest) = api::messages(None, Some(PREVIEW_COUNT)).await {
+                if let Ok(latest) = api::messages(Page::Latest, Some(PREVIEW_COUNT)).await {
                     // Newest first looks right for a ticker.
                     let mut latest = latest;
                     latest.reverse();
@@ -65,7 +68,7 @@ fn pick(messages: &[ChatMessage], index: usize) -> Option<&ChatMessage> {
     }
 }
 
-/// "shell 4" — the auto-cycling Live Chat preview.
+/// "shell 4" — the auto-cycling Guestbook preview.
 #[component]
 pub fn ChatPreviewPanel(feed: ChatFeed) -> Element {
     let s = use_strings();
@@ -82,10 +85,10 @@ pub fn ChatPreviewPanel(feed: ChatFeed) -> Element {
                             "{relative_time(&m.created_at, s)}"
                         }
                     }
-                    p { class: "text-sm text-white/70 leading-snug line-clamp-3", "{m.message}" }
+                    p { class: "text-sm text-white/70 leading-snug line-clamp-3", "{plain_text(&m.message, PREVIEW_CHARS)}" }
                 }
             } else {
-                p { class: "text-white/30 text-sm", "{s.terminal.no_messages}" }
+                p { class: "text-white/30 text-sm", "{s.terminal.no_entries}" }
             }
         }
     }
@@ -100,9 +103,7 @@ mod tests {
             id,
             username: "u".into(),
             url: None,
-            avatar_url: None,
             message: "m".into(),
-            attachment_url: None,
             created_at: "2026-01-01T00:00:00Z".into(),
         }
     }

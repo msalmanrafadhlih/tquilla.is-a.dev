@@ -101,7 +101,7 @@ strings! {
         home_title: "Generation Menu",
         home_description: "A NixOS-style boot menu that links to my GitHub, LinkedIn, GitHub journal and a desktop OS simulated in the browser, built with Rust and Dioxus (WebAssembly).",
         desktop_title: "Deisktify",
-        desktop_description: "Deisktify: a desktop operating system simulated in the browser, with a window manager, calculator, radio, ambient sounds, AI chat and live chat. Built with Rust and Dioxus.",
+        desktop_description: "Deisktify: a desktop operating system simulated in the browser, with a window manager, calculator, radio, ambient sounds, AI chat and a Markdown guestbook. Built with Rust and Dioxus.",
         journal_title: "GitHub Journal",
         journal_description: "A journal of my GitHub activity: pinned repositories, contribution volume, streaks, languages and stack.",
     },
@@ -233,7 +233,7 @@ strings! {
         radio: "Radio Indonesia",
         browser: "Locked Browser",
         embience: "Embience",
-        live_chat: "Live Chat!",
+        guestbook: "Guestbook",
         ai_assistant: "AI Assistant",
     },
 
@@ -289,9 +289,9 @@ strings! {
         app_dock: "Application dock",
         open_settings: "Open settings",
         about_nixdesktop: "About NixDesktop",
-        chat: "Chat",
-        open_chat_menu: "Open chat menu",
-        live_chat: "Live Chat",
+        guestbook_group: "Guestbook",
+        open_guestbook_menu: "Open guestbook menu",
+        guestbook: "Guestbook",
     },
 
     // ------------------------------------------------- mode terminal
@@ -304,7 +304,7 @@ strings! {
         coming_soon: "Coming Soon",
         switch: "Switch",
         desktop: "Desktop",
-        no_messages: "No messages yet.",
+        no_entries: "No entries yet.",
         no_commands: "No commands run yet.",
         welcome_before: "Welcome to NixOS 26.11 (Zakar) — Dioxus terminal simulator. Type ",
         welcome_after: " to get started.",
@@ -428,27 +428,73 @@ strings! {
         open_playlist: "Open playlist",
     },
 
-    // ------------------------------------------------- Live Chat
-    livechat: LiveChat {
-        /// `{user}`
-        attachment_alt: "Attachment from {user}",
-        form_label: "Message submission form",
-        username_label: "Username",
-        username_placeholder: "Set username",
-        url_label: "Website URL",
-        url_placeholder: "url (optional)",
+    // ------------------------------------------------- Guestbook
+    guestbook: Guestbook {
+        // --- window states
+        loading: "Loading the guestbook…",
+        load_failed: "The guestbook could not be loaded.",
+        empty: "No entries yet. Be the first to sign.",
+        entries_title: "Entries",
+        refresh: "Refresh",
+        refreshing: "Refreshing…",
+        up_to_date: "You are up to date.",
+        load_older: "Load older entries",
+        loading_older: "Loading…",
+        first_entry: "That is the first entry.",
+        // --- form
+        form_label: "Sign the guestbook",
+        form_title: "Sign the guestbook",
+        username_label: "Name",
+        username_placeholder: "Your name",
+        url_label: "Website",
+        url_placeholder: "Website (optional)",
         message_label: "Message",
-        message_placeholder: "Type your message here...",
-        send: "Send",
-        sending: "Sending…",
-        loading: "Loading messages…",
-        load_failed: "The chat could not be loaded.",
-        empty: "No messages yet. Be the first to say hello.",
-        reconnecting: "Connection lost. Trying again…",
-        avatar_alt: "Your default avatar",
+        message_placeholder: "Write something nice. Markdown works here.",
+        /// `{user}`
+        avatar_alt: "Avatar of {user}",
+        your_avatar_alt: "Your default avatar",
+        editor_modes: "Editor mode",
+        tab_write: "Write",
+        tab_preview: "Preview",
+        preview_empty: "Nothing to preview yet.",
+        toolbar_label: "Formatting",
+        markdown_hint: "Markdown supported · Ctrl+Enter to sign",
+        /// `{count}`
+        chars_left: "{count} left",
+        /// `{count}`
+        chars_over: "{count} over the limit",
+        send: "Sign",
+        sending: "Signing…",
+        sent: "Thank you for signing the guestbook!",
+        // --- toolbar buttons
+        fmt_heading: "Heading",
+        fmt_bold: "Bold",
+        fmt_italic: "Italic",
+        fmt_strike: "Strikethrough",
+        fmt_code: "Code",
+        fmt_link: "Link",
+        fmt_quote: "Quote",
+        fmt_list: "Bulleted list",
+        fmt_tasks: "Task list",
+        fmt_placeholder: "text",
+        // --- reporting
+        report: "Report",
+        report_confirm: "Confirm report",
+        reporting: "Reporting…",
+        reported: "Reported. Thank you.",
+        // --- rendered Markdown
+        image_label: "image",
+        /// `{name}`
+        image_link: "image: {name}",
+        alert_note: "Note",
+        alert_tip: "Tip",
+        alert_important: "Important",
+        alert_warning: "Warning",
+        alert_caution: "Caution",
+        // --- local validation (same rules as the server, `api_types::chat`)
         reject_username_length: "Username must be 1 to 32 characters.",
         reject_username_chars: "Username has characters that are not allowed.",
-        reject_message_length: "Message must be 1 to 1000 characters and at most 20 lines.",
+        reject_message_length: "Message must be 1 to 2000 characters and at most 40 lines.",
         reject_message_chars: "Message has characters that are not allowed.",
         reject_link: "The link must be a valid web address.",
         reject_blocked: "This message was rejected.",
@@ -854,9 +900,21 @@ impl Embience {
     }
 }
 
-impl LiveChat {
-    pub fn attachment_alt(&self, user: &str) -> String {
-        fill(self.attachment_alt, &[("user", &user)])
+impl Guestbook {
+    pub fn avatar_alt(&self, user: &str) -> String {
+        fill(self.avatar_alt, &[("user", &user)])
+    }
+
+    pub fn chars_left(&self, count: u32) -> String {
+        fill(self.chars_left, &[("count", &count)])
+    }
+
+    pub fn chars_over(&self, count: u32) -> String {
+        fill(self.chars_over, &[("count", &count)])
+    }
+
+    pub fn image_link(&self, name: &str) -> String {
+        fill(self.image_link, &[("name", &name)])
     }
 }
 

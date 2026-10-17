@@ -8,6 +8,7 @@ dioxus = { workspace = true, features = ["router"] }
 serde = { workspace = true }
 api-types = { workspace = true }
 serde_json = { workspace = true }
+pulldown-cmark = { workspace = true }
 
 # Browser-only APIs (web build).
 [target.'cfg(target_arch = "wasm32")'.dependencies]

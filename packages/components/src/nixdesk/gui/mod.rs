@@ -5,7 +5,7 @@ mod browser;
 mod calculator;
 mod embience;
 mod filemanager;
-mod livechat;
+mod guestbook;
 mod radio;
 mod settings;
 
@@ -15,7 +15,7 @@ pub use browser::BrowserWindowContent;
 pub use calculator::Calculator;
 pub use embience::EmbienceWindowContent;
 pub use filemanager::FileManagerWindowContent;
-pub use livechat::LiveChatWindowContent;
+pub use guestbook::GuestbookWindowContent;
 pub use radio::RadioWindowContent;
 
 pub use about::AboutWindowContent;

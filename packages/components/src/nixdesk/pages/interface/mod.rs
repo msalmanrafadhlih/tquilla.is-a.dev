@@ -10,7 +10,7 @@ use window::{AppId, OpenWindow, WindowFrame, WINDOW_FRAME_CSS, WINDOW_MANAGER_JS
 
 use crate::nixdesk::gui::{
     AboutWindowContent, AiAssistantWindowContent, BrowserWindowContent, Calculator,
-    EmbienceWindowContent, FileManagerWindowContent, LiveChatWindowContent, RadioWindowContent,
+    EmbienceWindowContent, FileManagerWindowContent, GuestbookWindowContent, RadioWindowContent,
     SettingsWindowContent, AUDIO_JS,
 };
 
@@ -42,8 +42,8 @@ fn AppContent(id: AppId) -> Element {
         AppId::Embience => rsx! {
             EmbienceWindowContent {}
         },
-        AppId::LiveChat => rsx! {
-            LiveChatWindowContent {}
+        AppId::Guestbook => rsx! {
+            GuestbookWindowContent {}
         },
         AppId::Browser => rsx! {
             BrowserWindowContent {}

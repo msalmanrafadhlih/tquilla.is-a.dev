@@ -1,4 +1,4 @@
-//! Waktu relatif ("3 minutes ago") untuk Live Chat dan preview chat di mode
+//! Waktu relatif ("3 minutes ago") untuk Guestbook dan preview di mode
 //! Terminal. Sebelumnya fungsi ini disalin di dua file; sekarang satu
 //! implementasi murni (`relative_time_between`) yang bisa diuji tanpa jam.
 
