@@ -23,8 +23,8 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use api_types::validate::{is_http_url, is_route_or_url};
 pub use api_types::{
-    ApiErrorBody, ApiErrorDetail, Bookmark, Embience, ErrorCode, Generation, HealthResponse, Items,
-    Preset, RadioStation, ServiceStatus, API_PREFIX,
+    ApiErrorBody, ApiErrorDetail, Bookmark, ChatMessage, Embience, ErrorCode, Generation,
+    HealthResponse, Items, NewMessage, Preset, RadioStation, ServiceStatus, API_PREFIX,
 };
 
 use crate::languages::{Language, Strings};
@@ -176,7 +176,18 @@ fn parse_response<T: DeserializeOwned>(status: u16, body: &str) -> Result<T, Api
 
 /// `GET` an endpoint and decode the JSON body.
 pub async fn get<T: DeserializeOwned>(path: &str) -> Result<T, ApiError> {
-    let url = join_url(base_url()?, path)?;
+    get_with_query(path, "").await
+}
+
+/// Like [`get`], with a ready-made query string (`"after=3&limit=50"`, no
+/// leading `?`). Only numbers go in here, never user text, so nothing needs
+/// escaping; see [`messages_query`].
+async fn get_with_query<T: DeserializeOwned>(path: &str, query: &str) -> Result<T, ApiError> {
+    let mut url = join_url(base_url()?, path)?;
+    if !query.is_empty() {
+        url.push('?');
+        url.push_str(query);
+    }
     let resp = http::get(&url).await.map_err(ApiError::Network)?;
     parse_response(resp.status, &resp.body)
 }
@@ -295,9 +306,109 @@ pub async fn presets() -> Result<Vec<Preset>, ApiError> {
     Ok(list.items)
 }
 
+// ---------------------------------------------------------------------------
+// Live Chat
+// ---------------------------------------------------------------------------
+
+/// The query string for `GET /messages`. Numbers only, so it is always safe.
+fn messages_query(after: Option<u32>, limit: Option<u32>) -> String {
+    let mut parts = Vec::new();
+    if let Some(id) = after {
+        parts.push(format!("after={id}"));
+    }
+    if let Some(n) = limit {
+        parts.push(format!("limit={n}"));
+    }
+    parts.join("&")
+}
+
+/// Same idea as the content sanitizers, for rows that anybody on the internet
+/// could have written: links the page would render must be `http(s)` (the
+/// server only stores `https://` avatars and attachments, so those are
+/// checked with `is_http_url` too, which is the looser rule).
+fn sanitize_messages(mut items: Vec<ChatMessage>) -> Vec<ChatMessage> {
+    for m in &mut items {
+        m.url.take_if(|u| !is_http_url(u));
+        m.avatar_url.take_if(|u| !is_http_url(u));
+        m.attachment_url.take_if(|u| !is_http_url(u));
+    }
+    items
+}
+
+/// `GET /api/v1/messages`, oldest first. `after` asks only for messages newer
+/// than that id (what the poll loop uses); without it the server answers with
+/// the latest ones.
+pub async fn messages(
+    after: Option<u32>,
+    limit: Option<u32>,
+) -> Result<Vec<ChatMessage>, ApiError> {
+    let query = messages_query(after, limit);
+    let list: Items<ChatMessage> = get_with_query(api_types::paths::MESSAGES, &query).await?;
+    Ok(sanitize_messages(list.items))
+}
+
+/// `POST /api/v1/messages`. The server cleans and validates everything again
+/// and answers with the stored message.
+pub async fn post_message(new: &NewMessage) -> Result<ChatMessage, ApiError> {
+    let mut sent: ChatMessage = post(api_types::paths::MESSAGES, new).await?;
+    sent.url.take_if(|u| !is_http_url(u));
+    sent.avatar_url.take_if(|u| !is_http_url(u));
+    sent.attachment_url.take_if(|u| !is_http_url(u));
+    Ok(sent)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn chat_message(id: u32) -> ChatMessage {
+        ChatMessage {
+            id,
+            username: "u".into(),
+            url: None,
+            avatar_url: None,
+            message: "m".into(),
+            attachment_url: None,
+            created_at: "2026-01-01T00:00:00Z".into(),
+        }
+    }
+
+    #[test]
+    fn messages_query_has_numbers_only() {
+        assert_eq!(messages_query(None, None), "");
+        assert_eq!(messages_query(Some(7), None), "after=7");
+        assert_eq!(messages_query(None, Some(50)), "limit=50");
+        assert_eq!(messages_query(Some(7), Some(50)), "after=7&limit=50");
+    }
+
+    #[test]
+    fn unsafe_chat_links_are_blanked_but_the_message_stays() {
+        let mut bad = chat_message(1);
+        bad.url = Some("javascript:alert(1)".into());
+        bad.avatar_url = Some("data:image/png;base64,AAAA".into());
+        bad.attachment_url = Some("//evil.example/x.png".into());
+        let mut good = chat_message(2);
+        good.url = Some("https://a.dev".into());
+        let kept = sanitize_messages(vec![bad, good]);
+        assert_eq!(kept.len(), 2);
+        assert_eq!(kept[0].url, None);
+        assert_eq!(kept[0].avatar_url, None);
+        assert_eq!(kept[0].attachment_url, None);
+        assert_eq!(kept[1].url.as_deref(), Some("https://a.dev"));
+    }
+
+    #[test]
+    fn chat_list_decodes_the_documented_shape() {
+        let body = r#"{"items":[{"id":3,"username":"Moch","url":null,"avatar_url":null,
+            "message":"hi","attachment_url":null,"created_at":"2026-01-01T00:00:00Z"}]}"#;
+        let list: Items<ChatMessage> = parse_response(200, body).unwrap();
+        assert_eq!(list.items[0].id, 3);
+        let limited: Result<Items<ChatMessage>, _> = parse_response(
+            429,
+            r#"{"error":{"code":"rate_limited","message":"Too many messages."}}"#,
+        );
+        assert_eq!(limited.unwrap_err().code(), Some(ErrorCode::RateLimited));
+    }
 
     fn generation(n: u32, link: &str) -> Generation {
         Generation {

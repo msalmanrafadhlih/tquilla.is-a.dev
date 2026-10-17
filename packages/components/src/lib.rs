@@ -9,6 +9,7 @@
 
 pub mod api;
 mod app;
+mod chat;
 mod home;
 mod journal;
 pub mod languages;

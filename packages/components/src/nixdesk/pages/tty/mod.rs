@@ -7,7 +7,7 @@ mod nav_rail;
 mod shell;
 
 use crate::languages::use_strings;
-use chat_preview::{use_chat_cycle, ChatPreviewPanel};
+use chat_preview::{use_chat_feed, ChatPreviewPanel};
 use clock::{use_live_clock, ClockPanel};
 use coming_soon::ComingSoonPanel;
 use nav_rail::NavRail;
@@ -40,7 +40,7 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
     let command_log: Signal<Vec<String>> = use_signal(Vec::new);
 
     let (time, date) = use_live_clock();
-    let chat_index = use_chat_cycle();
+    let chat_feed = use_chat_feed();
 
     let mut mobile_tab = use_signal(|| MobileTab::Shell3);
 
@@ -72,7 +72,7 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                 }
                 div { class: "w-[300px] xl:w-[340px] shrink-0 flex flex-col gap-2.5",
                     div { class: "flex-1 min-h-0", ClockPanel { time, date } }
-                    div { class: "flex-1 min-h-0", ChatPreviewPanel { index: chat_index } }
+                    div { class: "flex-1 min-h-0", ChatPreviewPanel { feed: chat_feed } }
                     div { class: "flex-1 min-h-0", ComingSoonPanel { label: s.terminal.panel(5) } }
                     div { class: "flex-1 min-h-0", ComingSoonPanel { label: s.terminal.panel(6) } }
                 }
@@ -96,7 +96,7 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                     } else if mobile_tab() == MobileTab::Shell3 {
                         ClockPanel { time, date }
                     } else if mobile_tab() == MobileTab::Shell4 {
-                        ChatPreviewPanel { index: chat_index }
+                        ChatPreviewPanel { feed: chat_feed }
                     } else {
                         ComingSoonPanel { label: s.terminal.panel(5) }
                     }

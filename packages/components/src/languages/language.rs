@@ -432,27 +432,26 @@ strings! {
     livechat: LiveChat {
         /// `{user}`
         attachment_alt: "Attachment from {user}",
-        preview_alt: "Preview of the image about to be sent",
-        remove_attached: "Remove attached image",
-        remove_image: "Remove image",
         form_label: "Message submission form",
-        upload_avatar: "Upload avatar",
-        change_avatar: "Change avatar",
-        your_avatar: "Your avatar",
-        add_avatar: "Add avatar",
         username_label: "Username",
         username_placeholder: "Set username",
         url_label: "Website URL",
         url_placeholder: "url (optional)",
         message_label: "Message",
         message_placeholder: "Type your message here...",
-        add_image_file: "Add image file",
-        add_media: "Add Media",
         send: "Send",
-        upload_not_image: "The file must be an image.",
-        /// `{mb}`
-        upload_too_large: "Image size must be at most {mb} MB.",
-        upload_read_failed: "Could not read the image file.",
+        sending: "Sending…",
+        loading: "Loading messages…",
+        load_failed: "The chat could not be loaded.",
+        empty: "No messages yet. Be the first to say hello.",
+        reconnecting: "Connection lost. Trying again…",
+        avatar_alt: "Your default avatar",
+        reject_username_length: "Username must be 1 to 32 characters.",
+        reject_username_chars: "Username has characters that are not allowed.",
+        reject_message_length: "Message must be 1 to 1000 characters and at most 20 lines.",
+        reject_message_chars: "Message has characters that are not allowed.",
+        reject_link: "The link must be a valid web address.",
+        reject_blocked: "This message was rejected.",
     },
 
     // ------------------------------------------------- AI chat
@@ -858,10 +857,6 @@ impl Embience {
 impl LiveChat {
     pub fn attachment_alt(&self, user: &str) -> String {
         fill(self.attachment_alt, &[("user", &user)])
-    }
-
-    pub fn upload_too_large(&self, mb: u64) -> String {
-        fill(self.upload_too_large, &[("mb", &mb)])
     }
 }
 

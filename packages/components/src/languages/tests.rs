@@ -126,7 +126,6 @@ fn template_methods_leave_no_placeholder() {
         out.push(s.embience.select_ambience("Rain"));
         out.push(s.embience.volume_of("Rain"));
         out.push(s.livechat.attachment_alt("Moch"));
-        out.push(s.livechat.upload_too_large(5));
         out.push(s.ai.http_failed(500));
         out.push(s.journal.build_number(42));
         out.push(s.journal.load_failed("boom"));
