@@ -105,6 +105,7 @@ pub enum Format {
     Strike,
     Code,
     Link,
+    Image,
     Quote,
     List,
     Tasks,
@@ -113,13 +114,14 @@ pub enum Format {
 
 impl Format {
     /// Toolbar order.
-    pub const ALL: [Format; 9] = [
+    pub const ALL: [Format; 10] = [
         Format::Heading,
         Format::Bold,
         Format::Italic,
         Format::Strike,
         Format::Code,
         Format::Link,
+        Format::Image,
         Format::Quote,
         Format::List,
         Format::Tasks,
@@ -133,6 +135,7 @@ impl Format {
             Format::Strike => "strike",
             Format::Code => "code",
             Format::Link => "link",
+            Format::Image => "image",
             Format::Quote => "quote",
             Format::List => "list",
             Format::Tasks => "tasks",
@@ -149,6 +152,7 @@ impl Format {
             Format::Strike => t.fmt_strike,
             Format::Code => t.fmt_code,
             Format::Link => t.fmt_link,
+            Format::Image => t.fmt_image,
             Format::Quote => t.fmt_quote,
             Format::List => t.fmt_list,
             Format::Tasks => t.fmt_tasks,
@@ -168,6 +172,7 @@ impl Format {
             Format::Strike => "S",
             Format::Code => "<>",
             Format::Link => "@",
+            Format::Image => "\u{25A3}",
             Format::Quote => "\u{275D}",
             Format::List => "\u{2022}",
             Format::Tasks => "\u{2611}",

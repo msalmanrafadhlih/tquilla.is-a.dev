@@ -473,6 +473,7 @@ strings! {
         fmt_strike: "Strikethrough",
         fmt_code: "Code",
         fmt_link: "Link",
+        fmt_image: "Image",
         fmt_quote: "Quote",
         fmt_list: "Bulleted list",
         fmt_tasks: "Task list",
@@ -484,6 +485,7 @@ strings! {
         reported: "Reported. Thank you.",
         // --- rendered Markdown
         image_label: "image",
+        details_label: "Details",
         /// `{name}`
         image_link: "image: {name}",
         alert_note: "Note",

@@ -6,7 +6,7 @@
 
 use dioxus::prelude::*;
 
-use super::{parse, Alert, Align, Block, Inline, Item};
+use super::{parse, Alert, Align, Block, Inline, Item, Style};
 use crate::languages::use_strings;
 
 const LINK_CLASS: &str = "underline decoration-dotted decoration-[var(--fg-secondary)] underline-offset-4 break-words hover:decoration-solid hover:decoration-[var(--fg-main)]";
@@ -50,6 +50,17 @@ fn align_class(align: Option<&Align>) -> &'static str {
         Some(Align::Center) => "text-center",
         Some(Align::Right) => "text-right",
         _ => "text-left",
+    }
+}
+
+/// Alignment of a `<div align=...>` group (inline content and images follow
+/// `text-align`).
+fn group_class(align: Align) -> &'static str {
+    match align {
+        Align::Center => "text-center",
+        Align::Right => "text-right",
+        Align::Left => "text-left",
+        Align::Default => "",
     }
 }
 
@@ -149,6 +160,27 @@ fn BlockView(block: Block) -> Element {
         Block::Rule => rsx! {
             hr { class: "w-full m-0 border-0 border-t border-solid border-[var(--fg-secondary)]" }
         },
+        Block::Aligned { align, blocks } => rsx! {
+            div { class: "flex flex-col gap-1.5 min-w-0 {group_class(align)}", Blocks { blocks } }
+        },
+        Block::Details {
+            summary,
+            open,
+            blocks,
+        } => rsx! {
+            details {
+                open,
+                class: "border border-solid border-[var(--fg-secondary)] px-2 py-1.5",
+                summary { class: "cursor-pointer font-bold",
+                    if summary.is_empty() {
+                        "{s.guestbook.details_label}"
+                    } else {
+                        Inlines { nodes: summary }
+                    }
+                }
+                div { class: "flex flex-col gap-1.5 pt-1.5", Blocks { blocks } }
+            }
+        },
         Block::Table { align, head, rows } => rsx! {
             div { class: "overflow-x-auto [scrollbar-width:thin]",
                 table { class: "border-collapse text-xs",
@@ -239,27 +271,95 @@ fn InlineView(node: Inline) -> Element {
                 }
             }
         }
-        Inline::Image { alt, href } => {
-            let label = if alt.is_empty() {
-                s.guestbook.image_label.to_string()
-            } else {
-                s.guestbook.image_link(&alt)
-            };
-            match href {
-                Some(href) => rsx! {
-                    a {
-                        href: "{href}",
-                        title: "{href}",
-                        target: "_blank",
-                        rel: "noopener noreferrer nofollow ugc",
-                        class: LINK_CLASS,
-                        "{label}"
-                    }
-                },
-                None => rsx! {
-                    span { class: "text-[var(--fg-secondary)]", "{label}" }
-                },
+        Inline::Styled(style, nodes) => match style {
+            Style::Underline => rsx! {
+                u { Inlines { nodes } }
+            },
+            Style::Mark => rsx! {
+                mark { class: "bg-[var(--yellow)] px-0.5 text-black", Inlines { nodes } }
+            },
+            Style::Sub => rsx! {
+                sub { Inlines { nodes } }
+            },
+            Style::Sup => rsx! {
+                sup { Inlines { nodes } }
+            },
+            Style::Kbd => rsx! {
+                kbd { class: "border border-solid border-[var(--fg-secondary)] px-1 [font:inherit]",
+                    Inlines { nodes }
+                }
+            },
+            Style::Code => rsx! {
+                code { class: "px-1 py-px {CODE_BG} [font:inherit] break-words", Inlines { nodes } }
+            },
+        },
+        Inline::Image {
+            alt,
+            href,
+            width,
+            height,
+        } => match href {
+            // Only `https` is loaded; see the module docs for why.
+            Some(src) if src.starts_with("https://") => rsx! {
+                Picture {
+                    key: "{src}",
+                    src,
+                    alt,
+                    width,
+                    height,
+                }
+            },
+            other => {
+                let label = image_label(s, &alt);
+                let title = other.unwrap_or_default();
+                rsx! {
+                    span { title: "{title}", class: "text-[var(--fg-secondary)]", "{label}" }
+                }
             }
+        },
+    }
+}
+
+/// What stands in for an image that is not shown.
+fn image_label(s: &crate::languages::Strings, alt: &str) -> String {
+    if alt.is_empty() {
+        s.guestbook.image_label.to_string()
+    } else {
+        s.guestbook.image_link(alt)
+    }
+}
+
+/// An image from an entry. Loaded lazily, without a `Referer`, and capped in
+/// size; if it fails to load, its alt text is shown instead.
+#[component]
+fn Picture(src: String, alt: String, width: Option<u16>, height: Option<u16>) -> Element {
+    let s = use_strings();
+    let mut failed = use_signal(|| false);
+    if failed() {
+        let label = image_label(s, &alt);
+        return rsx! {
+            span { title: "{src}", class: "text-[var(--fg-secondary)]", "{label}" }
+        };
+    }
+    // One side is enough: the other follows, so the picture keeps its shape
+    // even when `max-w-full` shrinks it.
+    let (w, h, fit) = match (width, height) {
+        (Some(w), _) => (Some(w), None, "h-auto"),
+        (None, Some(h)) => (None, Some(h), "w-auto"),
+        (None, None) => (None, None, ""),
+    };
+    rsx! {
+        img {
+            src: "{src}",
+            alt: "{alt}",
+            title: if alt.is_empty() { None } else { Some(alt.clone()) },
+            width: w.map(|w| w.to_string()),
+            height: h.map(|h| h.to_string()),
+            loading: "lazy",
+            decoding: "async",
+            referrerpolicy: "no-referrer",
+            class: "inline-block align-middle max-w-full max-h-80 object-contain {fit}",
+            onerror: move |_| failed.set(true),
         }
     }
 }

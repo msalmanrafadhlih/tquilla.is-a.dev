@@ -66,6 +66,13 @@ test('link selects the address so it can be typed over', () => {
   assert.equal(apply('', 0, 0, 'link').el.value, '[text](https://)');
 });
 
+test('image is a link with a bang and selects the address', () => {
+  const r = apply('a cat', 0, 5, 'image');
+  assert.equal(r.el.value, '![a cat](https://)');
+  assert.equal(r.picked, 'https://');
+  assert.equal(apply('', 0, 0, 'image').el.value, '![text](https://)');
+});
+
 test('line prefixes apply to every selected line and toggle off', () => {
   const on = apply('a\nb\nc', 0, 5, 'list');
   assert.equal(on.el.value, '- a\n- b\n- c');

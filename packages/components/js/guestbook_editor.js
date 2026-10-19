@@ -2,8 +2,8 @@
 // the message textarea with Markdown syntax. Run through `document::eval`,
 // with these provided before the body (see `guestbook.rs`):
 //   ID          id of the textarea
-//   KIND        one of bold, italic, strike, code, codeblock, link, quote,
-//               list, tasks, heading
+//   KIND        one of bold, italic, strike, code, codeblock, link, image,
+//               quote, list, tasks, heading
 //   PLACEHOLDER text used when nothing is selected (comes from `Strings`)
 // Returns true if the textarea was found and changed.
 
@@ -52,12 +52,14 @@ function edit(value, start, end, kind, placeholder) {
     };
   }
 
-  if (kind === 'link') {
+  if (kind === 'link' || kind === 'image') {
+    // An image is a link with a `!` in front; its text is the alt text.
+    const open = kind === 'image' ? '![' : '[';
     const text = sel || placeholder;
     const url = 'https://';
-    const out = value.slice(0, start) + '[' + text + '](' + url + ')' + value.slice(end);
+    const out = value.slice(0, start) + open + text + '](' + url + ')' + value.slice(end);
     // Select the address so it can be typed or pasted over.
-    const from = start + 1 + text.length + 2;
+    const from = start + open.length + text.length + 2;
     return { value: out, start: from, end: from + url.length };
   }
 
