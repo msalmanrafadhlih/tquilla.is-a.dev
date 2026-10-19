@@ -2,7 +2,7 @@
 //! Markdown), a Write/Preview editor to sign it, and a way to report an entry.
 //!
 //! The logic that can be tested without a browser lives in
-//! `crate::guestbook`; the Markdown renderer in `crate::markdown`.
+//! `crate::guestbook`; the Markdown renderer in `crate::markdown_view` (parser: the `markdown` crate).
 
 use api_types::chat::{clean_link, clean_message, clean_username, Reject};
 use dioxus::prelude::*;
@@ -13,7 +13,7 @@ use crate::guestbook::{
     reject_message, Format, EDITOR_ID, MAX_LINK_CHARS, MAX_USERNAME_CHARS, PAGE_SIZE,
 };
 use crate::languages::use_strings;
-use crate::markdown::Markdown;
+use crate::markdown_view::Markdown;
 use crate::nixdesk::js_util::eval_js;
 use crate::remote::{LoadFailed, Loading};
 use crate::time::relative_time;

@@ -1,13 +1,13 @@
-//! The tree from [`super::parse`] as Dioxus elements.
+//! The tree from [`markdown::parse`] as Dioxus elements.
 //!
 //! Every piece of text goes through Dioxus as a text node (escaped), every
-//! `href` was already vetted by [`super::safe_href`], and nothing here ever
+//! `href` was already vetted by [`markdown::safe_href`], and nothing here ever
 //! sets inner HTML. Recursion is bounded by the caps in the parent module.
 
 use dioxus::prelude::*;
 
-use super::{parse, Alert, Align, Block, Inline, Item, Style};
 use crate::languages::use_strings;
+use markdown::{parse, Alert, Align, Block, Inline, Item, Style};
 
 const LINK_CLASS: &str = "underline decoration-dotted decoration-[var(--fg-secondary)] underline-offset-4 break-words hover:decoration-solid hover:decoration-[var(--fg-main)]";
 const TEXT_CLASS: &str = "whitespace-pre-wrap break-words";

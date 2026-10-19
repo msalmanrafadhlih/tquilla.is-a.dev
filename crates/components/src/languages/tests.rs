@@ -232,7 +232,7 @@ const ALLOWED_LITERALS: &[(&str, &str, &str)] = &[
     ),
     ("platform.rs", "Content-Type", "HTTP header name"),
     (
-        "markdown/mod.rs",
+        "markdown/src/lib.rs",
         "www.",
         "URL prefix recognised in text, not UI text",
     ),
@@ -451,10 +451,17 @@ fn scan(path: &Path, source: &str, findings: &mut Vec<String>) {
 
 #[test]
 fn no_display_strings_left_in_components() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    // `components` and the `markdown` crate (parser; must hold no UI text either).
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut files = Vec::new();
-    rust_files(&root, &mut files);
-    assert!(files.len() > 20, "scanner found too few files");
+    rust_files(&manifest.join("src"), &mut files);
+    let before_markdown = files.len();
+    rust_files(&manifest.join("../markdown/src"), &mut files);
+    assert!(before_markdown > 20, "scanner found too few files");
+    assert!(
+        files.len() > before_markdown,
+        "scanner did not find the markdown crate sources"
+    );
 
     let mut findings = Vec::new();
     for file in files {

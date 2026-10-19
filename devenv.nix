@@ -118,10 +118,11 @@ in
   scripts = {
     dioxus-init.exec = "dx init";
 
-    # Workspace: packages/{components,web,desktop,mobile}. `components` itu
-    # library UI bersama; web/desktop/mobile cuma entry point per platform.
-    # dx otomatis jalanin Tailwind (packages/<pkg>/tailwind.css ->
-    # packages/<pkg>/assets/tailwind.css), jadi nggak perlu script manual.
+    # Workspace: crates/{components,markdown} + platform/{web,desktop,mobile}.
+    # `components` itu library UI bersama, `markdown` mesin parser README
+    # (Rust murni, tanpa Dioxus); web/desktop/mobile cuma entry point per
+    # platform. dx otomatis jalanin Tailwind (platform/<pkg>/tailwind.css ->
+    # platform/<pkg>/assets/tailwind.css), jadi nggak perlu script manual.
     web-dev.exec = "dx serve --package web --platform web";
     web-build.exec = "dx bundle --package web --platform web --release";
 
@@ -140,7 +141,7 @@ in
     # Cuma buat `nix build` (crane nggak lewat dx) atau debugging CSS.
     tailwind-build.exec = ''
       for pkg in web desktop mobile; do
-        tailwindcss -i ./packages/$pkg/tailwind.css -o ./packages/$pkg/assets/tailwind.css --minify
+        tailwindcss -i ./platform/$pkg/tailwind.css -o ./platform/$pkg/assets/tailwind.css --minify
       done
     '';
   };

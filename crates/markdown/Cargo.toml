@@ -1,0 +1,9 @@
+[package]
+name = "markdown"
+description = "Safe Markdown + README-style HTML subset -> a small tree. No Dioxus, no HTML strings."
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+api-types = { workspace = true }
+pulldown-cmark = { workspace = true }

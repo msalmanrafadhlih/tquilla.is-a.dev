@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   rust:
-    name: fmt + clippy + test (components)
+    name: fmt + clippy + test (components, markdown)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,12 +28,13 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Clippy (warning = error)
-        # Hanya `components`: itu tempat seluruh UI. Paket desktop/mobile
-        # dicek di platforms.yml (workflow terpisah, tidak menahan deploy).
-        run: cargo clippy -p components --all-targets -- -D warnings
+        # `components` (seluruh UI) dan `markdown` (mesin parser). Crate
+        # platform/desktop dan platform/mobile dicek di platforms.yml
+        # (workflow terpisah, tidak menahan deploy).
+        run: cargo clippy -p components -p markdown --all-targets -- -D warnings
 
       - name: Unit test
-        run: cargo test -p components
+        run: cargo test -p components -p markdown
 
   js:
     name: node test (js/ yang dijalankan lewat document::eval)
@@ -46,7 +47,7 @@ jobs:
           node-version: 22
 
       - name: Test
-        run: node --test "packages/components/js/tests/*.test.js"
+        run: node --test "crates/components/js/tests/*.test.js"
 
       - name: Test skrip postbuild
         run: python3 -m unittest discover -s scripts -p "test_*.py" -v

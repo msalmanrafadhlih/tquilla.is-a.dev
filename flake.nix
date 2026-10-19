@@ -60,17 +60,18 @@
           fileset = lib.fileset.unions [
             ./Cargo.toml
             ./Cargo.lock
-            ./packages/components
-            ./packages/web
-            ./packages/desktop
-            ./packages/mobile
+            ./crates/components
+            ./crates/markdown
+            ./platform/web
+            ./platform/desktop
+            ./platform/mobile
           ];
         };
 
         # Root Cargo.toml is workspace-only ([workspace], no [package]), so
         # pname/version have to come from the member we're actually
         # building, not from `src`.
-        inherit (craneLib.crateNameFromCargoToml { cargoToml = ./packages/desktop/Cargo.toml; }) pname version;
+        inherit (craneLib.crateNameFromCargoToml { cargoToml = ./platform/desktop/Cargo.toml; }) pname version;
 
         commonArgs = {
           inherit src pname version;
@@ -96,8 +97,8 @@
             # `asset!()` di Dioxus butuh file CSS-nya udah ada pas compile time,
             # jadi Tailwind di-generate dulu sebelum `cargo build`.
             preBuild = ''
-              mkdir -p ./packages/desktop/assets
-              tailwindcss -i ./packages/desktop/tailwind.css -o ./packages/desktop/assets/tailwind.css --minify
+              mkdir -p ./platform/desktop/assets
+              tailwindcss -i ./platform/desktop/tailwind.css -o ./platform/desktop/assets/tailwind.css --minify
             '';
 
             postInstall = ''

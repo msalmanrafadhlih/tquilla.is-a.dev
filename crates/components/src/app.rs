@@ -14,7 +14,7 @@ const FONTS_URL: &str =
     "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap";
 
 // Plain CSS owned by this crate. Tailwind is *not* here: its output is
-// generated per platform package (each one scans this crate's sources).
+// generated per platform crate (each one scans this crate's sources).
 const BASE_CSS: Asset = asset!("/assets/base.css");
 const GLOBALS_CSS: Asset = asset!("/assets/globals.css");
 const STYLEGUIDE_CSS: Asset = asset!("/assets/styleguide.css");

@@ -1,4 +1,6 @@
-//! Markdown for Guestbook entries ("README engine").
+//! Markdown for Guestbook entries ("README engine"), as a plain Rust crate:
+//! no Dioxus, no browser, no UI text. The tree it returns is drawn by
+//! `components::markdown_view`; everything here can be tested natively.
 //!
 //! The server stores the text exactly as written; this module is the only place
 //! that gives it meaning. The design is driven by one rule: **text from
@@ -9,8 +11,8 @@
 //!    raw HTML in the source is run through [`html`], a tokenizer that only
 //!    says "this tag, these attributes", and an **allow-list** decides what
 //!    (if anything) each tag becomes in the tree;
-//! 3. [`view`] turns the tree into Dioxus elements (text nodes are escaped by
-//!    Dioxus itself).
+//! 3. the caller turns the tree into elements (in this app: Dioxus, where
+//!    text nodes are escaped by Dioxus itself).
 //!
 //! What is supported: paragraphs, headings, emphasis, strong, ~~strikethrough~~,
 //! inline code, fenced and indented code blocks, block quotes (and GitHub
@@ -47,9 +49,6 @@ use pulldown_cmark::{
 };
 
 mod html;
-mod view;
-
-pub use view::Markdown;
 
 /// How many block quotes / lists may be nested. The input is capped at 2,000
 /// characters, but `>>>>>>...` could still nest a thousand levels deep and

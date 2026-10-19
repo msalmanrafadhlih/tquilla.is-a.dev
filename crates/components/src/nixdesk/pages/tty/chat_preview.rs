@@ -1,10 +1,10 @@
 use crate::api::{self, ChatMessage, Page};
 use crate::guestbook::tab_hidden;
 use crate::languages::use_strings;
-use crate::markdown::plain_text;
 use crate::platform::TimeoutFuture;
 use crate::time::relative_time;
 use dioxus::prelude::*;
+use markdown::plain_text;
 
 /// Time each message stays on screen.
 const CYCLE_MS: u32 = 3000;

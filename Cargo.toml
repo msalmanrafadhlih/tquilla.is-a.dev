@@ -1,10 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-    "packages/components",
-    "packages/web",
-    "packages/desktop",
-    "packages/mobile",
+    "crates/components",
+    "crates/markdown",
+    "platform/web",
+    "platform/desktop",
+    "platform/mobile",
 ]
 
 [workspace.package]
@@ -21,12 +22,14 @@ serde = { version = "1", features = ["derive"] }
 # perubahan di backend tidak masuk diam-diam; naikkan tag-nya sengaja.
 api-types = { git = "https://github.com/msalmanrafadhlih/deisktify-worker.rs", tag = "v0.4.0" }
 
-# Parser Markdown untuk entri Guestbook. `default-features = false` membuang
-# renderer HTML dan `getopts` (CLI): kita tidak pernah membuat string HTML,
-# peristiwa parser langsung jadi pohon (`markdown.rs`) lalu elemen Dioxus.
+# Parser Markdown untuk entri Guestbook, dipakai oleh crate `markdown`.
+# `default-features = false` membuang renderer HTML dan `getopts` (CLI): kita
+# tidak pernah membuat string HTML, peristiwa parser langsung jadi pohon
+# (`crates/markdown`) lalu elemen Dioxus (`crates/components`).
 pulldown-cmark = { version = "0.13", default-features = false }
 
-components = { path = "packages/components" }
+components = { path = "crates/components" }
+markdown = { path = "crates/markdown" }
 
 # Ukuran .wasm adalah biaya load terbesar di web. Pengaturan ini mengikuti
 # panduan "optimizing binary size" Dioxus. Catatan: berlaku juga untuk build

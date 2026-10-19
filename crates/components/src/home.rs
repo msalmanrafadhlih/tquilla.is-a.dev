@@ -14,7 +14,7 @@ use crate::shared::PageMeta;
 enum LinkTarget {
     /// A page of this app, opened through the router on every platform.
     Route(Route),
-    /// A web address, handed to the platform package (same tab on web,
+    /// A web address, handed to the platform crate (same tab on web,
     /// system browser on desktop, ...).
     External(String),
     /// Anything else: not opened. The link comes from the server, so an

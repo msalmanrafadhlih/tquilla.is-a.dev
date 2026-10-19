@@ -74,8 +74,8 @@ jobs:
           fi
           chmod +x tailwindcss-linux-x64
           ./tailwindcss-linux-x64 \
-            -i ./packages/web/tailwind.css \
-            -o ./packages/web/assets/tailwind.css \
+            -i ./platform/web/tailwind.css \
+            -o ./platform/web/assets/tailwind.css \
             --minify
 
       - name: Periksa API_BASE_URL

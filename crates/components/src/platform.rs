@@ -7,16 +7,16 @@
 //! one for the desktop / mobile builds.
 //!
 //! Platform *behaviour* that differs per target (e.g. how to open an
-//! external link) is injected by each platform package through
+//! external link) is injected by each platform crate through
 //! [`PlatformServices`] instead of being hard-coded here.
 
 use dioxus::prelude::*;
 
 // ---------------------------------------------------------------------------
-// Services injected by the platform packages
+// Services injected by the platform crates
 // ---------------------------------------------------------------------------
 
-/// Things only the host platform knows how to do. A platform package
+/// Things only the host platform knows how to do. A platform crate
 /// provides this once at its root with `use_context_provider`; if it
 /// doesn't, [`PlatformServices::default`] is used.
 #[derive(Clone, Copy)]
@@ -44,7 +44,7 @@ fn default_open_external(url: &str) {
     });
 }
 
-/// The [`PlatformServices`] provided by the platform package (or the default).
+/// The [`PlatformServices`] provided by the platform crate (or the default).
 pub fn use_platform() -> PlatformServices {
     try_use_context::<PlatformServices>().unwrap_or_default()
 }
