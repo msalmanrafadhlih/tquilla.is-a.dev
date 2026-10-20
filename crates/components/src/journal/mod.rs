@@ -2,6 +2,7 @@ mod chart;
 mod components;
 mod data;
 mod scroll;
+mod stats_url;
 mod util;
 
 use dioxus::prelude::*;
@@ -24,16 +25,12 @@ const MATERIAL_SYMBOLS_URL: &str = "https://fonts.googleapis.com/css2?family=Mat
 /// — the page should never show a broken/empty state.
 const SAMPLE_DATA: &str = include_str!("../../data/journal.sample.json");
 
-/// The Cloudflare Worker that now does what the old `fetch-stats` CI job +
-/// `data.json` used to: run the GitHub GraphQL query and hand back JSON in
-/// this exact shape, cached at the edge for a few minutes. See
-/// `worker/README.md` for setup/deploy instructions.
-///
-/// This has to be a full absolute URL (unlike the old relative
-/// `data.json` path) since it points at a different origin than the
-/// GitHub Pages site itself. Update this after your first
-/// `wrangler deploy` in `worker/`.
-const STATS_API_URL: &str = "https://github-journal-stats.msalmanrafadhlih.workers.dev/api/stats";
+/// Address of the stats endpoint, compiled in from the `STATS_API_URL` build
+/// variable with `option_env!` (not `env!`: a missing variable must not break
+/// `cargo test`, `nix build` or CI, which do not set it). Public address, not
+/// a secret. Unset or invalid means "not configured": the page says so
+/// instead of guessing a host (see `stats_url::normalize`).
+const STATS_API_URL: Option<&str> = option_env!("STATS_API_URL");
 
 /// Where the numbers on the page came from. The page keeps rendering when
 /// the live fetch fails, but it must say so: the bundled sample is dummy
@@ -42,6 +39,9 @@ const STATS_API_URL: &str = "https://github-journal-stats.msalmanrafadhlih.worke
 enum DataSource {
     /// Fresh from the stats Worker.
     Live,
+    /// Bundled sample because `STATS_API_URL` is unset or invalid in this
+    /// build; no request was made.
+    NotConfigured,
     /// Bundled `journal.sample.json` (dummy numbers), used because the live
     /// fetch failed.
     Snapshot,
@@ -53,8 +53,17 @@ struct Loaded {
     source: DataSource,
 }
 
+fn sample(source: DataSource) -> Result<Loaded, String> {
+    serde_json::from_str::<AppData>(SAMPLE_DATA)
+        .map(|data| Loaded { data, source })
+        .map_err(|e| e.to_string())
+}
+
 async fn load_data() -> Result<Loaded, String> {
-    if let Ok(resp) = crate::platform::http::get(STATS_API_URL).await {
+    let Some(url) = stats_url::normalize(STATS_API_URL) else {
+        return sample(DataSource::NotConfigured);
+    };
+    if let Ok(resp) = crate::platform::http::get(&url).await {
         if resp.ok() {
             if let Ok(data) = serde_json::from_str::<AppData>(&resp.body) {
                 return Ok(Loaded {
@@ -64,12 +73,7 @@ async fn load_data() -> Result<Loaded, String> {
             }
         }
     }
-    serde_json::from_str::<AppData>(SAMPLE_DATA)
-        .map(|data| Loaded {
-            data,
-            source: DataSource::Snapshot,
-        })
-        .map_err(|e| e.to_string())
+    sample(DataSource::Snapshot)
 }
 
 #[component]
@@ -129,11 +133,15 @@ fn Page(data: AppData, source: DataSource) -> Element {
             path: "/profile",
         }
         div { class: "bg-paper text-primary font-sans antialiased flex flex-col selection:bg-accent selection:text-paper overflow-x-hidden",
-            if source == DataSource::Snapshot {
+            if source != DataSource::Live {
                 div {
                     role: "status",
                     class: "w-full bg-accent text-paper font-mono text-xs text-center px-4 py-2",
-                    "{s.journal.offline_snapshot}"
+                    if source == DataSource::NotConfigured {
+                        "{s.journal.stats_not_configured}"
+                    } else {
+                        "{s.journal.offline_snapshot}"
+                    }
                 }
             }
             Hero { hero: data.hero.clone(), date_label, build_number }

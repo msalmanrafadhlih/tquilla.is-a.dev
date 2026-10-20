@@ -94,12 +94,30 @@ jobs:
             echo "API_BASE_URL di-set (${#API_BASE_URL} karakter)."
           fi
 
+      - name: Periksa STATS_API_URL
+        # Alamat endpoint statistik jurnal GitHub (/profile), juga dikompilasi
+        # lewat `option_env!` (components/src/journal/stats_url.rs), jadi BUKAN
+        # secret. Isi dengan alamat LENGKAP termasuk path, mis.
+        # https://github-journal-stats.<subdomain>.workers.dev/api/stats
+        # (Settings > Secrets and variables > Actions > Variables). Belum di-set
+        # atau tidak valid = jurnal menampilkan banner "belum disiapkan" dengan
+        # data contoh; build tetap lanjut dan CI (ci.yml) tidak butuh variable ini.
+        env:
+          STATS_API_URL: ${{ vars.STATS_API_URL }}
+        run: |
+          if [ -z "$STATS_API_URL" ]; then
+            echo "::warning::Variable STATS_API_URL belum di-set; jurnal GitHub memakai data contoh."
+          else
+            echo "STATS_API_URL di-set (${#STATS_API_URL} karakter)."
+          fi
+
       - name: Build & bundle (release, web)
         # dx bundle, bukan dx build — dx build cuma wrapper `cargo build`,
         # sedangkan dx bundle yang menjalankan pipeline produksi Dioxus
         # (kompresi wasm, minifikasi, dst).
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
+          STATS_API_URL: ${{ vars.STATS_API_URL }}
         run: dx bundle --package web --platform web --release
 
       - name: Suntik metadata statis (lang, OG tags, robots, sitemap, noscript)

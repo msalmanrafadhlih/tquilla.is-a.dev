@@ -539,6 +539,7 @@ strings! {
         /// `{error}`
         load_failed: "Failed to load data: {error}",
         offline_snapshot: "Offline snapshot: live GitHub stats are unavailable right now, so the numbers below are sample data.",
+        stats_not_configured: "Live GitHub stats are not set up in this build (the stats server address is missing or invalid), so the numbers below are sample data.",
         profile_alt: "Profile",
         /// `{n}` (nomor hari dalam setahun)
         build_number: "NO. {n}",
