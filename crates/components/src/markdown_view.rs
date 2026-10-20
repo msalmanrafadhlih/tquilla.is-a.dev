@@ -10,7 +10,9 @@ use crate::languages::use_strings;
 use markdown::{parse, Alert, Align, Block, Inline, Item, Style};
 
 const LINK_CLASS: &str = "underline decoration-dotted decoration-[var(--fg-secondary)] underline-offset-4 break-words hover:decoration-solid hover:decoration-[var(--fg-main)]";
-const TEXT_CLASS: &str = "whitespace-pre-wrap break-words";
+// `flow-root`: a floated image (`<img align="left">`) must stay inside the block
+// that holds it instead of spilling over the next one.
+const TEXT_CLASS: &str = "flow-root whitespace-pre-wrap break-words";
 const CODE_BG: &str = "bg-[color-mix(in_srgb,var(--fg-main)_12%,transparent)]";
 
 /// Renders Markdown `source` (an entry's text). Re-parses only when `source`
@@ -298,6 +300,7 @@ fn InlineView(node: Inline) -> Element {
             href,
             width,
             height,
+            align,
         } => match href {
             // Only `https` is loaded; see the module docs for why.
             Some(src) if src.starts_with("https://") => rsx! {
@@ -307,6 +310,7 @@ fn InlineView(node: Inline) -> Element {
                     alt,
                     width,
                     height,
+                    align,
                 }
             },
             other => {
@@ -329,10 +333,27 @@ fn image_label(s: &crate::languages::Strings, alt: &str) -> String {
     }
 }
 
+/// Where a picture sits: inline by default, floated to an edge for
+/// `align="left|right"` (text wraps around it), or alone on a centered line.
+fn picture_place(align: Align) -> &'static str {
+    match align {
+        Align::Left => "float-left mr-2 mb-1",
+        Align::Right => "float-right ml-2 mb-1",
+        Align::Center => "block mx-auto",
+        Align::Default => "inline-block align-middle",
+    }
+}
+
 /// An image from an entry. Loaded lazily, without a `Referer`, and capped in
 /// size; if it fails to load, its alt text is shown instead.
 #[component]
-fn Picture(src: String, alt: String, width: Option<u16>, height: Option<u16>) -> Element {
+fn Picture(
+    src: String,
+    alt: String,
+    width: Option<u16>,
+    height: Option<u16>,
+    align: Align,
+) -> Element {
     let s = use_strings();
     let mut failed = use_signal(|| false);
     if failed() {
@@ -348,6 +369,7 @@ fn Picture(src: String, alt: String, width: Option<u16>, height: Option<u16>) ->
         (None, Some(h)) => (None, Some(h), "w-auto"),
         (None, None) => (None, None, ""),
     };
+    let place = picture_place(align);
     rsx! {
         img {
             src: "{src}",
@@ -358,7 +380,7 @@ fn Picture(src: String, alt: String, width: Option<u16>, height: Option<u16>) ->
             loading: "lazy",
             decoding: "async",
             referrerpolicy: "no-referrer",
-            class: "inline-block align-middle max-w-full max-h-80 object-contain {fit}",
+            class: "{place} max-w-full max-h-80 object-contain {fit}",
             onerror: move |_| failed.set(true),
         }
     }

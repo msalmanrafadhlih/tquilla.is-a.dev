@@ -23,7 +23,8 @@
 //! A README-style subset of HTML works too: `<img src="https://...">`
 //! (`alt`, `width`, `height`), `<br>`, `<hr>`, `<b>` `<strong>` `<i>` `<em>`
 //! `<s>` `<del>` `<strike>` `<u>` `<mark>` `<sub>` `<sup>` `<kbd>` `<code>`,
-//! `<a href>`, `<h1>`..`<h6>`, `<p>` `<div>` `<center>` (with `align`), and
+//! `<a href>`, `<h1>`..`<h6>`, `<p>` `<div>` `<center>` (with `align`), `<img align>`
+//! (`left` / `right` float the picture, `center` centers it), and
 //! `<details>` / `<summary>`. Markdown images (`![alt](https://...)`) are the
 //! same thing as `<img>`.
 //!
@@ -158,12 +159,28 @@ pub enum Inline {
     /// An image. `href` is `Some` for `http(s)` targets only (the view loads
     /// it if it is `https`, otherwise shows `alt`) and `None` when the target
     /// is unsafe. `width` / `height` are pixel hints, already clamped.
+    /// `align` comes from `<img align="left|right|center">`: left / right float
+    /// the picture to that edge (text wraps around it), center puts it on its
+    /// own centered line; [`Align::Default`] keeps it inline.
     Image {
         alt: String,
         href: Option<String>,
         width: Option<u16>,
         height: Option<u16>,
+        align: Align,
     },
+}
+
+/// The `align` attribute: only `left`, `right` and `center` (any case) mean
+/// something; every other value, or none, is [`Align::Default`]. Nothing else
+/// from the attribute reaches the tree.
+fn align_attr(attrs: &[(String, String)]) -> Align {
+    match html::attr(attrs, "align").map(|a| a.trim().to_ascii_lowercase()) {
+        Some(a) if a == "center" => Align::Center,
+        Some(a) if a == "right" => Align::Right,
+        Some(a) if a == "left" => Align::Left,
+        _ => Align::Default,
+    }
 }
 
 /// Largest `width` / `height` hint accepted on an image.
@@ -892,6 +909,7 @@ impl Builder {
                     href: href.filter(|h| !h.starts_with("mailto:")),
                     width: html::attr(attrs, "width").and_then(dimension),
                     height: html::attr(attrs, "height").and_then(dimension),
+                    align: align_attr(attrs),
                 });
             }
             "b" => self.html_span("b", H::Strong),
@@ -924,12 +942,9 @@ impl Builder {
                     "p" => "p",
                     _ => "center",
                 };
-                let align = match html::attr(attrs, "align").map(str::to_ascii_lowercase) {
-                    Some(a) if a == "center" => Align::Center,
-                    Some(a) if a == "right" => Align::Right,
-                    Some(a) if a == "left" => Align::Left,
-                    _ if tag == "center" => Align::Center,
-                    _ => Align::Default,
+                let align = match align_attr(attrs) {
+                    Align::Default if tag == "center" => Align::Center,
+                    other => other,
                 };
                 self.html_container(Container::Aligned { tag, align });
             }
@@ -1090,6 +1105,7 @@ impl Builder {
                     href,
                     width: None,
                     height: None,
+                    align: Align::Default,
                 });
             }
             SpanKind::Html { what, .. } => self.close_html_span(what, children),
@@ -1405,6 +1421,7 @@ mod tests {
                     href,
                     width,
                     height,
+                    ..
                 } => Some((alt.clone(), href.clone(), *width, *height)),
                 _ => None,
             })
@@ -2203,5 +2220,147 @@ inside
         let text = shown(readme);
         assert!(text.contains("Project") && text.contains("Tagline") && text.contains("inside"));
         assert!(!text.contains('<'), "{text}");
+    }
+
+    /// The social-badge row from the guestbook: a centered `<p>` with
+    /// `<code><a><img></a></code>` icons, then a badge floated left and a
+    /// counter floated right (note `align ="center"` with a space).
+    const BADGE_ROW: &str = r##"<p align ="center">
+  <code><a href="https://x.com/" target="_blank"><img width="20" alt="twitter" src="https://raw.githubusercontent.com/msalmanrafadhlih/msalmanrafadhlih/refs/heads/main/assets/x.png"></a></code> 
+  <code><a href="https://bsky.app/" target="_blank"><img width="20" alt="bluesky" src="https://raw.githubusercontent.com/msalmanrafadhlih/msalmanrafadhlih/refs/heads/main/assets/bluesky2.png"></a></code>
+  <code><a href="https://www.threads.net/" target="_blank"><img width="20" alt="threads" src="https://raw.githubusercontent.com/msalmanrafadhlih/msalmanrafadhlih/refs/heads/main/assets/threads.png"></a></code>
+  <code><a href="https://www.youtube.com/" target="_blank"><img width="20" alt="Youtube" src="https://raw.githubusercontent.com/msalmanrafadhlih/msalmanrafadhlih/refs/heads/main/assets/youtube.png"></a></code>
+  <code><a href="https://www.linkedin.com/" target="_blank"><img width="20" alt="linkedin.com" src="https://raw.githubusercontent.com/msalmanrafadhlih/msalmanrafadhlih/refs/heads/main/assets/linkedin1.png"></a></code>
+  <a href="https://tquilla.is-a.dev"><img src="https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Portfolio Badge" align="left" /></a>
+  <img src="https://komarev.com/ghpvc/?username=msalmanrafadhlih&style=flat-square&color=blue&style=for-the-badge&abbreviated=true" alt="Profile views" align="right"/>
+</p>"##;
+
+    fn aligns(src: &str) -> Vec<Align> {
+        all_inlines(&parse(src))
+            .into_iter()
+            .filter_map(|n| match n {
+                Inline::Image { align, .. } => Some(*align),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn img_align_left_right_center() {
+        let img = |a: &str| format!("<img align=\"{a}\" src=\"https://a.dev/x.png\">");
+        assert_eq!(aligns(&img("left")), [Align::Left]);
+        assert_eq!(aligns(&img("right")), [Align::Right]);
+        assert_eq!(aligns(&img("center")), [Align::Center]);
+        // Case and padding do not matter.
+        assert_eq!(aligns(&img("LEFT")), [Align::Left]);
+        assert_eq!(aligns(&img(" Right ")), [Align::Right]);
+        // Single quotes, no quotes, spaces around `=`.
+        assert_eq!(
+            aligns("<img align='center' src='https://a.dev/x.png'>"),
+            [Align::Center]
+        );
+        assert_eq!(
+            aligns("<img align=right src=\"https://a.dev/x.png\">"),
+            [Align::Right]
+        );
+        assert_eq!(
+            aligns("<img align = \"left\" src=\"https://a.dev/x.png\" />"),
+            [Align::Left]
+        );
+    }
+
+    #[test]
+    fn img_align_ignores_everything_else() {
+        let img = |a: &str| format!("<img align=\"{a}\" src=\"https://a.dev/x.png\">");
+        // Old vertical values, junk, and CSS-looking values mean "inline".
+        for v in [
+            "top",
+            "middle",
+            "bottom",
+            "",
+            "evil",
+            "center;position:fixed",
+        ] {
+            assert_eq!(aligns(&img(v)), [Align::Default], "align={v:?}");
+        }
+        assert_eq!(
+            aligns("<img src=\"https://a.dev/x.png\">"),
+            [Align::Default]
+        );
+        // `style` is still never read, so it cannot center anything.
+        assert_eq!(
+            aligns("<img style=\"display:block;margin:auto\" src=\"https://a.dev/x.png\">"),
+            [Align::Default]
+        );
+        // Markdown images have no alignment syntax.
+        assert_eq!(aligns("![a](https://a.dev/x.png)"), [Align::Default]);
+    }
+
+    #[test]
+    fn badge_row_keeps_its_shape() {
+        let blocks = parse(BADGE_ROW);
+        assert_eq!(blocks.len(), 1, "{blocks:?}");
+        let Block::Aligned {
+            align: Align::Center,
+            blocks: inner,
+        } = &blocks[0]
+        else {
+            panic!("not a centered group: {blocks:?}");
+        };
+        assert!(!inner.is_empty());
+
+        // Seven pictures, in source order: five icons, the badge, the counter.
+        let imgs = images(BADGE_ROW);
+        assert_eq!(imgs.len(), 7, "{imgs:?}");
+        assert!(imgs
+            .iter()
+            .all(|i| i.1.as_deref().is_some_and(|h| h.starts_with("https://"))));
+        assert_eq!(
+            imgs.iter().map(|i| i.2).collect::<Vec<_>>(),
+            [Some(20), Some(20), Some(20), Some(20), Some(20), None, None]
+        );
+        assert_eq!(imgs[0].0, "twitter");
+        assert_eq!(imgs[6].0, "Profile views");
+        // `&amp;`-free sources arrive intact, `&` included.
+        assert!(imgs[5]
+            .1
+            .as_deref()
+            .unwrap()
+            .contains("style=for-the-badge&logo=ko-fi"));
+        assert!(imgs[6].1.as_deref().unwrap().contains("&abbreviated=true"));
+
+        let mut expected = vec![Align::Default; 5];
+        expected.extend([Align::Left, Align::Right]);
+        assert_eq!(aligns(BADGE_ROW), expected);
+
+        // The five icons are `code > link > image`; the badge is a bare link.
+        let all = all_inlines(&blocks);
+        let wrapped = all
+            .iter()
+            .filter(|n| matches!(n, Inline::Styled(Style::Code, c) if matches!(
+                c.as_slice(),
+                [Inline::Link { children, .. }] if matches!(children.as_slice(), [Inline::Image { .. }])
+            )))
+            .count();
+        assert_eq!(wrapped, 5, "{all:?}");
+        let links = all
+            .iter()
+            .filter(|n| matches!(n, Inline::Link { .. }))
+            .count();
+        assert_eq!(links, 6);
+
+        // Nothing leaks as text: no tags, no attribute names.
+        let text = shown(BADGE_ROW);
+        assert!(
+            !text.contains('<') && !text.contains("align") && !text.contains("src"),
+            "{text:?}"
+        );
+    }
+
+    #[test]
+    fn badge_row_is_the_same_in_a_larger_readme() {
+        let src = format!("# Hi\n\n{BADGE_ROW}\n\nafter");
+        assert_eq!(aligns(&src).len(), 7);
+        assert!(shown(&src).contains("after"));
     }
 }
