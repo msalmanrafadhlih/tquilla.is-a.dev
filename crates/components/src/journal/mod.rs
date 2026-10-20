@@ -33,7 +33,7 @@ const SAMPLE_DATA: &str = include_str!("../../data/journal.sample.json");
 /// `data.json` path) since it points at a different origin than the
 /// GitHub Pages site itself. Update this after your first
 /// `wrangler deploy` in `worker/`.
-const STATS_API_URL: &str = "https://github-journal-stats.msalmanrafadhlih.workers.dev/api/stats";
+const STATS_API_URL: &str = env!("STATS_API_URL");
 
 /// Where the numbers on the page came from. The page keeps rendering when
 /// the live fetch fails, but it must say so: the bundled sample is dummy
