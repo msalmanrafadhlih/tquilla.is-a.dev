@@ -100,7 +100,6 @@ jobs:
         # (kompresi wasm, minifikasi, dst).
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
-          STATS_API_URL: ${{ vars.STATS_API_URL }}
         run: dx bundle --package web --platform web --release
 
       - name: Suntik metadata statis (lang, OG tags, robots, sitemap, noscript)
