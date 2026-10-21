@@ -1,4 +1,5 @@
-use super::data::Chronicle;
+use api_types::journal::Chronicle;
+
 use super::util::format_short_date;
 use crate::languages::Strings;
 
@@ -11,8 +12,13 @@ const TOOLTIP_H: f64 = 90.0;
 /// including the gradient area, stroke path, and collision-avoided tooltips
 /// for each entry in `top_activities`. Rendered via `dangerous_inner_html`
 /// so we don't need typed RSX bindings for `<foreignObject>`/`<linearGradient>`.
+///
+/// Safe because **only numbers and fixed strings go in**: dates are `YYYY-MM-DD`
+/// (re-checked by `api::journal` through `api_types::journal::Data::validate`,
+/// then reformatted from digits), counts are `u32`, labels come from `Strings`.
+/// Never add text from the API (names, descriptions) to this markup.
 pub fn build_chart_svg(chronicle: &Chronicle, s: &Strings) -> String {
-    let timeline = &chronicle.stats.timeline;
+    let timeline = &chronicle.timeline;
 
     let mut svg = format!(
         r#"<svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 {WIDTH} {HEIGHT}" xmlns="http://www.w3.org/2000/svg">"#
@@ -56,14 +62,12 @@ pub fn build_chart_svg(chronicle: &Chronicle, s: &Strings) -> String {
         r##"<path d="{d_path}" fill="none" stroke="#1A1A1A" stroke-width="2"></path>"##
     ));
 
-    if let Some(activities) = &chronicle.top_activities {
+    {
+        let activities = &chronicle.top_activities;
         let mut placed: Vec<(f64, f64, f64, f64)> = Vec::new(); // (x, y, w, h)
 
         for activity in activities {
-            let Some(idx) = timeline
-                .iter()
-                .position(|t| format_short_date(&t.date) == activity.date)
-            else {
+            let Some(idx) = timeline.iter().position(|t| t.date == activity.date) else {
                 continue;
             };
             let (cx, cy) = points[idx];
@@ -115,7 +119,7 @@ pub fn build_chart_svg(chronicle: &Chronicle, s: &Strings) -> String {
 
             svg.push_str(&format!(
                 r#"<foreignObject x="{fx}" y="{fy}" width="{TOOLTIP_W}" height="{TOOLTIP_H}"><div xmlns="http://www.w3.org/1999/xhtml" class="bg-primary text-paper p-4 shadow-2xl border border-white/10"><div class="font-serif italic text-lg opacity-80 mb-1">{}</div><div class="font-mono text-xl font-bold tracking-tight">{}</div></div></foreignObject>"#,
-                activity.date,
+                format_short_date(&activity.date),
                 s.journal.chart_commits(activity.count)
             ));
             svg.push_str("</g>");

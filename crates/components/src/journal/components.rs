@@ -1,13 +1,17 @@
 use dioxus::prelude::*;
 
+use api_types::journal::{Chronicle, Hero as HeroData, Repo};
+
 use super::chart::build_chart_svg;
-use super::data::{Chronicle, Hero as HeroData, Repo};
-use super::util::{build_month_labels, format_stars, format_volume};
+use super::util::{
+    build_month_labels, fill_segments, format_growth, format_short_date, format_stars,
+    format_volume, month_index,
+};
 use crate::languages::use_strings;
 use crate::shared::{AVATAR, CONTACT_EMAIL};
 
 #[component]
-pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element {
+pub fn Hero(hero: HeroData, date_label: String, build_number: String, updated: String) -> Element {
     let s = use_strings();
     rsx! {
         header { class: "w-full border-b border-line bg-paper",
@@ -40,10 +44,13 @@ pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element
                     }
                 }
                 section { class: "w-full lg:w-3/5 flex flex-col justify-center px-8 py-16 lg:px-24 lg:py-32 bg-paper relative",
-                    div { class: "absolute top-6 right-6 lg:top-10 lg:right-10 flex items-center gap-2 text-muted font-mono",
-                        span { "{date_label}" }
-                        span { class: "w-8 h-px bg-line" }
-                        span { "{build_number}" }
+                    div { class: "absolute top-6 right-6 lg:top-10 lg:right-10 flex flex-col items-end gap-1 text-muted font-mono",
+                        div { class: "flex items-center gap-2",
+                            span { "{date_label}" }
+                            span { class: "w-8 h-px bg-line" }
+                            span { "{build_number}" }
+                        }
+                        span { class: "text-xs", "{updated}" }
                     }
                     div { class: "max-w-2xl",
                         p { class: "font-mono text-accent text-sm tracking-widest mb-6 uppercase", "{s.journal.eyebrow}" }
@@ -79,6 +86,18 @@ pub fn Hero(hero: HeroData, date_label: String, build_number: String) -> Element
     }
 }
 
+/// An empty description (GitHub repo without one) shows a neutral placeholder.
+fn description_or_placeholder(description: &str, s: &crate::languages::Strings) -> String {
+    if description.is_empty() {
+        s.journal.no_description.to_string()
+    } else {
+        description.to_owned()
+    }
+}
+
+/// Bar color when GitHub gave no color for a language.
+const FALLBACK_LANGUAGE_COLOR: &str = "#D1CDC5";
+
 #[component]
 pub fn ArticleCard(repo: Option<Repo>, class: String) -> Element {
     let s = use_strings();
@@ -96,8 +115,12 @@ pub fn ArticleCard(repo: Option<Repo>, class: String) -> Element {
                 }
                 div { class: "relative z-10 mt-auto",
                     h3 { class: "editorial-text text-3xl sm:text-4xl font-normal mb-2", "{repo.title}" }
-                    p { class: "font-sans text-ink/60 mb-4 line-clamp-2", "{repo.description}" }
-                    span { class: "mono-text text-ink/40", "{repo.language}" }
+                    p { class: "font-sans text-ink/60 mb-4 line-clamp-2",
+                        "{description_or_placeholder(&repo.description, s)}"
+                    }
+                    span { class: "mono-text text-ink/40",
+                        "{repo.language.clone().unwrap_or_else(|| s.journal.unknown_language.to_string())}"
+                    }
                 }
             }
         }
@@ -138,7 +161,7 @@ pub fn PinnedSection(pinned: Vec<Repo>) -> Element {
                                 div { class: "max-w-2xl z-10",
                                     h2 { class: "editorial-text text-4xl sm:text-8xl font-normal leading-none mb-6", "{repo.title}" }
                                     p { class: "font-sans text-xl leading-relaxed text-ink/80 mb-8 border-l-2 border-accent pl-6",
-                                        "{repo.description}"
+                                        "{description_or_placeholder(&repo.description, s)}"
                                     }
                                     div { class: "flex flex-wrap gap-2 mb-8" }
                                 }
@@ -176,20 +199,48 @@ pub fn PinnedSection(pinned: Vec<Repo>) -> Element {
 }
 
 #[component]
-pub fn ChronicleSection(chronicle: Chronicle) -> Element {
+pub fn ChronicleSection(chronicle: Chronicle, fetched_at: String) -> Element {
     let s = use_strings();
-    let stack = chronicle.stack.clone().unwrap_or_else(|| {
-        vec![
-            "Linux".into(),
-            "Neovim".into(),
-            "Arch".into(),
-            "Hyprland".into(),
-        ]
-    });
-    let months = build_month_labels(&chronicle.stats.timeline, s);
+    let stack = chronicle.stack.clone();
+    let months = build_month_labels(&chronicle.timeline, s);
     let chart_svg = build_chart_svg(&chronicle, s);
-    let focus_html = chronicle.monthly_focus_html.clone();
-    let focus_text = chronicle.monthly_focus.clone();
+    let peak_day = chronicle
+        .top_activities
+        .first()
+        .map(|d| format_short_date(&d.date))
+        .unwrap_or_else(|| s.journal.no_peak.to_string());
+    let weekday = s
+        .calendar
+        .weekday(usize::from(chronicle.most_productive_weekday).min(6));
+
+    // The focus sentence is data + a UI template, never server-made HTML:
+    // highlighted words become plain `span`s below.
+    let focus_segments = match (&chronicle.monthly_focus, month_index(&fetched_at)) {
+        (Some(focus), Some(month)) => fill_segments(
+            s.journal.focus_sentence,
+            &[
+                ("month", s.calendar.month(month), false),
+                (
+                    "activity",
+                    s.journal.activity_for(focus.language.as_deref()),
+                    false,
+                ),
+                (
+                    "language",
+                    focus
+                        .language
+                        .as_deref()
+                        .unwrap_or(s.journal.focus_language_fallback),
+                    true,
+                ),
+                ("repo", focus.repo.as_str(), true),
+            ],
+        ),
+        _ => fill_segments(
+            s.journal.focus_empty,
+            &[("ideas", s.journal.focus_ideas, true)],
+        ),
+    };
 
     // The original JS animates each dialect bar from width:0 to its target
     // percent 100ms after render. Reproduce that with a signal flip.
@@ -222,7 +273,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                             span { class: "text-5xl md:text-6xl font-mono text-primary", "{format_volume(chronicle.total_contribution_volume)}" }
                             span { class: "text-sm font-medium text-accent flex justify-end items-center gap-1",
                                 span { class: "material-symbols-outlined", "trending_up" }
-                                " {s.journal.growth_vs_last_year(&chronicle.growth_percentage)}"
+                                " {s.journal.growth_vs_last_year(&format_growth(chronicle.growth_percent))}"
                             }
                         }
                     }
@@ -245,7 +296,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                                                 div { class: "h-[2px] w-full bg-line",
                                                     div {
                                                         class: "dialect-bar h-[2px] transition-all duration-1000 ease-out",
-                                                        style: "width: {bar_width}%; background-color: {lang.color};",
+                                                        style: "width: {bar_width}%; background-color: {lang.color.as_deref().unwrap_or(FALLBACK_LANGUAGE_COLOR)};",
                                                     }
                                                 }
                                             }
@@ -253,11 +304,13 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                                     }
                                 }
                             }
-                            div { class: "mt-16 pt-8 border-t border-line",
-                                h4 { class: "font-mono text-sm uppercase tracking-widest text-primary/40 mb-4", "{s.journal.core_stack}" }
-                                div { class: "flex flex-wrap gap-2",
-                                    for s in stack.iter() {
-                                        span { class: "px-2 py-1 border border-line text-sm font-medium text-primary/70", key: "{s}", "{s}" }
+                            if !stack.is_empty() {
+                                div { class: "mt-16 pt-8 border-t border-line",
+                                    h4 { class: "font-mono text-sm uppercase tracking-widest text-primary/40 mb-4", "{s.journal.core_stack}" }
+                                    div { class: "flex flex-wrap gap-2",
+                                        for item in stack.iter() {
+                                            span { class: "px-2 py-1 border border-line text-sm font-medium text-primary/70", key: "{item}", "{item}" }
+                                        }
                                     }
                                 }
                             }
@@ -277,7 +330,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                                     }
                                     div { class: "text-right",
                                         span { class: "block text-sm font-bold uppercase tracking-widest text-primary/40", "{s.journal.peak_activity}" }
-                                        span { class: "font-mono text-xl font-bold text-primary", "{chronicle.peak_activity_day.date}" }
+                                        span { class: "font-mono text-xl font-bold text-primary", "{peak_day}" }
                                     }
                                 }
                             }
@@ -299,10 +352,14 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                             div { class: "grid grid-cols-1 md:grid-cols-2 gap-8 mt-12",
                                 div { class: "p-6 bg-white border border-line", "data-reveal": "true",
                                     h4 { class: "font-serif italic text-2xl mb-2 text-primary", "{s.journal.monthly_focus}" }
-                                    if let Some(html) = &focus_html {
-                                        p { class: "text-sm leading-relaxed text-primary/70", dangerous_inner_html: "{html}" }
-                                    } else {
-                                        p { class: "text-sm leading-relaxed text-primary/70", "{s.journal.focus_text(&focus_text)}" }
+                                    p { class: "text-sm leading-relaxed text-primary/70",
+                                        for (i, seg) in focus_segments.iter().enumerate() {
+                                            if seg.highlight {
+                                                span { key: "{i}", class: "text-accent font-medium", "{seg.text}" }
+                                            } else {
+                                                span { key: "{i}", "{seg.text}" }
+                                            }
+                                        }
                                     }
                                 }
                                 div {
@@ -313,7 +370,7 @@ pub fn ChronicleSection(chronicle: Chronicle) -> Element {
                                         span { class: "material-symbols-outlined text-accent", "bolt" }
                                     }
                                     div {
-                                        div { class: "text-4xl font-serif font-bold italic text-primary", "{chronicle.most_productive_day}" }
+                                        div { class: "text-4xl font-serif font-bold italic text-primary", "{weekday}" }
                                         div { class: "text-sm uppercase tracking-widest text-primary/50 mt-1", "{s.journal.based_on_commits}" }
                                     }
                                 }

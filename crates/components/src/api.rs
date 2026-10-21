@@ -364,6 +364,41 @@ pub async fn post_message(new: &NewMessage) -> Result<ChatMessage, ApiError> {
     Ok(sent)
 }
 
+/// Second, independent check of a journal snapshot (the server validates too):
+/// the shared validator rejects markup-looking names, odd dates, colors that
+/// are not `#rrggbb` and out-of-range numbers, so nothing odd can reach the
+/// page (the chart is assembled from these values).
+fn sanitize_journal(
+    snapshot: api_types::journal::Snapshot,
+) -> Result<api_types::journal::Snapshot, ApiError> {
+    match snapshot.data.validate() {
+        Ok(()) if journal_time_ok(&snapshot.fetched_at) => Ok(snapshot),
+        _ => Err(ApiError::Decode("invalid journal data".to_owned())),
+    }
+}
+
+/// `YYYY-MM-DDTHH:MM:SSZ`, digits only.
+fn journal_time_ok(s: &str) -> bool {
+    let b = s.as_bytes();
+    b.len() == 20
+        && b[10] == b'T'
+        && b[19] == b'Z'
+        && api_types::journal::is_iso_date(&s[..10])
+        && b[11..19].iter().enumerate().all(|(i, c)| {
+            if matches!(i, 2 | 5) {
+                *c == b':'
+            } else {
+                c.is_ascii_digit()
+            }
+        })
+}
+
+/// `GET /api/v1/journal`: the latest GitHub journal snapshot (`503` until the
+/// first refresh has run).
+pub async fn journal() -> Result<api_types::journal::Snapshot, ApiError> {
+    sanitize_journal(get(api_types::paths::JOURNAL).await?)
+}
+
 /// A `2xx` with no body to read (`204`), or the documented error.
 fn parse_empty(status: u16, body: &str) -> Result<(), ApiError> {
     if (200..300).contains(&status) {
@@ -386,6 +421,72 @@ pub async fn report_message(id: u32) -> Result<(), ApiError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn journal_snapshot() -> api_types::journal::Snapshot {
+        use api_types::journal::*;
+        Snapshot {
+            fetched_at: "2026-10-20T12:00:00Z".into(),
+            source: Source::Github,
+            data: Data {
+                hero: Hero {
+                    total_repos: 1,
+                    total_stars: 2,
+                    total_followers: 3,
+                },
+                pinned: vec![],
+                chronicle: Chronicle {
+                    total_contribution_volume: 10,
+                    growth_percent: 1.5,
+                    current_streak: 1,
+                    top_activities: vec![],
+                    monthly_focus: None,
+                    most_productive_weekday: 2,
+                    languages: vec![],
+                    stack: vec!["Rust".into()],
+                    timeline: vec![],
+                },
+            },
+        }
+    }
+
+    #[test]
+    fn a_valid_journal_snapshot_passes_and_a_tampered_one_is_a_decode_error() {
+        assert!(sanitize_journal(journal_snapshot()).is_ok());
+
+        let mut bad = journal_snapshot();
+        bad.data
+            .chronicle
+            .stack
+            .push("<img onerror=1>\u{202E}".into());
+        assert!(matches!(sanitize_journal(bad), Err(ApiError::Decode(_))));
+
+        let mut bad = journal_snapshot();
+        bad.data.chronicle.most_productive_weekday = 9;
+        assert!(matches!(sanitize_journal(bad), Err(ApiError::Decode(_))));
+
+        for at in [
+            "",
+            "yesterday",
+            "2026-10-20 12:00:00Z",
+            "2026-10-20T12:00:00",
+            "2026-10-20T1x:00:00Z",
+        ] {
+            let mut bad = journal_snapshot();
+            bad.fetched_at = at.into();
+            assert!(
+                matches!(sanitize_journal(bad), Err(ApiError::Decode(_))),
+                "{at:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_journal_endpoint_is_under_the_api_prefix() {
+        assert_eq!(
+            join_url("https://api.example.dev", api_types::paths::JOURNAL).unwrap(),
+            "https://api.example.dev/api/v1/journal"
+        );
+    }
 
     fn chat_message(id: u32) -> ChatMessage {
         ChatMessage {

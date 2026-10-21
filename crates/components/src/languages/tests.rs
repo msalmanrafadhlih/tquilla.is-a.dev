@@ -8,7 +8,8 @@ use super::*;
 /// berarti menambahkannya juga di sini.
 const KNOWN_PLACEHOLDERS: &[&str] = &[
     "n", "number", "build", "kernel", "date", "seconds", "name", "item", "dir", "cmd", "slogan",
-    "user", "mb", "status", "error", "growth", "count", "focus", "year", "c", "lo", "hi",
+    "user", "mb", "status", "error", "growth", "count", "year", "c", "lo", "hi", "ago", "month",
+    "activity", "language", "repo", "ideas",
 ];
 
 fn placeholders(text: &str) -> Result<Vec<&str>, String> {
@@ -134,7 +135,10 @@ fn template_methods_leave_no_placeholder() {
         out.push(s.journal.load_failed("boom"));
         out.push(s.journal.growth_vs_last_year("+3%"));
         out.push(s.journal.streak_days(9));
-        out.push(s.journal.focus_text("Rust"));
+        out.push(s.journal.updated("3 hours ago"));
+        for lang in [None, Some("Rust"), Some("C++"), Some("Brainfuck")] {
+            out.push(s.journal.activity_for(lang).to_string());
+        }
         out.push(s.journal.chart_commits(12));
         out.push(s.journal.copyright(2026));
         out.push(s.calc_err.unexpected_char('?'));

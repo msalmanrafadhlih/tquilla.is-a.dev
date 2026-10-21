@@ -538,8 +538,11 @@ strings! {
         loading: "Loading…",
         /// `{error}`
         load_failed: "Failed to load data: {error}",
-        offline_snapshot: "Offline snapshot: live GitHub stats are unavailable right now, so the numbers below are sample data.",
-        stats_not_configured: "Live GitHub stats are not set up in this build (the stats server address is missing or invalid), so the numbers below are sample data.",
+        sample_data: "Sample data: this snapshot comes from a local seed file, not from GitHub, so the numbers below are made up.",
+        /// `{ago}` (mis. "3 hours ago")
+        updated: "Updated {ago}",
+        no_description: "No description yet.",
+        unknown_language: "N/A",
         profile_alt: "Profile",
         /// `{n}` (nomor hari dalam setahun)
         build_number: "NO. {n}",
@@ -566,9 +569,29 @@ strings! {
         /// `{count}`
         streak_days: "{count} Days",
         peak_activity: "Peak Activity",
+        /// Ditampilkan bila belum ada hari dengan kontribusi.
+        no_peak: "—",
         monthly_focus: "Monthly Focus",
-        /// `{focus}`
-        focus_text: "Current heavy activity detected in {focus}.",
+        /// `{month}` `{activity}` `{language}` `{repo}`; bahasa dan repo ditonjolkan
+        focus_sentence: "{month} saw a significant shift towards {activity}, with heavy activity in {language} configurations for the {repo} setup.",
+        /// `{ideas}` (ditonjolkan)
+        focus_empty: "Structuring {ideas} into reality.",
+        focus_ideas: "ideas",
+        focus_language_fallback: "Code",
+        activity_rust: "systems programming",
+        activity_go: "backend services",
+        activity_typescript: "application development",
+        activity_javascript: "interactive interfaces",
+        activity_python: "data processing",
+        activity_lua: "configuration & scripting",
+        activity_nix: "reproducible infrastructure",
+        activity_html: "structure & layout",
+        activity_css: "visual styling",
+        activity_cpp: "performance engineering",
+        activity_c: "low-level system logic",
+        activity_shell: "automation scripts",
+        activity_other: "coding activity",
+        activity_none: "general development",
         most_productive: "Most Productive",
         based_on_commits: "Based on commit history",
         /// `{count}`; di dalam grafik SVG
@@ -944,8 +967,29 @@ impl Journal {
         fill(self.streak_days, &[("count", &count)])
     }
 
-    pub fn focus_text(&self, focus: &str) -> String {
-        fill(self.focus_text, &[("focus", &focus)])
+    pub fn updated(&self, ago: &str) -> String {
+        fill(self.updated, &[("ago", &ago)])
+    }
+
+    /// Jenis aktivitas untuk bahasa utama sebuah repositori (kosong = tak
+    /// terdeteksi). Nama bahasa dicocokkan persis seperti nama GitHub.
+    pub fn activity_for(&self, language: Option<&str>) -> &'static str {
+        match language {
+            None => self.activity_none,
+            Some("Rust") => self.activity_rust,
+            Some("Go") => self.activity_go,
+            Some("TypeScript") => self.activity_typescript,
+            Some("JavaScript") => self.activity_javascript,
+            Some("Python") => self.activity_python,
+            Some("Lua") => self.activity_lua,
+            Some("Nix") => self.activity_nix,
+            Some("HTML") => self.activity_html,
+            Some("CSS") => self.activity_css,
+            Some("C++") => self.activity_cpp,
+            Some("C") => self.activity_c,
+            Some("Shell") => self.activity_shell,
+            Some(_) => self.activity_other,
+        }
     }
 
     pub fn chart_commits(&self, count: u32) -> String {
