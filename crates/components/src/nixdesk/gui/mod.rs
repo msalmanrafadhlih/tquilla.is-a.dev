@@ -1,5 +1,6 @@
 mod about;
 mod ai;
+mod ai_history;
 mod audio;
 mod browser;
 mod calculator;

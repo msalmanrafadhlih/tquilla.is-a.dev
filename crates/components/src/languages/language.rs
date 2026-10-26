@@ -509,9 +509,26 @@ strings! {
         empty_prompt: "Ask me anything — bring your own Gemini API key below.",
         code_block: "Code block",
         form_label: "Ask the AI assistant",
-        add_attachments_aria: "Add files, and more",
-        add_attachments_title: "Add Attachments",
+        history_toggle_aria: "Open chat history",
+        history_toggle_title: "Chat history",
+        history_close_aria: "Close chat history",
+        history_title: "Chats",
+        history_panel_label: "Chat history",
+        new_chat: "New chat",
+        history_empty: "No saved chats yet. Your conversations will appear here.",
+        history_note: "Chats are saved only in this browser, never on a server. Your API key is never saved.",
+        history_unavailable: "This browser blocked local storage, so chats can't be saved or listed.",
+        untitled_chat: "Untitled chat",
+        download_chat: "Download",
+        /// `{title}`
+        download_chat_aria: "Download chat \"{title}\" as JSON",
+        delete_chat: "Delete",
+        delete_chat_confirm: "Sure?",
+        /// `{title}`
+        delete_chat_aria: "Delete chat \"{title}\"",
+        download_all: "Download all (JSON)",
         question_prompt: "What would you like to know?",
+        question_hint: "Press Enter to send, Shift+Enter for a new line.",
         send_question: "Send question",
         api_key_label: "API key:",
         show_key: "Show",
@@ -947,6 +964,14 @@ impl Guestbook {
 impl Ai {
     pub fn http_failed(&self, status: u16) -> String {
         fill(self.http_failed, &[("status", &status)])
+    }
+
+    pub fn download_chat_aria(&self, title: &str) -> String {
+        fill(self.download_chat_aria, &[("title", &title)])
+    }
+
+    pub fn delete_chat_aria(&self, title: &str) -> String {
+        fill(self.delete_chat_aria, &[("title", &title)])
     }
 }
 

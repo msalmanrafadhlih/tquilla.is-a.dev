@@ -1,15 +1,47 @@
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::ai_history::{
+    self, export_filename, export_json, fresh_id, ChatTurn, Conversation, Role, Summary,
+};
 use crate::languages::{use_strings, Strings};
+use crate::nixdesk::js_util::eval_js;
+use crate::platform::Date;
 
-const GEMINI_35_FLASH: &str = "gemini-3.5-flash";
-const GEMINI_37_FLASH: &str = "gemini-3.7-flash";
+// Penerus resmi `gemini-3.5-flash` dan `gemini-3.7-flash` (Google mengalihkan
+// nama lama ke dua ini). Yang pertama jadi bawaan, seperti urutan sebelumnya.
+const GEMINI_36_FLASH: &str = "gemini-3.6-flash";
+const GEMINI_38_FLASH: &str = "gemini-3.8-flash";
 
 const MODEL_OPTIONS: [(&str, &str); 2] = [
-    (GEMINI_35_FLASH, "3.5 Flash"),
-    (GEMINI_37_FLASH, "3.7 Flash"),
+    (GEMINI_36_FLASH, "3.6 Flash"),
+    (GEMINI_38_FLASH, "3.8 Flash"),
 ];
+
+/// Textarea pertanyaan: mulai 1 baris, tumbuh sampai 5 baris (`js/autosize.js`).
+const QUESTION_ID: &str = "assistant-question";
+const QUESTION_MAX_ROWS: u32 = 5;
+const AUTOSIZE_JS: &str = include_str!("../../../js/autosize.js");
+
+/// Pembungkus jendela: tempat panel riwayat menempel (di dalam area jendela,
+/// bukan viewport; `overflow-hidden` memotong panel di tepi jendela).
+const OUTER_CLASS: &str = "relative w-full h-full overflow-hidden";
+const SCRIM_CLASS: &str = "absolute inset-0 z-10 bg-black/40";
+const PANEL_CLASS: &str = "absolute inset-y-0 left-0 z-20 flex w-[min(18rem,85%)] flex-col gap-2 p-2.5 border-r border-solid border-[var(--fg-secondary)] bg-[var(--bg-secondary)]";
+const PANEL_HEADER_CLASS: &str = "flex items-center justify-between gap-2";
+const PANEL_TITLE_CLASS: &str =
+    "m-0 text-xs font-normal text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]";
+const NEW_CHAT_CLASS: &str = "flex items-center gap-2 px-2 py-1.5 text-xs text-[var(--fg-main)] bg-[var(--bg-secondary)] border border-solid border-[var(--fg-secondary)] cursor-pointer hover:border-[var(--fg-main)] disabled:opacity-40 disabled:cursor-default";
+const NOTE_CLASS: &str = "m-0 text-[10px] text-[var(--fg-secondary)] leading-snug";
+const LIST_CLASS: &str = "m-0 p-0 list-none flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto";
+const ROW_CLASS: &str = "flex flex-col gap-0.5 p-1.5 border border-solid border-transparent";
+const ROW_ACTIVE_CLASS: &str =
+    "flex flex-col gap-0.5 p-1.5 border border-solid border-[var(--fg-secondary)]";
+const ROW_OPEN_CLASS: &str = "flex flex-col items-start gap-0.5 min-w-0 p-0 text-left bg-transparent border-0 cursor-pointer disabled:cursor-default";
+const ROW_TITLE_CLASS: &str = "w-full truncate text-xs text-[var(--fg-main)]";
+const ROW_DATE_CLASS: &str = "text-[10px] text-[var(--fg-secondary)]";
+const ROW_ACTIONS_CLASS: &str = "flex items-center gap-3";
+const TEXT_BUTTON_CLASS: &str = "p-0 text-[10px] text-[var(--fg-secondary)] hover:text-[var(--fg-main)] bg-transparent border-0 cursor-pointer disabled:opacity-40 disabled:cursor-default";
 
 const ROOT_CLASS: &str =
     "flex flex-col items-center justify-center gap-[25px] relative w-full h-full overflow-y-scroll";
@@ -26,8 +58,10 @@ const CODE_NUMBERS_CLASS: &str = "relative w-fit mt-[-1.00px] whitespace-pre fon
 const CODE_PRE_CLASS: &str = "inline-flex flex-col items-start pt-[var(--size-space-400)] pr-[var(--size-space-200)] pb-[var(--size-space-400)] pl-[var(--size-space-200)] relative flex-1 min-w-0 overflow-auto bg-color-background-default-secondary border-r [border-right-style:solid] border-color-border-default-default whitespace-pre font-body-code font-[number:var(--body-code-font-weight)] text-[length:var(--body-code-font-size)] tracking-[var(--body-code-letter-spacing)] leading-[var(--body-code-line-height)] [font-style:var(--body-code-font-style)]";
 const FOOTER_CLASS: &str = "flex flex-col items-start relative w-full max-w-[48rem] flex-[0_0_auto] border border-solid border-[var(--fg-secondary)]";
 const FORM_CLASS: &str =
-    "flex items-center gap-5 p-2.5 relative self-stretch w-full h-max flex-[0_0_auto]";
-const QUESTION_INPUT_CLASS: &str = "relative flex-1 min-w-0 h-[22px] bg-[var(--bg-secondary)] border-0 outline-none [font:'JetBrains_Mono-Light',Helvetica] font-light text-[var(--fg-main)] text-sm tracking-[0] leading-[19.6px]";
+    "flex items-end gap-5 p-2.5 relative self-stretch w-full h-max flex-[0_0_auto]";
+// Tinggi diatur `js/autosize.js` (1 sampai 5 baris); padding 3px + 19.6px baris
+// = 25.6px, setara tombol ikon di sampingnya.
+const QUESTION_INPUT_CLASS: &str = "relative flex-1 min-w-0 min-h-[25px] py-[3px] resize-none overflow-y-hidden bg-[var(--bg-secondary)] border-0 outline-none [font:'JetBrains_Mono-Light',Helvetica] font-light text-[var(--fg-main)] text-sm tracking-[0] leading-[19.6px]";
 const ICON_BUTTON_CLASS: &str = "flex relative h-max opacity-70 hover:opacity-100 aspect-[1] bg-[var(--bg-secondary)] border-0 items-center justify-center cursor-pointer";
 const KEY_ROW_CLASS: &str =
     "w-full h-12 flex items-center justify-center p-2.5 relative max-w-full";
@@ -44,21 +78,11 @@ const MODEL_MENU_CLASS: &str = "absolute bottom-full right-0 mb-2 flex flex-col 
 
 const ICON_ASSISTANT: Asset = asset!("/assets/logo-Ai-Assistent.svg");
 const ICON_ADD: Asset = asset!("/assets/icon-add.svg");
+const ICON_CLOSE: Asset = asset!("/assets/icon-close.svg");
+const ICON_SIDEBAR: Asset = asset!("/assets/icon-sidebar.svg");
 const ICON_SEND: Asset = asset!("assets/icon-send.svg");
 const ICON_INFO: Asset = asset!("assets/icon-info.svg");
 const ICON_TOGGLE: Asset = asset!("assets/icon-toggle-popup.svg");
-
-#[derive(Clone, Copy, PartialEq)]
-enum Role {
-    User,
-    Assistant,
-}
-
-#[derive(Clone, PartialEq)]
-struct ChatTurn {
-    role: Role,
-    text: String,
-}
 
 /// Kenapa permintaan ke Gemini gagal. Diterjemahkan saat ditampilkan
 /// (`AiError::message`); teks dari Google atau dari jaringan ditampilkan apa adanya.
@@ -172,23 +196,78 @@ async fn call_gemini(
     Ok(text)
 }
 
+/// Chat yang sedang tampil. Id dibuat saat jendela dibuka atau "New chat";
+/// chat baru disimpan ke riwayat baru setelah pesan pertama terkirim.
+#[derive(Clone, PartialEq)]
+struct ActiveChat {
+    id: String,
+    created_at: i64,
+}
+
+impl ActiveChat {
+    fn fresh() -> Self {
+        Self {
+            id: fresh_id(),
+            created_at: now_ms(),
+        }
+    }
+}
+
+fn now_ms() -> i64 {
+    Date::now() as i64
+}
+
+/// Semua keadaan jendela chat. Semua isinya `Signal` (Copy), jadi struct ini
+/// bisa diteruskan ke fungsi dan ke dalam `spawn` tanpa clone.
+#[derive(Clone, Copy)]
+struct ChatState {
+    history: Signal<Vec<ChatTurn>>,
+    draft: Signal<String>,
+    sending: Signal<bool>,
+    error: Signal<Option<AiError>>,
+    active: Signal<ActiveChat>,
+    chats: Signal<Vec<Summary>>,
+    /// `false` bila browser menolak IndexedDB (mode privat tertentu, dll.).
+    /// Chat tetap jalan, hanya tidak tersimpan.
+    store_ok: Signal<bool>,
+}
+
+/// Menyimpan satu chat lalu memperbarui daftar di panel. Kegagalan hanya
+/// menandai penyimpanan tidak tersedia; percakapannya sendiri tidak terganggu.
+async fn persist(chat: Conversation, mut chats: Signal<Vec<Summary>>, mut store_ok: Signal<bool>) {
+    let summary = chat.summary();
+    match ai_history::save(&chat).await {
+        Ok(()) => {
+            store_ok.set(true);
+            let mut list = chats();
+            let dropped = ai_history::upsert(&mut list, summary);
+            chats.set(list);
+            if !dropped.is_empty() && ai_history::delete(&dropped).await.is_err() {
+                store_ok.set(false);
+            }
+        }
+        Err(_) => store_ok.set(false),
+    }
+}
+
 /// A plain function (not a shared closure) so it can be called from both
-/// the form submit handler and any other entry point without any
-/// closure-capture sharing concerns.
-fn send_prompt(
-    mut history: Signal<Vec<ChatTurn>>,
-    mut draft: Signal<String>,
-    mut sending: Signal<bool>,
-    mut error: Signal<Option<AiError>>,
-    api_key: String,
-    model: String,
-    s: &'static Strings,
-) {
+/// the form submit handler and the Enter key without any closure-capture
+/// sharing concerns.
+fn send_prompt(state: ChatState, api_key: String, model: String, s: &'static Strings) {
+    let ChatState {
+        mut history,
+        mut draft,
+        mut sending,
+        mut error,
+        active,
+        chats,
+        store_ok,
+    } = state;
     if sending() {
         return;
     }
-    let text = draft();
-    if text.trim().is_empty() {
+    let text = draft().trim().to_string();
+    if text.is_empty() {
         return;
     }
     if api_key.trim().is_empty() {
@@ -199,21 +278,30 @@ fn send_prompt(
     let mut list = history();
     list.push(ChatTurn {
         role: Role::User,
-        text: text.clone(),
+        text,
     });
     history.set(list.clone());
     draft.set(String::new());
     sending.set(true);
 
+    let chat = active();
     spawn(async move {
-        match call_gemini(api_key, model, list, s).await {
+        // Pesan pengguna disimpan dulu: chat muncul di riwayat segera, dan
+        // tidak hilang kalau permintaan gagal atau halaman ditutup.
+        let saved =
+            Conversation::assemble(&chat.id, chat.created_at, &model, list.clone(), now_ms());
+        persist(saved, chats, store_ok).await;
+
+        match call_gemini(api_key, model.clone(), list.clone(), s).await {
             Ok(reply) => {
-                let mut updated = history();
-                updated.push(ChatTurn {
+                list.push(ChatTurn {
                     role: Role::Assistant,
                     text: reply,
                 });
-                history.set(updated);
+                history.set(list.clone());
+                let saved =
+                    Conversation::assemble(&chat.id, chat.created_at, &model, list, now_ms());
+                persist(saved, chats, store_ok).await;
             }
             Err(e) => error.set(Some(e)),
         }
@@ -221,9 +309,116 @@ fn send_prompt(
     });
 }
 
-fn clear_chat(mut history: Signal<Vec<ChatTurn>>, mut error: Signal<Option<AiError>>) {
-    history.set(vec![]);
-    error.set(None);
+/// Mulai percakapan kosong. Yang lama sudah tersimpan, jadi tidak ada yang hilang.
+fn start_new_chat(mut state: ChatState) {
+    state.history.set(vec![]);
+    state.error.set(None);
+    state.active.set(ActiveChat::fresh());
+}
+
+/// Membuka chat dari riwayat. Selama permintaan berjalan, jawabannya akan masuk
+/// ke chat yang sedang tampil, jadi berpindah chat ditolak sampai selesai.
+fn open_chat(
+    state: ChatState,
+    id: String,
+    mut model: Signal<&'static str>,
+    mut show_history: Signal<bool>,
+) {
+    if (state.sending)() {
+        return;
+    }
+    spawn(async move {
+        let mut state = state;
+        match ai_history::load(&id).await {
+            Ok(Some(chat)) => {
+                if let Some((known, _)) = MODEL_OPTIONS.iter().find(|(m, _)| *m == chat.model) {
+                    model.set(known);
+                }
+                state.history.set(chat.turns);
+                state.active.set(ActiveChat {
+                    id: chat.id,
+                    created_at: chat.created_at,
+                });
+                state.error.set(None);
+                state.store_ok.set(true);
+            }
+            // Sudah dihapus (mis. dari tab lain): buang dari daftar.
+            Ok(None) => state.chats.with_mut(|list| list.retain(|c| c.id != id)),
+            Err(_) => state.store_ok.set(false),
+        }
+        show_history.set(false);
+    });
+}
+
+fn remove_chat(state: ChatState, id: String) {
+    spawn(async move {
+        let mut state = state;
+        match ai_history::delete(std::slice::from_ref(&id)).await {
+            Ok(()) => {
+                state.chats.with_mut(|list| list.retain(|c| c.id != id));
+                if (state.active)().id == id {
+                    start_new_chat(state);
+                }
+            }
+            Err(_) => state.store_ok.set(false),
+        }
+    });
+}
+
+/// Muat ulang daftar dari IndexedDB (saat jendela dibuka dan saat panel dibuka,
+/// jadi perubahan dari tab lain ikut terlihat).
+fn reload_list(state: ChatState) {
+    spawn(async move {
+        let mut state = state;
+        match ai_history::list().await {
+            Ok(list) => {
+                state.chats.set(list);
+                state.store_ok.set(true);
+            }
+            Err(_) => state.store_ok.set(false),
+        }
+    });
+}
+
+/// Unduh satu chat (`Some(id)`) atau semuanya (`None`) sebagai berkas JSON.
+fn download_chats(state: ChatState, id: Option<String>) {
+    spawn(async move {
+        let mut state = state;
+        let now = now_ms();
+        match id {
+            Some(id) => match ai_history::load(&id).await {
+                Ok(Some(chat)) => {
+                    let name = export_filename(Some(&chat), now);
+                    ai_history::download_json(&name, &export_json(&[chat], now));
+                }
+                Ok(None) => {}
+                Err(_) => state.store_ok.set(false),
+            },
+            None => match ai_history::load_all().await {
+                Ok(all) => {
+                    let name = export_filename(None, now);
+                    ai_history::download_json(&name, &export_json(&all, now));
+                }
+                Err(_) => state.store_ok.set(false),
+            },
+        }
+    });
+}
+
+/// `YYYY-MM-DD` menurut zona waktu pengguna.
+fn day_label(ms: i64) -> String {
+    let date = Date::from_iso(&ai_history::iso_from_ms(ms));
+    format!(
+        "{}-{:02}-{:02}",
+        date.get_full_year(),
+        date.get_month() + 1,
+        date.get_date()
+    )
+}
+
+/// Skrip yang memasang dan menjalankan penyesuaian tinggi textarea.
+fn autosize_script() -> String {
+    format!("const ID = \"{QUESTION_ID}\"; const MAX_ROWS = {QUESTION_MAX_ROWS};\n{AUTOSIZE_JS}")
 }
 
 /// Splits a reply on ``` fences so code blocks render in a monospace box
@@ -279,16 +474,45 @@ fn model_option_class(active: bool) -> &'static str {
 #[component]
 pub fn AiAssistantWindowContent() -> Element {
     let s = use_strings();
-    let history: Signal<Vec<ChatTurn>> = use_signal(Vec::new);
-    let mut draft = use_signal(String::new);
-    let sending = use_signal(|| false);
-    let error: Signal<Option<AiError>> = use_signal(|| None);
+    let state = ChatState {
+        history: use_signal(Vec::new),
+        draft: use_signal(String::new),
+        sending: use_signal(|| false),
+        error: use_signal(|| None),
+        active: use_signal(ActiveChat::fresh),
+        chats: use_signal(Vec::new),
+        store_ok: use_signal(|| true),
+    };
+    let mut draft = state.draft;
     let mut api_key = use_signal(String::new);
     let mut show_key = use_signal(|| false);
     let mut show_models = use_signal(|| false);
-    let mut model = use_signal(|| GEMINI_35_FLASH);
+    let mut model = use_signal(|| GEMINI_36_FLASH);
+    let mut show_history = use_signal(|| false);
+    // Id chat yang sedang diminta konfirmasi hapusnya (klik kedua menghapus).
+    let mut confirm_delete: Signal<Option<String>> = use_signal(|| None);
 
-    let turns = history();
+    // Riwayat dimuat sekali saat jendela dibuka.
+    use_future(move || async move {
+        reload_list(state);
+    });
+
+    // Textarea: pasang penyesuaian tinggi saat jendela dibuka, dan hitung ulang
+    // setiap isinya dikosongkan dari kode (mengubah `value` tidak memicu
+    // `input`). Membaca `draft` membuat efek ini berjalan tiap isinya berubah,
+    // tetapi skripnya hanya dikirim saat kosong; selama mengetik, pendengar
+    // `input` di browser yang bekerja.
+    use_effect(move || {
+        if draft().is_empty() {
+            eval_js(autosize_script());
+        }
+    });
+
+    let turns = (state.history)();
+    let sending = (state.sending)();
+    let chats = (state.chats)();
+    let store_ok = (state.store_ok)();
+    let active_id = (state.active)().id;
     let key_input_type = if show_key() { "text" } else { "password" };
     let eye_label = if show_key() {
         s.ai.hide_key
@@ -296,10 +520,20 @@ pub fn AiAssistantWindowContent() -> Element {
         s.ai.show_key
     };
     let models_expanded = if show_models() { "true" } else { "false" };
-    let has_error = error().is_some();
-    let error_message = error().map(|e| e.message(s)).unwrap_or_default();
+    let history_open = show_history();
+    let history_expanded = if history_open { "true" } else { "false" };
+    let history_toggle_aria = if history_open {
+        s.ai.history_close_aria
+    } else {
+        s.ai.history_toggle_aria
+    };
+    let error = (state.error)();
+    let has_error = error.is_some();
+    let error_message = error.map(|e| e.message(s)).unwrap_or_default();
+    let confirming = confirm_delete();
 
     rsx! {
+        div { class: OUTER_CLASS,
         div { class: ROOT_CLASS,
 
             // conversation — flex-col-reverse, so the DOM runs bottom to top:
@@ -308,7 +542,7 @@ pub fn AiAssistantWindowContent() -> Element {
                 "aria-label": s.ai.conversation,
                 class: CONVERSATION_CLASS,
 
-                if sending() {
+                if sending {
                     p { class: "text-[var(--fg-secondary)] text-xs", "{s.ai.thinking}" }
                 }
                 if has_error {
@@ -397,33 +631,55 @@ pub fn AiAssistantWindowContent() -> Element {
                     class: FORM_CLASS,
                     onsubmit: move |evt: FormEvent| {
                         evt.prevent_default();
-                        send_prompt(history, draft, sending, error, api_key(), model().to_string(), s);
+                        send_prompt(state, api_key(), model().to_string(), s);
                     },
 
+                    // Membuka dan menutup panel riwayat chat.
                     button {
                         r#type: "button",
-                        "aria-label": s.ai.add_attachments_aria,
-                        title: s.ai.add_attachments_title,
+                        "aria-label": history_toggle_aria,
+                        "aria-expanded": "{history_expanded}",
+                        "aria-controls": "ai-history-panel",
+                        title: s.ai.history_toggle_title,
                         class: ICON_BUTTON_CLASS,
-                        // salah ini,seharusnya add file gitu
-                        onclick: move |_| clear_chat(history, error),
-                        img { src: ICON_ADD, alt: "", "aria-hidden": "true" }
+                        onclick: move |_| {
+                            let open = !show_history();
+                            show_history.set(open);
+                            confirm_delete.set(None);
+                            if open {
+                                reload_list(state);
+                            }
+                        },
+                        img { src: ICON_SIDEBAR, alt: "", "aria-hidden": "true" }
                     }
 
                     label {
-                        r#for: "assistant-question",
+                        r#for: QUESTION_ID,
                         class: "sr-only",
                         "{s.ai.question_prompt}"
                     }
-                    input {
-                        id: "assistant-question",
+                    // Enter mengirim, Shift+Enter baris baru. Tinggi: 1 sampai 5 baris.
+                    textarea {
+                        id: QUESTION_ID,
                         name: "question",
-                        r#type: "text",
+                        rows: 1,
                         autocomplete: "off",
+                        "aria-describedby": "assistant-question-hint",
                         placeholder: s.ai.question_prompt,
                         class: QUESTION_INPUT_CLASS,
                         value: "{draft}",
                         oninput: move |evt: FormEvent| draft.set(evt.value()),
+                        onkeydown: move |evt: KeyboardEvent| {
+                            if evt.key() == Key::Enter && !evt.modifiers().shift() && !evt.is_composing() {
+                                evt.prevent_default();
+                                send_prompt(state, api_key(), model().to_string(), s);
+                            }
+                        },
+                    }
+                    p {
+                        id: "assistant-question-hint",
+                        class: "sr-only",
+                        "{s.ai.question_hint}"
                     }
 
                     button {
@@ -525,6 +781,138 @@ pub fn AiAssistantWindowContent() -> Element {
                     "{s.ai.api_key_help}"
                 }
             }
+        }
+
+        // Panel riwayat: menempel di dalam jendela (absolute di `OUTER_CLASS`),
+        // bukan di viewport. Klik di luar panel menutupnya.
+        if history_open {
+            div {
+                class: SCRIM_CLASS,
+                onclick: move |_| {
+                    show_history.set(false);
+                    confirm_delete.set(None);
+                },
+            }
+            aside {
+                id: "ai-history-panel",
+                "aria-label": s.ai.history_panel_label,
+                class: PANEL_CLASS,
+
+                div {
+                    class: PANEL_HEADER_CLASS,
+                    h2 { class: PANEL_TITLE_CLASS, "{s.ai.history_title}" }
+                    button {
+                        r#type: "button",
+                        "aria-label": s.ai.history_close_aria,
+                        class: ICON_BUTTON_CLASS,
+                        onclick: move |_| {
+                            show_history.set(false);
+                            confirm_delete.set(None);
+                        },
+                        img { src: ICON_CLOSE, alt: "", "aria-hidden": "true", class: "h-3 w-3" }
+                    }
+                }
+
+                button {
+                    r#type: "button",
+                    class: NEW_CHAT_CLASS,
+                    disabled: sending,
+                    onclick: move |_| {
+                        start_new_chat(state);
+                        show_history.set(false);
+                        confirm_delete.set(None);
+                    },
+                    img { src: ICON_ADD, alt: "", "aria-hidden": "true", class: "h-4 w-4" }
+                    span { "{s.ai.new_chat}" }
+                }
+
+                if !store_ok {
+                    p { class: NOTE_CLASS, role: "alert", "{s.ai.history_unavailable}" }
+                }
+
+                ul {
+                    class: LIST_CLASS,
+                    if chats.is_empty() && store_ok {
+                        li { class: NOTE_CLASS, "{s.ai.history_empty}" }
+                    }
+                    for chat in chats.iter() {
+                        {
+                            let is_active = chat.id == active_id;
+                            let title = if chat.title.is_empty() {
+                                s.ai.untitled_chat.to_string()
+                            } else {
+                                chat.title.clone()
+                            };
+                            let date = day_label(chat.updated_at);
+                            let asking = confirming.as_deref() == Some(chat.id.as_str());
+                            let open_id = chat.id.clone();
+                            let download_id = chat.id.clone();
+                            let delete_id = chat.id.clone();
+                            let download_aria = s.ai.download_chat_aria(&title);
+                            let delete_aria = s.ai.delete_chat_aria(&title);
+                            let delete_label = if asking {
+                                s.ai.delete_chat_confirm
+                            } else {
+                                s.ai.delete_chat
+                            };
+                            rsx! {
+                                li {
+                                    key: "{chat.id}",
+                                    class: if is_active { ROW_ACTIVE_CLASS } else { ROW_CLASS },
+                                    button {
+                                        r#type: "button",
+                                        class: ROW_OPEN_CLASS,
+                                        disabled: sending,
+                                        "aria-current": if is_active { "true" } else { "false" },
+                                        onclick: move |_| {
+                                            confirm_delete.set(None);
+                                            open_chat(state, open_id.clone(), model, show_history);
+                                        },
+                                        span { class: ROW_TITLE_CLASS, "{title}" }
+                                        span { class: ROW_DATE_CLASS, "{date}" }
+                                    }
+                                    div {
+                                        class: ROW_ACTIONS_CLASS,
+                                        button {
+                                            r#type: "button",
+                                            class: TEXT_BUTTON_CLASS,
+                                            "aria-label": download_aria,
+                                            onclick: move |_| download_chats(state, Some(download_id.clone())),
+                                            "{s.ai.download_chat}"
+                                        }
+                                        button {
+                                            r#type: "button",
+                                            class: TEXT_BUTTON_CLASS,
+                                            "aria-label": delete_aria,
+                                            // Chat yang sedang menunggu jawaban tidak boleh dihapus.
+                                            disabled: sending && is_active,
+                                            onclick: move |_| {
+                                                if confirm_delete().as_deref() == Some(delete_id.as_str()) {
+                                                    confirm_delete.set(None);
+                                                    remove_chat(state, delete_id.clone());
+                                                } else {
+                                                    confirm_delete.set(Some(delete_id.clone()));
+                                                }
+                                            },
+                                            "{delete_label}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                button {
+                    r#type: "button",
+                    class: NEW_CHAT_CLASS,
+                    disabled: chats.is_empty(),
+                    onclick: move |_| download_chats(state, None),
+                    "{s.ai.download_all}"
+                }
+                p { class: NOTE_CLASS, "{s.ai.history_note}" }
+            }
+        }
         }
     }
 }
