@@ -15,7 +15,8 @@ use crate::guestbook::{
 use crate::languages::use_strings;
 use crate::markdown_view::Markdown;
 use crate::nixdesk::js_util::eval_js;
-use crate::remote::{LoadFailed, Loading};
+use crate::remote::LoadFailed;
+use crate::skeleton::{SkeletonEntries, SkeletonGroup};
 use crate::time::relative_time;
 
 const AVATAR_1: Asset = asset!("/assets/profile_default_01.svg");
@@ -90,7 +91,9 @@ pub fn GuestbookWindowContent() -> Element {
     let state = resource.read_unchecked();
     match &*state {
         None => rsx! {
-            Loading { label: s.guestbook.loading }
+            SkeletonGroup { label: s.guestbook.loading, class: "p-3",
+                SkeletonEntries { rows: 4 }
+            }
         },
         Some(Err(e)) => rsx! {
             LoadFailed {

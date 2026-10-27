@@ -4,7 +4,8 @@ use super::audio::{load_and_play, pause_audio, resume_audio, set_audio_volume};
 use crate::api::{self, RadioStation};
 use crate::languages::{use_strings, Strings};
 use crate::nixdesk::js_util::{eval_js, js_string_escape};
-use crate::remote::{LoadFailed, Loading};
+use crate::remote::LoadFailed;
+use crate::skeleton::{SkeletonGroup, SkeletonRows};
 
 const AUDIO_ID: &str = "radio-audio";
 const PLAY_ICON: Asset = asset!("/assets/icon-play.svg");
@@ -43,7 +44,9 @@ pub fn RadioWindowContent() -> Element {
     let state = resource.read_unchecked();
     match &*state {
         None => rsx! {
-            Loading {}
+            SkeletonGroup { class: "p-3",
+                SkeletonRows { rows: 5 }
+            }
         },
         Some(Err(e)) => rsx! {
             LoadFailed { error: e.clone(), on_retry: move |_| resource.restart() }

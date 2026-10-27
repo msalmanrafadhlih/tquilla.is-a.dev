@@ -35,7 +35,10 @@
 //!   they cannot reach the page: the tree has nowhere to put them.
 //! - **Images** load only from `https://` (a plain `http://` image would be
 //!   blocked by the browser on an https page), with no `Referer`, lazily, and
-//!   with a size cap. Anything else is shown as its alt text.
+//!   with a size cap. Anything else is shown as its alt text. Hosts outside the
+//!   short list in [`images`] are not contacted until the reader clicks "Load
+//!   image from <host>" (the view enforces this; the parser only reports the
+//!   address).
 //! - **Link targets** other than `http(s)://` and `mailto:` lose the link and
 //!   keep the text (`javascript:`, `data:`, relative paths, ...).
 //! - Footnotes, math, definition lists, heading ids, and so on are off.
@@ -50,6 +53,7 @@ use pulldown_cmark::{
 };
 
 mod html;
+pub mod images;
 
 /// How many block quotes / lists may be nested. The input is capped at 2,000
 /// characters, but `>>>>>>...` could still nest a thousand levels deep and

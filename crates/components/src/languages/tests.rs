@@ -9,7 +9,7 @@ use super::*;
 const KNOWN_PLACEHOLDERS: &[&str] = &[
     "n", "number", "build", "kernel", "date", "seconds", "name", "item", "dir", "cmd", "slogan",
     "user", "mb", "status", "error", "growth", "count", "year", "c", "lo", "hi", "ago", "month",
-    "activity", "language", "repo", "ideas", "title",
+    "activity", "language", "repo", "ideas", "title", "host",
 ];
 
 fn placeholders(text: &str) -> Result<Vec<&str>, String> {

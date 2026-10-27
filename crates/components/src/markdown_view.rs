@@ -7,7 +7,13 @@
 use dioxus::prelude::*;
 
 use crate::languages::use_strings;
+use markdown::images::{image_host, is_icon_sized, is_trusted_image};
 use markdown::{parse, Alert, Align, Block, Inline, Item, Style};
+
+/// Hosts whose images the reader chose to load, for this visit only (memory,
+/// never saved): one click on "Load image from <host>" opens every image from
+/// that host, so a row of badges needs one click, not five.
+static LOADED_HOSTS: GlobalSignal<Vec<String>> = Signal::global(Vec::new);
 
 const LINK_CLASS: &str = "underline decoration-dotted decoration-[var(--fg-secondary)] underline-offset-4 break-words hover:decoration-solid hover:decoration-[var(--fg-main)]";
 // `flow-root`: a floated image (`<img align="left">`) must stay inside the block
@@ -344,8 +350,13 @@ fn picture_place(align: Align) -> &'static str {
     }
 }
 
-/// An image from an entry. Loaded lazily, without a `Referer`, and capped in
-/// size; if it fails to load, its alt text is shown instead.
+const ASK_CLASS: &str = "max-w-full p-1.5 text-left text-[10px] leading-snug text-[var(--fg-secondary)] bg-transparent border border-dashed border-[var(--fg-secondary)] cursor-pointer hover:text-[var(--fg-main)] hover:border-[var(--fg-main)]";
+
+/// An image from an entry. Images from hosts on the list in
+/// [`markdown::images`] load at once; every other one waits behind a button,
+/// so the reader's browser does not contact a stranger's server unasked. Loaded
+/// lazily, without a `Referer`, and capped in size; if it fails to load, its
+/// alt text is shown instead.
 #[component]
 fn Picture(
     src: String,
@@ -356,6 +367,53 @@ fn Picture(
 ) -> Element {
     let s = use_strings();
     let mut failed = use_signal(|| false);
+    // Only for an address whose host cannot be read: it cannot be remembered
+    // per host, so this one image is opened on its own.
+    let mut opened = use_signal(|| false);
+    let host = image_host(&src);
+    let allowed = is_trusted_image(&src)
+        || opened()
+        || host
+            .as_ref()
+            .is_some_and(|h| LOADED_HOSTS.read().contains(h));
+    if !allowed {
+        let label = image_label(s, &alt);
+        let shown_host = host
+            .clone()
+            .unwrap_or_else(|| s.guestbook.image_unknown_host.to_string());
+        let ask = s.guestbook.image_load(&shown_host);
+        let place = picture_place(align);
+        let on_click = move |_| match &host {
+            Some(h) => LOADED_HOSTS.write().push(h.clone()),
+            None => opened.set(true),
+        };
+        // Icons and badges: a small square, not a full button.
+        return if is_icon_sized(width, height) {
+            let side = width.or(height).unwrap_or(20).max(16);
+            rsx! {
+                button {
+                    r#type: "button",
+                    title: "{ask}",
+                    "aria-label": "{ask}",
+                    style: "width:{side}px;height:{side}px",
+                    class: "{place} {ASK_CLASS} p-0 text-center",
+                    onclick: on_click,
+                    "\u{25A3}"
+                }
+            }
+        } else {
+            rsx! {
+                button {
+                    r#type: "button",
+                    title: "{src}",
+                    class: "{place} {ASK_CLASS}",
+                    onclick: on_click,
+                    span { class: "block", "{label}" }
+                    span { class: "block underline decoration-dotted", "{ask}" }
+                }
+            }
+        };
+    }
     if failed() {
         let label = image_label(s, &alt);
         return rsx! {

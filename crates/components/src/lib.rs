@@ -18,6 +18,7 @@ mod nixdesk;
 pub mod platform;
 mod remote;
 mod shared;
+pub mod skeleton;
 mod time;
 
 pub use app::{App, Route};

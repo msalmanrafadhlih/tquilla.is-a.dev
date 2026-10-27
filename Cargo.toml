@@ -20,7 +20,7 @@ serde = { version = "1", features = ["derive"] }
 
 # Kontrak API bersama (repo backend, publik). Dikunci ke TAG, bukan branch, supaya
 # perubahan di backend tidak masuk diam-diam; naikkan tag-nya sengaja.
-api-types = { git = "https://github.com/msalmanrafadhlih/deisktify-worker.rs", tag = "v0.7.1" }
+api-types = { git = "https://github.com/msalmanrafadhlih/deisktify-worker.rs", tag = "v0.5.0" }
 
 # Parser Markdown untuk entri Guestbook, dipakai oleh crate `markdown`.
 # `default-features = false` membuang renderer HTML dan `getopts` (CLI): kita

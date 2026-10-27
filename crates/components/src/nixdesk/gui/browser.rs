@@ -3,7 +3,8 @@ use dioxus::prelude::*;
 
 use crate::api::{self, Bookmark};
 use crate::languages::use_strings;
-use crate::remote::{LoadFailed, Loading};
+use crate::remote::LoadFailed;
+use crate::skeleton::{SkeletonGroup, SkeletonRows};
 
 const ICON_LINK: Asset = asset!("/assets/icon-url.svg");
 
@@ -63,7 +64,9 @@ pub fn BrowserWindowContent() -> Element {
     let state = resource.read_unchecked();
     match &*state {
         None => rsx! {
-            Loading {}
+            SkeletonGroup { class: "p-3",
+                SkeletonRows { rows: 5 }
+            }
         },
         Some(Err(e)) => rsx! {
             LoadFailed { error: e.clone(), on_retry: move |_| resource.restart() }

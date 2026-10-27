@@ -4,7 +4,8 @@ use super::audio::set_audio_volume;
 use crate::api::{self, Embience, Preset};
 use crate::languages::use_strings;
 use crate::nixdesk::js_util::{eval_js, js_string_escape};
-use crate::remote::{LoadFailed, Loading};
+use crate::remote::LoadFailed;
+use crate::skeleton::{SkeletonGroup, SkeletonRows};
 
 // Path icon footer (sama seperti di embience.html).
 // Ganti ke `asset!("/assets/icon-xxx.svg")` kalau project kamu memakai asset pipeline Dioxus.
@@ -121,7 +122,9 @@ pub fn EmbienceWindowContent() -> Element {
             }
         }
         _ => rsx! {
-            Loading {}
+            SkeletonGroup { class: "p-3",
+                SkeletonRows { rows: 5 }
+            }
         },
     }
 }

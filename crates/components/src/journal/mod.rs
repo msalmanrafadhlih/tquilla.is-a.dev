@@ -8,6 +8,7 @@ use dioxus::prelude::*;
 
 use crate::languages::use_strings;
 use crate::shared::{PageMeta, PLAYFAIR_FONT_URL};
+use crate::skeleton::{Skeleton, SkeletonGroup, SkeletonText};
 use components::{ChronicleSection, EndOfStream, Footer, Hero, PinnedSection};
 
 /// Fonts that only this route uses (kept out of `app.rs` so `/` and
@@ -51,8 +52,13 @@ pub fn JournalPage() -> Element {
                 "{s.journal.load_failed(&err)}"
             }
         } else {
-            div { class: "min-h-screen flex items-center justify-center bg-paper text-primary font-mono text-sm",
-                "{s.journal.loading}"
+            div { class: "min-h-screen bg-paper text-primary",
+                SkeletonGroup { label: s.journal.loading, class: "mx-auto max-w-3xl p-8",
+                    Skeleton { class: "h-10 w-2/3" }
+                    SkeletonText { lines: 3 }
+                    Skeleton { class: "h-40 w-full" }
+                    SkeletonText { lines: 4 }
+                }
             }
         }
     }

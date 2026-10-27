@@ -488,6 +488,9 @@ strings! {
         details_label: "Details",
         /// `{name}`
         image_link: "image: {name}",
+        /// `{host}`
+        image_load: "Load image from {host}",
+        image_unknown_host: "an unknown host",
         alert_note: "Note",
         alert_tip: "Tip",
         alert_important: "Important",
@@ -958,6 +961,10 @@ impl Guestbook {
 
     pub fn image_link(&self, name: &str) -> String {
         fill(self.image_link, &[("name", &name)])
+    }
+
+    pub fn image_load(&self, host: &str) -> String {
+        fill(self.image_load, &[("host", &host)])
     }
 }
 
