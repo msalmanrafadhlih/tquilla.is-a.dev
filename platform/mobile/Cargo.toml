@@ -12,6 +12,10 @@ path = "src/main.rs"
 [dependencies]
 dioxus = { workspace = true }
 components = { workspace = true }
+# Opens links outside the app: Android `Intent.ACTION_VIEW` (JNI) and iOS
+# `openURL`. Same crate (and major version) dioxus-desktop already uses for
+# link clicks, so no new code ends up in the Cargo.lock beyond this edge.
+webbrowser = "1"
 
 [features]
 default = ["mobile"]

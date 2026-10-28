@@ -19,14 +19,11 @@ fn App() -> Element {
     }
 }
 
-/// TODO(mobile): this navigates the webview itself, so the user leaves the
-/// app until they press Back. Replace with an Android `Intent.ACTION_VIEW`
-/// / iOS `openURL` call (JNI / objc) to open the system browser instead.
+/// External links open in the system browser (Android: `Intent.ACTION_VIEW`,
+/// iOS: `openURL`), so the app stays where it is and Back returns to it.
+/// Callers only pass `http(s)` URLs (`home::link_target` filters them).
 fn open_external(url: &str) {
-    let url = url.replace('\\', "\\\\").replace('\'', "\\'");
-    spawn(async move {
-        document::eval(&format!("window.location.href = '{url}';"))
-            .await
-            .ok();
-    });
+    if let Err(err) = webbrowser::open(url) {
+        dioxus::logger::tracing::warn!("could not open the system browser: {err}");
+    }
 }

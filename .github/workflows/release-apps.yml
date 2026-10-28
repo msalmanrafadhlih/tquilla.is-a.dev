@@ -303,6 +303,31 @@ jobs:
           dx bundle --package mobile --platform android --release
           --target aarch64-linux-android --package-types apk --out-dir dist
 
+      - name: Ikon peluncur NixOS (timpa resource, rakit ulang APK)
+        # dx menulis ikon bawaan Dioxus ke project Gradle tiap build dan tidak
+        # menyediakan cara menggantinya lewat Dioxus.toml. Jadi: project Gradle
+        # yang baru dibuat dx di atas diberi resource dari platform/mobile/android-res
+        # (ikon adaptif + ikon lama, logo NixOS berwarna di latar #2A2A2A, dan
+        # nama aplikasi "NixOS Desktop"), lalu dirakit ulang dengan perintah Gradle
+        # yang sama seperti pilihan dx (release bila keystore ada, selain itu debug).
+        env:
+          SIGNED: ${{ steps.sign.outputs.signed }}
+        run: |
+          gradlew="$(find target/dx -name gradlew -path '*android*' | head -n 1)"
+          [ -n "$gradlew" ] || { echo "::error::Project Gradle buatan dx tidak ditemukan di target/dx"; exit 1; }
+          root="$(cd "$(dirname "$gradlew")" && pwd)"
+          res="$root/app/src/main/res"
+          [ -d "$res" ] || { echo "::error::Folder res tidak ada: $res"; exit 1; }
+          # Ikon latar depan bawaan dx berupa vektor; digantikan PNG bernama sama.
+          rm -f "$res/drawable-v24/ic_launcher_foreground.xml"
+          cp -r platform/mobile/android-res/. "$res/"
+          if [ "$SIGNED" = "release" ]; then task=assembleRelease; out=release/app-release.apk
+          else task=assembleDebug; out=debug/app-debug.apk; fi
+          (cd "$root" && ./gradlew --no-daemon "$task")
+          apk="$root/app/build/outputs/apk/$out"
+          [ -f "$apk" ] || { echo "::error::APK tidak ditemukan: $apk"; exit 1; }
+          cp "$apk" "$(ls dist/*.apk | head -n 1)"
+
       - name: Beri nama berkas (versi + arsitektur)
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
