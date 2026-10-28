@@ -120,14 +120,17 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                                     r#type: "password",
                                     autocomplete: "current-password",
                                     class: "peer absolute inset-0 z-10 w-full h-full opacity-0 text-base text-center cursor-text",
-                                    value: "{value}",
                                     disabled: unlocking(),
                                     onfocus: move |_| {
                                         focused.set(true);
                                         // Clicking/tabbing into the field is a
                                         // "distraction" too — stop the demo.
+                                        // The demo only drew dots (the field is
+                                        // not bound to `value`), so the visitor
+                                        // starts from an empty password.
                                         if mode() == TypingMode::Auto {
                                             mode.set(TypingMode::Manual);
+                                            value.set(String::new());
                                         }
                                     },
                                     onblur: move |_| focused.set(false),

@@ -5,7 +5,7 @@ use super::ai_history::{
     self, export_filename, export_json, fresh_id, ChatTurn, Conversation, Role, Summary,
 };
 use crate::languages::{use_strings, Strings};
-use crate::nixdesk::js_util::eval_js;
+use crate::nixdesk::js_util::{eval_js, set_field};
 use crate::platform::Date;
 
 // Penerus resmi `gemini-3.5-flash` dan `gemini-3.7-flash` (Google mengalihkan
@@ -266,7 +266,10 @@ fn send_prompt(state: ChatState, api_key: String, model: String, s: &'static Str
     if sending() {
         return;
     }
-    let text = draft().trim().to_string();
+    // Isi mentah dipegang untuk membersihkan kolom: hanya dikosongkan bila
+    // DOM masih memuat persis teks ini (ketikan yang menyusul tidak hilang).
+    let raw = draft();
+    let text = raw.trim().to_string();
     if text.is_empty() {
         return;
     }
@@ -282,6 +285,7 @@ fn send_prompt(state: ChatState, api_key: String, model: String, s: &'static Str
     });
     history.set(list.clone());
     draft.set(String::new());
+    set_field(QUESTION_ID, "", Some(&raw));
     sending.set(true);
 
     let chat = active();
@@ -546,7 +550,7 @@ pub fn AiAssistantWindowContent() -> Element {
                     p { class: "text-[var(--fg-secondary)] text-xs", "{s.ai.thinking}" }
                 }
                 if has_error {
-                    p { class: "text-[var(--red text)]-xs", "{error_message}" }
+                    p { role: "alert", class: "text-[var(--red)] text-xs [overflow-wrap:anywhere]", "{error_message}" }
                 }
 
                 for (idx, turn) in turns.iter().enumerate().rev() {
@@ -667,7 +671,7 @@ pub fn AiAssistantWindowContent() -> Element {
                         "aria-describedby": "assistant-question-hint",
                         placeholder: s.ai.question_prompt,
                         class: QUESTION_INPUT_CLASS,
-                        value: "{draft}",
+                        // Tanpa `value`: DOM pemilik teks, lihat `js_util::set_field`.
                         oninput: move |evt: FormEvent| draft.set(evt.value()),
                         onkeydown: move |evt: KeyboardEvent| {
                             if evt.key() == Key::Enter && !evt.modifiers().shift() && !evt.is_composing() {
@@ -711,7 +715,6 @@ pub fn AiAssistantWindowContent() -> Element {
                                     placeholder: "AIza...",
                                     r#type: key_input_type,
                                     class: KEY_INPUT_CLASS,
-                                    value: "{api_key}",
                                     oninput: move |evt: FormEvent| api_key.set(evt.value()),
                                 }
                             }

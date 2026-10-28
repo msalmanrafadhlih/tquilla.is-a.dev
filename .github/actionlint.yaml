@@ -1,0 +1,4 @@
+self-hosted-runner:
+  # Label runner GitHub yang belum dikenal actionlint 1.7.x (Mac Intel).
+  labels:
+    - macos-15-intel

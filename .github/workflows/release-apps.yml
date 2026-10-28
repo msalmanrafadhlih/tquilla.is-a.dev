@@ -1,0 +1,397 @@
+name: Release apps (desktop + Android)
+
+# Membangun aplikasi desktop dan Android lalu menaruhnya di Release GitHub
+# sebagai berkas yang bisa diunduh. Sengaja workflow TERPISAH dari
+# deploy-page.yml: deploy web tidak boleh menunggu atau gagal karena build app.
+#
+# Cara memicu:
+#   - dorong tag `app-v*` (mis. `app-v0.1.0`); atau
+#   - tab Actions > "Release apps" > Run workflow, isi nama tag (dibuat kalau
+#     belum ada, menunjuk ke commit yang dipilih).
+#
+# Arsitektur: hanya yang memang didukung dan punya runner GitHub, masing-masing
+# jadi berkas SENDIRI (tidak ada build "universal"). Mau menambah/mengurangi
+# arsitektur: ubah `matrix.include` di bawah.
+#   desktop  linux-x86_64     .deb .rpm
+#            linux-arm64      .deb .rpm             (runner ubuntu-24.04-arm: gratis
+#                                                    hanya untuk repo PUBLIK)
+#            windows-x86_64   .exe (installer NSIS)
+#            macos-arm64      .dmg  (Mac Apple Silicon)
+#            macos-x86_64     .dmg  (Mac Intel)
+#   android  arm64-v8a        .apk  (hampir semua HP modern). Emulator x86_64
+#                             dan HP 32-bit lama sengaja tidak dibuat.
+# Tidak dibuat: Windows ARM64, Linux 32-bit, Android x86/armv7, iOS, dan
+# AppImage (alat pengemasnya tidak bisa diuji, dan WebKitGTK + GStreamer di
+# dalam AppImage rapuh; .deb/.rpm memakai WebKitGTK sistem).
+#
+# Satu arsitektur gagal TIDAK membatalkan yang lain: job `release` tetap
+# menerbitkan apa yang berhasil (job yang gagal tampil merah di Actions).
+#
+# Variable repo `API_BASE_URL` (sama dengan deploy-page.yml) dibakar ke app saat
+# build; tanpa itu bagian yang butuh API menampilkan "server address is not
+# configured".
+#
+# Penandatanganan: berkas ini TIDAK ditandatangani (tanpa sertifikat berbayar):
+#   - Windows: SmartScreen memberi peringatan ("More info" > "Run anyway").
+#   - macOS: Gatekeeper menolak; buka lewat klik-kanan > Open, atau
+#     `xattr -dr com.apple.quarantine /Applications/NixOS\ Desktop.app`.
+#   - Android: APK ditandatangani kunci debug, KECUALI secret Actions
+#     ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS
+#     (dan opsional ANDROID_KEY_PASSWORD) diisi. Kunci debug berbeda tiap
+#     build, jadi memperbarui app lama mengharuskan copot-pasang; dengan
+#     keystore sendiri pembaruan berjalan mulus.
+on:
+  push:
+    tags:
+      - "app-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Nama tag rilis, mis. app-v0.1.0 (dibuat kalau belum ada)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-apps-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  prepare:
+    name: Tentukan tag
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - id: tag
+        # Nilai masuk lewat env (bukan di-interpolasi ke skrip) supaya nama tag
+        # tidak bisa menyuntik perintah.
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          tag="$REF_NAME"
+          if [ "$EVENT" = "workflow_dispatch" ]; then tag="$INPUT_TAG"; fi
+          if ! printf '%s' "$tag" | grep -Eq '^app-v[0-9A-Za-z._-]+$'; then
+            echo "::error::Nama tag harus berbentuk app-v<versi> (huruf, angka, titik, garis)."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#app-v}" >> "$GITHUB_OUTPUT"
+
+  desktop:
+    name: Desktop ${{ matrix.name }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runner: ubuntu-24.04
+            packages: "deb rpm"
+            tailwind: tailwindcss-linux-x64
+          - name: linux-arm64
+            runner: ubuntu-24.04-arm
+            packages: "deb rpm"
+            tailwind: tailwindcss-linux-arm64
+          - name: windows-x86_64
+            runner: windows-2022
+            packages: "nsis"
+            tailwind: tailwindcss-windows-x64.exe
+            exe: ".exe"
+          - name: macos-arm64
+            runner: macos-15
+            packages: "dmg"
+            tailwind: tailwindcss-macos-arm64
+          - name: macos-x86_64
+            runner: macos-15-intel
+            packages: "dmg"
+            tailwind: tailwindcss-macos-x64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Library sistem untuk webview (Linux)
+        if: runner.os == 'Linux'
+        # Sama dengan platforms.yml.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libxdo-dev \
+            libayatana-appindicator3-dev librsvg2-dev libsoup-3.0-dev \
+            libssl-dev pkg-config
+
+      # Versi sama dengan rust-toolchain.toml dan workflow lain.
+      - uses: dtolnay/rust-toolchain@1.97.0
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: desktop-${{ matrix.name }}
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.25.2
+
+      - name: Install dioxus-cli (dx)
+        # Versi sama dengan deploy-page.yml dan crate `dioxus` di Cargo.lock.
+        run: cargo binstall dioxus-cli@0.7.10 --force -y
+
+      - name: Build Tailwind CSS
+        # `asset!("/assets/tailwind.css")` butuh file itu berisi CSS asli saat
+        # compile. `dx bundle` TIDAK menjamin menghasilkannya lebih dulu: dicoba
+        # tanpa langkah ini, bundel jadi, tetapi app tampil tanpa gaya (file CSS
+        # 0 byte). Pakai standalone CLI v4 yang sama dengan deploy-page.yml.
+        env:
+          TAILWIND_ASSET: ${{ matrix.tailwind }}
+          EXE: ${{ matrix.exe }}
+        run: |
+          curl -fsSL -o "tailwindcss${EXE}" "https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.11/${TAILWIND_ASSET}"
+          chmod +x "tailwindcss${EXE}"
+          mkdir -p platform/desktop/assets
+          "./tailwindcss${EXE}" -i ./platform/desktop/tailwind.css -o ./platform/desktop/assets/tailwind.css --minify
+          test -s platform/desktop/assets/tailwind.css
+
+      - name: Periksa API_BASE_URL
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::warning::Variable API_BASE_URL belum di-set; app dibuat tanpa alamat API."
+          else
+            echo "API_BASE_URL di-set (${#API_BASE_URL} karakter)."
+          fi
+
+      - name: Build & bundle (release)
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          PACKAGES: ${{ matrix.packages }}
+        run: |
+          args=()
+          for t in $PACKAGES; do args+=(--package-types "$t"); done
+          dx bundle --package desktop --platform desktop --release "${args[@]}" --out-dir dist
+
+      - name: Beri nama berkas (versi + arsitektur)
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          ARCH_NAME: ${{ matrix.name }}
+        run: |
+          mkdir -p out
+          shopt -s nullglob
+          for f in dist/*; do
+            [ -f "$f" ] || continue   # .app (folder) tidak ikut; dmg-nya yang dirilis
+            base="$(basename "$f")"
+            ext="${base##*.}"
+            cp "$f" "out/NixDesktop_${VERSION}_${ARCH_NAME}.${ext}"
+          done
+          ls -la out
+          [ -n "$(ls -A out)" ] || { echo "::error::Tidak ada berkas hasil bundle"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-desktop-${{ matrix.name }}
+          path: out/*
+          if-no-files-found: error
+
+  android:
+    name: Android arm64
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-arm64
+
+      - name: Android SDK/NDK
+        # Versi sama dengan devenv.nix (platform 34, build-tools 34.0.0,
+        # NDK 26.1.10909125): yang dibutuhkan project Gradle buatan dx 0.7.x.
+        run: |
+          sdkm="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdkm" --licenses > /dev/null || true
+          "$sdkm" "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> "$GITHUB_ENV"
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.25.2
+
+      - name: Install dioxus-cli (dx)
+        run: cargo binstall dioxus-cli@0.7.10 --force -y
+
+      - name: Kunci penandatangan APK (opsional)
+        id: sign
+        # Tanpa secret: dx memakai kunci debug. Dengan secret: `[bundle.android]`
+        # ditambahkan ke Dioxus.toml (hanya di runner ini, tidak di-commit).
+        # Hindari tanda kutip ganda dan `$` di password: template Gradle dx
+        # menaruhnya apa adanya di string Kotlin.
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KS_PASSWORD" ] || [ -z "$KEY_ALIAS" ]; then
+            echo "::warning::Secret keystore Android belum lengkap; APK ditandatangani kunci debug."
+            echo "signed=debug" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Path jks_file dihitung dari akar repo (lihat template Gradle dx).
+          printf '%s' "$KEYSTORE_B64" | base64 -d > release.jks
+          python3 - <<'PY'
+          import json, os
+          ks = os.environ["KS_PASSWORD"]
+          key = os.environ.get("KEY_PASSWORD") or ks
+          # String dasar TOML = string JSON.
+          block = (
+              "\n[bundle.android]\n"
+              'jks_file = "release.jks"\n'
+              f"jks_password = {json.dumps(ks)}\n"
+              f"key_alias = {json.dumps(os.environ['KEY_ALIAS'])}\n"
+              f"key_password = {json.dumps(key)}\n"
+          )
+          with open("platform/mobile/Dioxus.toml", "a", encoding="utf-8") as f:
+              f.write(block)
+          PY
+          echo "signed=release" >> "$GITHUB_OUTPUT"
+
+      - name: Build Tailwind CSS
+        # `asset!("/assets/tailwind.css")` butuh file itu berisi CSS asli saat
+        # compile. `dx bundle` TIDAK menjamin menghasilkannya lebih dulu: dicoba
+        # tanpa langkah ini, bundel jadi, tetapi app tampil tanpa gaya (file CSS
+        # 0 byte). Pakai standalone CLI v4 yang sama dengan deploy-page.yml.
+        run: |
+          curl -fsSL -o tailwindcss "https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.11/tailwindcss-linux-x64"
+          chmod +x tailwindcss
+          mkdir -p platform/mobile/assets
+          ./tailwindcss -i ./platform/mobile/tailwind.css -o ./platform/mobile/assets/tailwind.css --minify
+          test -s platform/mobile/assets/tailwind.css
+
+      - name: Periksa API_BASE_URL
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::warning::Variable API_BASE_URL belum di-set; app dibuat tanpa alamat API."
+          else
+            echo "API_BASE_URL di-set (${#API_BASE_URL} karakter)."
+          fi
+
+      - name: Build & bundle APK (release, arm64-v8a)
+        # `--target` WAJIB: tanpa itu dx memilih arsitektur mesin build
+        # (x86_64), APK-nya tidak jalan di HP.
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: >
+          dx bundle --package mobile --platform android --release
+          --target aarch64-linux-android --package-types apk --out-dir dist
+
+      - name: Beri nama berkas (versi + arsitektur)
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          mkdir -p out
+          apk="$(ls dist/*.apk | head -n 1)"
+          cp "$apk" "out/NixDesktop_${VERSION}_android-arm64.apk"
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-android-arm64
+          path: out/NixDesktop_*.apk
+          if-no-files-found: error
+
+      - name: Catat jenis tanda tangan
+        run: echo "APK ditandatangani dengan kunci ${{ steps.sign.outputs.signed }}" >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: Terbitkan Release
+    needs: [prepare, desktop, android]
+    # Terbitkan apa pun yang berhasil, meski satu arsitektur gagal.
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: app-*
+          merge-multiple: true
+          path: release
+
+      - name: Susun catatan rilis dan checksum
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          DESKTOP_RESULT: ${{ needs.desktop.result }}
+          ANDROID_RESULT: ${{ needs.android.result }}
+        run: |
+          shopt -s nullglob
+          files=(release/*)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::Tidak ada berkas untuk dirilis (semua build gagal)."
+            exit 1
+          fi
+          (cd release && sha256sum -- * > SHA256SUMS.txt)
+          {
+            echo "Aplikasi desktop dan Android untuk \`$TAG\`. Pilih berkas yang cocok dengan perangkatmu; semuanya TIDAK ditandatangani (lihat catatan di bawah)."
+            echo
+            echo "| Perangkat | Berkas |"
+            echo "|---|---|"
+            for f in release/*; do
+              n="$(basename "$f")"
+              case "$n" in
+                SHA256SUMS.txt) continue ;;
+                *linux-x86_64*) d="Linux x86_64" ;;
+                *linux-arm64*) d="Linux ARM64" ;;
+                *windows-x86_64*) d="Windows 64-bit" ;;
+                *macos-arm64*) d="macOS Apple Silicon" ;;
+                *macos-x86_64*) d="macOS Intel" ;;
+                *android-arm64*) d="Android (arm64-v8a)" ;;
+                *) d="-" ;;
+              esac
+              echo "| $d | \`$n\` |"
+            done
+            echo
+            echo "Hasil build: desktop **$DESKTOP_RESULT**, Android **$ANDROID_RESULT**. Berkas yang gagal dibuat tidak muncul di tabel; lihat tab Actions."
+            echo
+            echo "### Catatan"
+            echo "- **Windows**: SmartScreen memberi peringatan karena penerbitnya belum dikenal: *More info* lalu *Run anyway*."
+            echo "- **macOS**: app belum ditandatangani/dinotarisasi. Buka lewat klik-kanan lalu *Open*, atau jalankan \`xattr -dr com.apple.quarantine \"/Applications/NixOS Desktop.app\"\`."
+            echo "- **Linux**: \`sudo apt install ./<berkas>.deb\` (Debian/Ubuntu), \`sudo dnf install ./<berkas>.rpm\` (Fedora). WebKitGTK 4.1 ikut sebagai dependensi paket."
+            echo "- **Android**: izinkan pemasangan dari sumber tidak dikenal. APK yang tidak memakai keystore sendiri ditandatangani kunci debug: untuk memperbarui versi lama, copot dulu."
+            echo "- Cocokkan checksum dengan \`SHA256SUMS.txt\`."
+          } > notes.md
+          cat notes.md
+
+      - name: Buat atau perbarui Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" release/* --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "$TAG" --notes-file notes.md --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" release/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Aplikasi $TAG" \
+              --notes-file notes.md
+          fi

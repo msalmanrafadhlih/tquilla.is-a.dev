@@ -6,7 +6,13 @@ use dioxus::prelude::*;
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
 fn main() {
-    dioxus::launch(App);
+    // The UI is a full desktop of its own (top bar, dock, windows), so the
+    // toolkit's default menu bar (Window / Edit / Help) only duplicates it
+    // and eats a row of the window. `None` removes it on every OS.
+    let config = dioxus::desktop::Config::new().with_menu(None);
+    dioxus::LaunchBuilder::desktop()
+        .with_cfg(config)
+        .launch(App);
 }
 
 #[component]

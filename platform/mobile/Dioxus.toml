@@ -1,3 +1,13 @@
 [application]
 name = "NixOS Desktop"
 default_platform = "android"
+
+# Dipakai `dx bundle --package mobile --platform android` (workflow
+# release-apps.yml). `identifier` jadi application id Android: tiap segmen
+# harus pengenal Java yang sah (tanpa tanda hubung), makanya bukan
+# "dev.is-a.tquilla". Penanda tangan APK (`[bundle.android]`) sengaja TIDAK
+# ditulis di sini: workflow menambahkannya saat build dari secret Actions.
+[bundle]
+identifier = "dev.tquilla.nixdesktop"
+publisher = "Tquilla"
+short_description = "NixOS-style desktop simulation"

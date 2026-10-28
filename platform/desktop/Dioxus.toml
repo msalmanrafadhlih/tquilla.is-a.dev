@@ -1,3 +1,28 @@
 [application]
 name = "NixOS Desktop"
 default_platform = "desktop"
+
+# Dipakai `dx bundle --package desktop --platform desktop` (workflow
+# release-apps.yml). Ikon: avatar situs (crates/components/assets/avatar.jpg)
+# dalam beberapa ukuran; .ico untuk Windows, PNG dipakai Linux dan macOS.
+[bundle]
+identifier = "dev.tquilla.nixdesktop"
+publisher = "Tquilla"
+short_description = "NixOS-style desktop simulation"
+long_description = "A NixOS-flavoured desktop simulation built with Rust and Dioxus: window manager, calculator, radio, guestbook, AI chat and more."
+category = "Utility"
+# Jangan menambah PNG kecil di sini: .ico dikonversi ke ukuran-ukuran standar
+# juga oleh bundler Linux, dan ukuran yang sama dua kali membuat bundel RPM
+# gagal ("duplicate file entry").
+icon = ["icons/icon.png", "icons/icon.ico"]
+
+# Paket .deb: webview dan GStreamer (suara Radio/Embience) ikut sebagai
+# dependensi, supaya `apt install ./file.deb` menariknya sendiri.
+[bundle.deb]
+depends = [
+    "libwebkit2gtk-4.1-0",
+    "libgtk-3-0",
+    "gstreamer1.0-plugins-base",
+    "gstreamer1.0-plugins-good",
+    "gstreamer1.0-libav",
+]

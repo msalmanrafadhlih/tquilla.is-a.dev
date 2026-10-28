@@ -14,7 +14,7 @@ use crate::guestbook::{
 };
 use crate::languages::use_strings;
 use crate::markdown_view::Markdown;
-use crate::nixdesk::js_util::eval_js;
+use crate::nixdesk::js_util::{eval_js, set_field};
 use crate::remote::LoadFailed;
 use crate::skeleton::{SkeletonEntries, SkeletonGroup};
 use crate::time::relative_time;
@@ -379,6 +379,7 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                 return;
             }
         };
+        let sent_text = draft.peek().clone();
         sending.set(true);
         error.set(None);
         sent.set(false);
@@ -387,6 +388,9 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                 Ok(entry) => {
                     merge(&mut entries.write(), vec![entry]);
                     draft.set(String::new());
+                    // DOM pemilik teks; dikosongkan hanya bila tak ada ketikan baru.
+                    // (Bila tab Preview aktif, editor dibuat ulang kosong.)
+                    set_field(EDITOR_ID, "", Some(&sent_text));
                     tab.set(Tab::Write);
                     sent.set(true);
                     // Newest first: the new entry is at the top.
@@ -441,7 +445,6 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                         maxlength: "{MAX_USERNAME_CHARS}",
                         placeholder: s.guestbook.username_placeholder,
                         autocomplete: "username",
-                        value: "{username}",
                         oninput: move |evt: FormEvent| username.set(evt.value()),
                     }
                     label { class: "sr-only", r#for: "guestbook-url", "{s.guestbook.url_label}" }
@@ -454,7 +457,6 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                         maxlength: "{MAX_LINK_CHARS}",
                         placeholder: s.guestbook.url_placeholder,
                         autocomplete: "url",
-                        value: "{url}",
                         oninput: move |evt: FormEvent| url.set(evt.value()),
                     }
                 }
@@ -520,7 +522,9 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                     name: "message",
                     rows: EDITOR_ROWS,
                     placeholder: s.guestbook.message_placeholder,
-                    value: "{draft}",
+                    // Dibuat ulang tiap pindah tab: isi awal dari draft. Setelah itu
+                    // DOM pemilik teks (tanpa `value`), lihat `js_util::set_field`.
+                    initial_value: "{text}",
                     oninput: move |evt: FormEvent| draft.set(evt.value()),
                     // Ctrl/Cmd+Enter signs. Plain Enter is a new line (Markdown needs lines).
                     onkeydown: move |evt: KeyboardEvent| {

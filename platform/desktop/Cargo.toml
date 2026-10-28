@@ -3,6 +3,13 @@ name = "desktop"
 version.workspace = true
 edition.workspace = true
 
+# Nama biner = nama di paket rilis (/usr/bin/nixos-desktop, "NixosDesktop" di
+# menu). Nama paket Cargo tetap `desktop` (dipakai `-p desktop` di CI/devenv).
+# Kalau diganti, ubah juga `wrapProgram` di flake.nix.
+[[bin]]
+name = "nixos-desktop"
+path = "src/main.rs"
+
 [dependencies]
 dioxus = { workspace = true }
 components = { workspace = true }

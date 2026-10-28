@@ -126,8 +126,17 @@ in
     web-dev.exec = "dx serve --package web --platform web";
     web-build.exec = "dx bundle --package web --platform web --release";
 
-    desktop-dev.exec = "dx serve --package desktop --platform desktop";
-    desktop-build.exec = "dx bundle --package desktop --platform desktop --release";
+    # Desktop tidak punya "alamat situs" seperti web: alamat API dibakar saat
+    # build lewat API_BASE_URL (mis. `API_BASE_URL=https://api.contoh.dev desktop-dev`).
+    # Kosong = jendela yang butuh API menampilkan "server address is not configured".
+    desktop-dev.exec = ''
+      [ -n "$API_BASE_URL" ] || echo "peringatan: API_BASE_URL kosong; Home/Browser/Radio/Guestbook tidak akan memuat data" >&2
+      dx serve --package desktop --platform desktop
+    '';
+    desktop-build.exec = ''
+      [ -n "$API_BASE_URL" ] || echo "peringatan: API_BASE_URL kosong; build desktop tanpa alamat API" >&2
+      dx bundle --package desktop --platform desktop --release
+    '';
 
     android-dev.exec = "dx serve --package mobile --platform android";
     android-build.exec = "dx bundle --package mobile --platform android --release";

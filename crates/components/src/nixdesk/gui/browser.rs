@@ -3,10 +3,13 @@ use dioxus::prelude::*;
 
 use crate::api::{self, Bookmark};
 use crate::languages::use_strings;
+use crate::nixdesk::js_util::set_field;
 use crate::remote::LoadFailed;
 use crate::skeleton::{SkeletonGroup, SkeletonRows};
 
 const ICON_LINK: Asset = asset!("/assets/icon-url.svg");
+const NEW_LABEL_ID: &str = "browser-new-label";
+const NEW_URL_ID: &str = "browser-new-url";
 
 /// What the user typed becomes a tab only if it is an `http(s)` address
 /// (`https://` is added when the scheme is missing). This also keeps
@@ -44,6 +47,9 @@ fn add_bookmark(
     selected.set(idx);
     new_label.set(String::new());
     new_url.set(String::new());
+    // DOM pemilik teks (tanpa `value`), lihat `js_util::set_field`.
+    set_field(NEW_LABEL_ID, "", None);
+    set_field(NEW_URL_ID, "", None);
 }
 
 fn tab_class(active: bool) -> &'static str {
@@ -128,10 +134,10 @@ fn BrowserBoard(initial: Vec<Bookmark>) -> Element {
                     div {
                         class: "w-full flex items-center gap-2",
                         input {
+                            id: NEW_LABEL_ID,
                             r#type: "text",
                             placeholder: s.browser.name_placeholder,
                             class: "w-full py-2 bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
-                            value: "{new_label}",
                             oninput: move |evt: FormEvent| new_label.set(evt.value()),
                         }
                         button {
@@ -144,10 +150,10 @@ fn BrowserBoard(initial: Vec<Bookmark>) -> Element {
                     div {
                         class: "w-full flex items-center gap-2",
                         input {
+                            id: NEW_URL_ID,
                             r#type: "text",
                             placeholder: "https://...",
                             class: "w-full h-full py-2 flex-1 min-w-0 bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
-                            value: "{new_url}",
                             onkeydown: move |evt: KeyboardEvent| {
                                 if evt.key() == Key::Enter {
                                     evt.prevent_default();

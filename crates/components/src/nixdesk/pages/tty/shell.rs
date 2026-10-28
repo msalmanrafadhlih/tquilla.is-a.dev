@@ -1,9 +1,12 @@
 use crate::languages::{use_strings, Strings};
+use crate::nixdesk::js_util::set_field;
 use crate::platform::Date;
 use dioxus::prelude::*;
 
 use super::clock::{format_date, format_time};
 use crate::nixdesk::clock::{use_clock_format, ClockFormat};
+
+const SHELL_INPUT_ID: &str = "shell-input";
 
 /// One resolved command + the output lines it produced.
 #[derive(Debug, Clone, PartialEq)]
@@ -144,6 +147,7 @@ pub fn ShellPanel(
         let raw = draft();
         if raw.trim().is_empty() {
             draft.set(String::new());
+            set_field(SHELL_INPUT_ID, "", Some(&raw));
             return;
         }
 
@@ -172,6 +176,8 @@ pub fn ShellPanel(
             cwd.set(dir);
         }
         draft.set(String::new());
+        // DOM pemilik teks (tanpa `value`), lihat `js_util::set_field`.
+        set_field(SHELL_INPUT_ID, "", Some(&raw));
 
         spawn(async move {
             document::eval(
@@ -213,11 +219,10 @@ pub fn ShellPanel(
             div { class: "flex gap-2 items-center",
                 span { class: "text-white/40", "$" }
                 input {
-                    id: "shell-input",
+                    id: SHELL_INPUT_ID,
                     class: "flex-1 bg-[var(--bg-main)] outline-none border-none text-white font-mono caret-white",
                     autocomplete: "off",
                     spellcheck: "false",
-                    value: "{draft}",
                     onmounted: move |evt| {
                         let data = evt.data();
                         spawn(async move {
@@ -241,6 +246,7 @@ pub fn ShellPanel(
                                 };
                                 log_cursor.set(Some(next));
                                 draft.set(log[next].clone());
+                                set_field(SHELL_INPUT_ID, &log[next], None);
                             }
                         }
                         Key::ArrowDown => {
@@ -250,10 +256,12 @@ pub fn ShellPanel(
                                 Some(i) if i + 1 < log.len() => {
                                     log_cursor.set(Some(i + 1));
                                     draft.set(log[i + 1].clone());
+                                    set_field(SHELL_INPUT_ID, &log[i + 1], None);
                                 }
                                 _ => {
                                     log_cursor.set(None);
                                     draft.set(String::new());
+                                    set_field(SHELL_INPUT_ID, "", None);
                                 }
                             }
                         }

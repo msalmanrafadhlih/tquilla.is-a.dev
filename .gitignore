@@ -33,3 +33,8 @@ platform/mobile/assets/tailwind.css
 # Python bytecode (created when the tests in scripts/ run)
 __pycache__/
 *.pyc
+
+# Keystore Android dan keluaran rilis lokal; keystore hanya ada sementara di CI
+*.jks
+/dist/
+/release/

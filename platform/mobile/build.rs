@@ -10,6 +10,9 @@ use std::{env, fs, path::PathBuf};
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    // A missing file counts as "changed": after `git clean` (or deleting the
+    // generated CSS) cargo reruns this script instead of reusing a stale result.
+    println!("cargo:rerun-if-changed=assets/tailwind.css");
 
     let manifest_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").expect("cargo sets it"));
     let css = manifest_dir.join("assets").join("tailwind.css");

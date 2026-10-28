@@ -3,6 +3,12 @@ name = "mobile"
 version.workspace = true
 edition.workspace = true
 
+# Nama biner jadi nama aplikasi Android ("NixosMobile") dan nama library .so.
+# Nama paket Cargo tetap `mobile` (dipakai `-p mobile` di CI).
+[[bin]]
+name = "nixos-mobile"
+path = "src/main.rs"
+
 [dependencies]
 dioxus = { workspace = true }
 components = { workspace = true }

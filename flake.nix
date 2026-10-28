@@ -102,7 +102,8 @@
             '';
 
             postInstall = ''
-              wrapProgram "$out/bin/${pname}" \
+              # Nama biner dari [[bin]] di platform/desktop/Cargo.toml (bukan nama paket).
+              wrapProgram "$out/bin/nixos-desktop" \
                 --set LD_LIBRARY_PATH ${lib.makeLibraryPath desktopRuntimeLibs}
             '';
           }
