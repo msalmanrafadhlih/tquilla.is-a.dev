@@ -265,10 +265,14 @@ Tujuan: mengganti file JSON dummy di `crates/components/data/` dengan database s
 | Database | **Turso (libSQL)** untuk produksi; SQLite lokal untuk development (`turso dev`, protokol HTTP yang sama) |
 | Repo | **Dua repo**: ini (frontend, GitHub Actions ke Pages) dan repo backend baru, **publik** (nama rencana `tquilla-api`, tetapi repo yang dibuat Moch bernama **`deisktify-worker.rs`**; URL itu yang dipakai di git dependency), deploy ke Cloudflare lewat Actions miliknya sendiri |
 | Klien ↔ server | **REST + JSON** lewat `platform::http`. Tanpa `#[server]` dan tanpa `dx serve --fullstack`, karena server function Dioxus butuh binary server Dioxus |
-| Tipe bersama | crate `api-types` (struct serde, batas validasi, `normalize_url`) hidup di repo backend; frontend memakainya lewat git dependency dengan **tag** |
+| Tipe bersama | crate `api-types` (struct serde, batas validasi, `normalize_url`) hidup di repo backend; frontend memakainya dari **crates.io** sejak B6 (paket `tquilla-api-types`, nama library tetap `api_types`; dulu git dependency dengan **tag**) |
 | Migrasi | file `.sql` biasa di repo backend, dijalankan lewat Turso CLI. `sqlx` tidak dipakai: tidak bisa compile ke wasm32 dan tidak bicara ke Turso |
 | Domain API | `*.workers.dev` dulu. Belum dipastikan apakah `is-a.dev` mengizinkan `api.tquilla.is-a.dev` |
 | CORS | hanya origin `https://tquilla.is-a.dev`; `localhost` hanya lewat env var di development |
+
+> **B6 (keputusan Moch, 2026-10-30):** repo backend akan dibuat **privat**, repo ini tetap publik (GitHub Pages gratis, Release publik, runner arm64 gratis hanya untuk repo publik). Karena itu kontrak `api-types` diterbitkan ke crates.io sebagai **`tquilla-api-types`** dan repo ini memakainya dari sana, bukan lewat git. **Kerugian yang diterima:** tag lama repo ini (`generation_*`, `app-v0.1.0`, dst.) terkunci ke git dependency di repo backend dan **tidak bisa dibangun ulang** setelah backend privat; hanya tag baru yang bisa. Status tahap dan catatan "belum terverifikasi" ada di README repo backend, bagian "B6". Yang terbit di crates.io bersifat **permanen dan publik**.
+>
+> **Status (2026-10-31):** `tquilla-api-types 0.1.0` sudah terbit di crates.io dan repo ini memakainya (`Cargo.lock` mencatat sumber `registry` dengan checksum). Terverifikasi di sandbox: `cargo fmt`, `clippy -D warnings`, 179 test Rust (118 + 61), 55 test JS, 10 test Python, `actionlint`, semuanya dengan `--locked`. **Belum terverifikasi:** CI dan deploy di GitHub Actions setelah perubahan ini, `platforms.yml`/`release-apps.yml` (sandbox tidak punya pustaka GTK, jadi `clippy -p desktop -p mobile` tidak bisa dijalankan di sana), `nix build`, dan bahwa log build benar-benar mengambil `tquilla-api-types` dari crates.io (cache cargo bisa menutupi).
 
 ```text
 Browser / Desktop / Android  (Dioxus, repo ini)
