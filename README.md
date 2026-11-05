@@ -24,8 +24,9 @@ Live: <https://tquilla.is-a.dev>
 Semua perintah dijalankan di dalam dev shell Nix/devenv.
 
 ```sh
-web-dev      # dx serve --package web --platform web
-web-build    # dx bundle --package web --platform web --release
+web-dev       # dx serve --package web --platform web (tanpa API_BASE_URL: jendela yang butuh API menampilkan "not configured")
+web-dev-local # web-dev + API_BASE_URL=http://127.0.0.1:8787: uji dengan backend lokal (jalankan `dev-local` di repo tquilla-api dulu)
+web-build     # dx bundle --package web --platform web --release
 ```
 
 > Web adalah satu-satunya platform yang sudah diuji Moch di runtime. Desktop Linux sudah dijalankan di sandbox (Xvfb + WebKitGTK, lihat "Platform desktop dan mobile" di bawah); mobile hanya `cargo check`, dan `android-dev` belum pernah diuji.

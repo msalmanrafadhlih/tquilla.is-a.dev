@@ -124,6 +124,15 @@ in
     # platform. dx otomatis jalanin Tailwind (platform/<pkg>/tailwind.css ->
     # platform/<pkg>/assets/tailwind.css), jadi nggak perlu script manual.
     web-dev.exec = "dx serve --package web --platform web";
+    # Uji lokal bersama backend (`dev-local` di repo tquilla-api): alamat API
+    # dibakar saat build lewat API_BASE_URL, bawaannya Worker lokal 127.0.0.1:8787.
+    # Buka http://127.0.0.1:8080 (atau localhost:8080): keduanya ada di
+    # ALLOWED_ORIGINS bawaan `.dev.vars` buatan `dev-local`.
+    web-dev-local.exec = ''
+      export API_BASE_URL="''${API_BASE_URL:-http://127.0.0.1:8787}"
+      echo "API_BASE_URL=$API_BASE_URL (backend: jalankan dev-local di repo tquilla-api)" >&2
+      dx serve --package web --platform web
+    '';
     web-build.exec = "dx bundle --package web --platform web --release";
 
     # Desktop tidak punya "alamat situs" seperti web: alamat API dibakar saat
@@ -167,6 +176,7 @@ in
       echo "  Dev per platform:"
       echo "    desktop-dev / desktop-build"
       echo "    web-dev     / web-build   (dx compile Tailwind sendiri)"
+      echo "    web-dev-local             (web-dev + API_BASE_URL=http://127.0.0.1:8787, untuk uji dengan backend lokal)"
       echo "    android-dev / android-build"
       echo ""
       echo "  tailwind-build cuma perlu dijalankan manual untuk 'nix build'"
