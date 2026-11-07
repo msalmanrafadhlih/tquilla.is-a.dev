@@ -1,7 +1,7 @@
 //! Typed client for the REST API (`tquilla-api`, a separate repository).
 //!
 //! The API base URL is fixed at **build time** through the `API_BASE_URL`
-//! environment variable (see README, "Fullstack dan database"):
+//! environment variable (see docs/alur-project.md, "Fullstack dan database"):
 //!
 //! ```text
 //! API_BASE_URL=http://127.0.0.1:8787 dx serve --package web --platform web

@@ -1,394 +1,134 @@
 # tquilla.is-a.dev
 
-Situs personal berbasis **Rust + Dioxus 0.7 (WASM)**: menu boot bergaya NixOS (`/`), jurnal GitHub (`/profile`), dan simulasi desktop OS di browser (`/deisktify`).
+Situs personal **Moch** yang ditulis seluruhnya dengan **Rust + [Dioxus](https://dioxuslabs.com) 0.7** dan dijalankan di browser sebagai WebAssembly. Live: <https://tquilla.is-a.dev>
 
-Live: <https://tquilla.is-a.dev>
+Tampilannya bertema NixOS, dengan tiga halaman:
 
-## Struktur workspace
-
-| Paket | Isi |
+| Rute | Isi |
 | --- | --- |
-| `crates/components` | Semua UI bersama (routing, halaman, window manager, aplikasi dock, data JSON), termasuk `markdown_view.rs` yang menggambar pohon Markdown jadi komponen Dioxus |
-| `crates/markdown` | Mesin Markdown ("readme engine"): Rust murni, **tanpa Dioxus dan tanpa teks UI**. `lib.rs` (parser + daftar putih + pohon `Block`/`Inline`) dan `html.rs` (tokenizer tag). Dites native tanpa mengompilasi Dioxus |
-| `crates/components/js/` | JS yang dijalankan lewat `document::eval` (window manager, audio/hls, scroll reveal, context menu, penyimpanan riwayat chat, unduh berkas, textarea otomatis) + test node di `js/tests/` |
-| `platform/web` | Entry point web (launch, Tailwind, `PlatformServices` browser) |
-| `platform/desktop` | Entry point desktop (compile, clippy, dan jalan di Linux/WebKitGTK menurut uji sandbox; belum dicoba Moch di mesin sungguhan, lihat "Platform desktop dan mobile") |
-| `platform/mobile` | Entry point Android (compile dan clippy lolos di host; build Android gagal di percobaan 1 karena SDK, perbaikan belum diuji) |
-| `site/` | File statis untuk deploy: `robots.txt`, `sitemap.xml`, snippet `<head>` (SEO/Open Graph) dan `<noscript>` |
-| `scripts/postbuild.py` | Langkah pasca-build di CI: menyuntik `site/*` ke output `dx bundle` (tes: `scripts/test_postbuild.py`) |
-| `.github/workflows/` | `ci.yml` (fmt, clippy, test Rust, test node/python; jalan di tiap PR dan sebelum deploy), `deploy-page.yml` (build + deploy ke Pages; jalan saat tag `generation_*` di-push atau lewat tombol manual, bukan tiap push), dan `platforms.yml` (cek compile desktop/mobile; tidak menahan deploy), dan `release-apps.yml` (build app desktop + Android per arsitektur lalu dipasang ke Release GitHub; jalan saat tag `app-v*` di-push atau lewat tombol manual) |
-| `rust-toolchain.toml` | Versi Rust dikunci (1.97.0); naikkan bersama workflow |
+| `/` | Menu boot bergaya bootloader NixOS (daftar "generasi" yang bisa dipilih dengan keyboard) |
+| `/profile` | Jurnal GitHub: statistik, repo sematan, grafik aktivitas, dan stack |
+| `/deisktify` | Simulasi desktop OS di browser: layar boot, login, dock, window manager, dan aplikasi (File Manager, Calculator, Browser, Radio, Embience, Guestbook, AI Assistant, Settings, About, serta terminal TTY) |
 
-## Menjalankan
+Ejaan `deisktify` disengaja.
 
-Semua perintah dijalankan di dalam dev shell Nix/devenv.
+Beberapa hal yang menarik di dalamnya: kalkulator dengan mode Algebra, Trigonometry, dan Calculus; pemutar Radio dan suara latar (Embience); buku tamu yang merender Markdown lewat parser sendiri tanpa pernah membuat string HTML; dan AI Assistant berbasis Gemini dengan kunci API milik pengguna sendiri (riwayat chat hanya tersimpan di IndexedDB browser, tidak dikirim ke server mana pun).
+
+Data dinamis (generasi, bookmark, radio, Embience, Guestbook, jurnal) datang dari backend terpisah, `tquilla-api` (Axum di Cloudflare Workers + Turso), lewat REST + JSON. Tanpa backend, halaman tetap tampil tetapi jendela yang butuh data menampilkan "The server address is not configured".
+
+## Teknologi dan struktur
+
+Rust 1.97.0 (dikunci di `rust-toolchain.toml`), Dioxus 0.7, Tailwind CSS v4, dan `dx` (Dioxus CLI) untuk build dan dev server.
+
+| Bagian | Isi |
+| --- | --- |
+| `crates/components` | Semua UI bersama: routing, halaman, window manager, aplikasi, klien API, dan JS kecil di `js/` |
+| `crates/markdown` | Mesin Markdown untuk Guestbook (Rust murni, tanpa Dioxus) |
+| `platform/web` | Entry point web (yang dideploy ke GitHub Pages) |
+| `platform/desktop`, `platform/mobile` | Entry point desktop dan Android (web adalah platform yang paling teruji) |
+| `site/`, `scripts/` | Berkas statis SEO dan skrip pasca-build/tes |
+| `docs/alur-project.md` | Daftar TODO, catatan verifikasi, keputusan fullstack, dan rencana bertahap |
+
+## Prasyarat
+
+Cara termudah adalah **Nix**: `flake.nix` + `devenv.nix` menyediakan Rust (dengan target wasm32), `dx`, Tailwind v4, Node, dan library webview untuk desktop.
 
 ```sh
-web-dev       # dx serve --package web --platform web (tanpa API_BASE_URL: jendela yang butuh API menampilkan "not configured")
-web-dev-local # web-dev + API_BASE_URL=http://127.0.0.1:8787: uji dengan backend lokal (jalankan `dev-local` di repo tquilla-api dulu)
-web-build     # dx bundle --package web --platform web --release
+nix develop --impure     # atau: direnv allow
 ```
 
-> Web adalah satu-satunya platform yang sudah diuji Moch di runtime. Desktop Linux sudah dijalankan di sandbox (Xvfb + WebKitGTK, lihat "Platform desktop dan mobile" di bawah); mobile hanya `cargo check`, dan `android-dev` belum pernah diuji.
+Tanpa Nix, pasang: Rust 1.97.0 + target `wasm32-unknown-unknown`, `dioxus-cli` versi 0.7.x yang sama dengan `Cargo.lock`, Tailwind CSS v4 (`tailwindcss` harus v4, bukan v3), Node, dan Python 3.
 
-Cek yang sama dengan CI (semuanya harus hijau sebelum commit):
+## Menjalankan dan menguji secara lokal
+
+Untuk menguji sebagai satu kesatuan, jalankan **backend dulu**, baru frontend.
+
+### 1. Backend lokal
+
+Di repo `tquilla-api` (dev shell-nya sendiri):
+
+```sh
+dev-local
+```
+
+Tunggu sampai muncul `Ready on http://127.0.0.1:8787`. Perintah ini menyiapkan database lokal berisi data contoh dan mengizinkan origin `127.0.0.1:8080` / `localhost:8080` (CORS). Detailnya ada di README repo backend.
+
+### 2. Frontend
+
+Di folder repo ini (dev shell):
+
+```sh
+web-dev-local
+```
+
+`web-dev-local` menjalankan `dx serve --package web --platform web` dengan `API_BASE_URL=http://127.0.0.1:8787`. Build pertama memakan waktu sekitar 3 menit; berikutnya inkremental dan ada hot reload. Setelah muncul `Serving web` dengan alamat `http://127.0.0.1:8080`, buka alamat itu di browser.
+
+Tanpa Nix, perintah setara:
+
+```sh
+API_BASE_URL=http://127.0.0.1:8787 dx serve --package web --platform web
+```
+
+`API_BASE_URL` dibakar saat **build** (bukan dibaca saat jalan). Hanya `http(s)://host[:port]` tanpa path yang diterima; nilai kosong atau salah berarti "not configured". Mengubahnya butuh build ulang.
+
+### 3. Yang perlu dicek di browser
+
+1. `/`: menu boot tampil, daftar generasi terisi dari backend, navigasi dengan ↑/↓/j/k dan Enter berfungsi. Biarkan 10 detik tanpa menyentuh apa pun: otomatis masuk ke `/deisktify`.
+2. `/profile`: data jurnal muncul (dari data contoh backend).
+3. `/deisktify`: lewati layar boot dan login, lalu buka:
+   - **Guestbook**: ada entri contoh. Kirim pesan Markdown, tekan Refresh, laporkan pesan, lalu sembunyikan dari dashboard admin backend (`http://127.0.0.1:8787/admin/`) dan Refresh lagi.
+   - **Radio**, **Embience**, dan **Browser**: daftarnya terisi dari database.
+   - **Calculator**, **File Manager**, **Settings**, terminal TTY, dan menyeret/menutup jendela.
+   - **AI Assistant** (opsional): butuh kunci API Gemini milik sendiri; riwayat tersimpan di browser.
+4. Tab Network di devtools: permintaan ke `http://127.0.0.1:8787/api/v1/...` berstatus 200 tanpa error CORS.
+
+### Tanpa backend
+
+`web-dev` (tanpa `API_BASE_URL`) tetap berjalan untuk mengerjakan tampilan; jendela yang butuh data akan menampilkan "The server address is not configured".
+
+### Desktop dan Android
+
+`API_BASE_URL` wajib diberikan saat build, mis. `API_BASE_URL=http://127.0.0.1:8787 desktop-dev`. Desktop (`desktop-dev`) sudah pernah dijalankan; Android (`android-dev`) belum teruji di perangkat. Keduanya belum dicoba terhadap backend lokal.
+
+## Pengujian otomatis
+
+Sama dengan CI (semuanya harus hijau sebelum commit):
 
 ```sh
 cargo fmt --all -- --check
 cargo clippy -p components -p markdown --all-targets -- -D warnings
-cargo test -p components -p markdown                       # 179 test: 118 di components (engine kalkulator, window manager, parsing data, URL, API, waktu, guestbook, riwayat chat AI, skeleton, teks UI) + 61 di markdown (termasuk kebijakan host gambar)
-node --test "crates/components/js/tests/*.test.js"       # 55 test JS dengan DOM tiruan (termasuk IndexedDB tiruan)
-python3 -m unittest discover -s scripts -p "test_*.py"     # 10 test: 6 postbuild + 4 path Tailwind per platform
+cargo test -p components -p markdown
+node --test "crates/components/js/tests/*.test.js"
+python3 -m unittest discover -s scripts -p "test_*.py"
 ```
 
----
+Target `wasm32` tidak dikompilasi oleh perintah di atas; kode khusus browser hanya terkompilasi lewat `dx`.
 
-# ✅ TODO
-
-Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
-
-## 🔴 Prioritas 1: bug dan risiko nyata
-
-- [x] **#1** Listener drag window bocor: listener `document` kini dipasang sekali dan meneruskan event ke gesture yang aktif (`window.rs`, `WINDOW_MANAGER_JS`)
-- [x] **#2** `/profile` tidak lagi menampilkan data sample seolah-olah data asli: ada banner "Offline snapshot" saat fallback (`journal/mod.rs`)
-  - [x] ~~Masukkan source Cloudflare Worker (`worker/`) ke repo~~ Tidak berlaku lagi: Worker JavaScript lama diganti port Rust di repo backend (D5a, `v0.5.0`), dan `STATS_API_URL` sudah dihapus
-- [x] **#3** API key Gemini dikirim lewat header `x-goog-api-key`, bukan query string (`ai.rs`, `platform::http::post_json_with_headers`)
-  - [x] Cek ulang nama model (2026-10-26, dari dokumentasi Google): `gemini-3.5-flash` / `gemini-3.7-flash` tercatat di halaman deprecations tanpa tanggal penghentian, dialihkan otomatis ke penerusnya. **Sudah dinaikkan** (2026-10-26) ke `gemini-3.6-flash` (bawaan) dan `gemini-3.8-flash` (keduanya Stable menurut dokumentasi). Belum diuji dengan panggilan nyata: kirim satu pesan di AI chat dengan key sendiri, di kedua model
-- [x] **#4** Breakpoint `xs` didefinisikan di `theme.css` (`--breakpoint-xs: 30rem`), supaya `xs:text-xs` di `home.rs` benar-benar bekerja
-
-> P1 sudah diuji manual dan berjalan baik (2026-10-09).
-
-## 🟠 Prioritas 2: performa load awal
-
-- [ ] **#5** Muat resource per fitur, bukan global (`app.rs`)
-  - [x] `hls.js` dimuat lazy, hanya saat stream `.m3u8` pertama diputar (`AUDIO_JS` di `audio.rs`)
-  - [x] Material Symbols, Inter, dan Playfair Display hanya dimuat di `/profile`; Playfair juga di kalkulator (tombol italik). Font global tinggal JetBrains Mono. Inter 600 dibuang (tidak dipakai)
-  - [ ] Self-host font (woff2 + `@font-face` lokal) dengan subset latin, supaya tidak bergantung ke Google Fonts
-- [x] **#6** Profil release: `debug = false`, `codegen-units = 1`, `panic = "abort"`, `strip = true` ditambahkan di `[profile.release]`. Ukuran `.wasm` sebelum/sesudah belum terukur, cek dengan `web-build` lalu bandingkan isi `target/dx/web/release/web/public/assets/*.wasm`
-- [x] **#7** Hilangkan ketergantungan gambar GitHub saat runtime
-  - [x] Favicon, avatar login, dan avatar `/profile` memakai `shared::AVATAR` (`assets/avatar.jpg`, gambar yang kamu kirim 2026-10-09). Ganti file itu kalau mau foto lain (tetap bernama `avatar.jpg`, atau ubah path di `shared.rs`)
-  - [x] Ikon embience memakai aset lokal `logo-*.svg` (dicocokkan lewat nama file di JSON)
-- [x] **#8** Parse JSON sekali per sesi (`OnceLock`) di `home.rs` (re-render tiap detik karena countdown dan tiap hover) dan `tty/chat_preview.rs` (re-render tiap 3 detik). `browser.rs`, `radio.rs`, `embience.rs`, dan `guestbook.rs` (dulu `livechat.rs`) sudah parse sekali per mount lewat `use_signal`/`use_hook`, jadi tidak perlu diubah (semuanya akan diganti fetch dari database)
-- [x] **#9** Boot screen bisa di-skip: tombol "Skip ⏎" atau tekan tombol apa saja (`booting.rs`). Menyesuaikan durasi dengan waktu load aset sebenarnya belum dikerjakan
-
-> Catatan: perubahan P2 dicek dengan `cargo check` + `cargo test` (native) dan uji JS dengan DOM tiruan, tetapi belum dijalankan di browser. Uji manual: (1) buka `/`, `/profile`, `/deisktify` dan cek tab Network, tidak ada request ke `cdn.jsdelivr.net` sebelum Radio diputar, dan `/` tidak memuat Inter/Playfair/Material Symbols; (2) putar stasiun HLS (mis. Jak FM) dan satu suara Embience; (3) skip boot dengan tombol dan dengan keyboard; (4) cek tombol italik kalkulator dan ikon Embience.
-
-## 🟡 Prioritas 3: SEO, aksesibilitas, UX
-
-- [x] **#10** Metadata
-  - [x] `PageMeta` (`shared.rs`) di tiap route: judul, `description`, canonical, Open Graph, `twitter:card`
-  - [x] Tag statis untuk crawler preview link (tidak menjalankan WASM): `site/head.html` disuntik ke `index.html` oleh `scripts/postbuild.py` di CI, lengkap dengan `<html lang="en">` dan `<noscript>`
-  - [x] `robots.txt` dan `sitemap.xml` (`site/`), disalin ke output oleh `postbuild.py`
-  - [ ] Cek hasil deploy: lihat sumber halaman live dan tes link di <https://opengraph.xyz> atau debugger Facebook/WhatsApp
-  - [x] Kartu preview besar (`summary_large_image`): gambar 1200×630 ada di `site/og-image.jpg`, disalin ke root output oleh `postbuild.py` (URL tetap `/og-image.jpg`). Edit gambarnya kalau mau tampilan lain; ukuran dan nama file jangan diubah
-- [x] **#11** Judul tab seragam ("`<Halaman>` | tquilla.is-a.dev"). Ejaan **`deisktify`** sengaja dipertahankan (URL, judul, komentar), jadi tidak ada rename atau redirect. Typo label di `generations.json` ("Github Jounal") diperbaiki jadi "GitHub Journal"
-- [x] **#12** Aksesibilitas
-  - [x] `alt=""` untuk 2 ikon dekoratif di Live Chat (kini Guestbook) (hasil audit ulang: hanya 2 `img` yang belum punya `alt`, bukan 5)
-  - [x] Daftar generasi memakai pola listbox ARIA (`role="listbox"`/`option`, `aria-activedescendant`); fokus keyboard pindah dari `<section>` ke `<ul>`, `tabindex: "{total}"` diganti `0`
-  - [x] `prefers-reduced-motion` berlaku global (`base.css`); animasi boot dan login sudah punya aturan sendiri
-  - [ ] Uji dengan screen reader (NVDA/VoiceOver) dan navigasi keyboard penuh
-- [x] **#13** Auto-boot di Home dibatalkan oleh interaksi apa pun (tombol, hover, klik, sentuh); teks berubah jadi "Auto boot cancelled"
-- [x] **#14** `LINKEDIN_URL` memakai profilmu dari `generations.json` (`linkedin.com/in/msalmanrafadhlih`). `DISCORD_URL` **sengaja** tetap invite komunitas "Motion IME" (keputusan 2026-10-09, jangan diganti)
-- [x] **#15** Bahasa UI: **Inggris** untuk semua teks antarmuka (hint di Home sekarang berbahasa Inggris, sama seperti AI chat, login, dan banner). Kalkulator ikut Inggris sejak L1 (Algebra/Trigonometry/Calculus, True/False, titik desimal)
-
-> Catatan: P3 dicek dengan `cargo check`, `cargo test`, dan uji `postbuild.py` pada `index.html` tiruan (termasuk dijalankan dua kali, dan kasus gagal). Belum dijalankan di browser. Uji manual: (1) `/`: biarkan 10 detik (redirect ke `/deisktify`), lalu ulangi dan tekan tombol apa saja (hitungan berhenti); navigasi ↑/↓/j/k/Enter; klik area kosong lalu tekan ↓; (2) cek judul tab tiap route; (3) setelah deploy: "view-source" dan cek `og:*`, `lang="en"`, `robots.txt`, `sitemap.xml`; (4) aktifkan "reduce motion" di OS dan cek boot, login, dan jendela.
-
-## 🔵 Prioritas 4: kualitas kode dan CI
-
-- [x] **#16** CI: `.github/workflows/ci.yml` menjalankan `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`, test node, dan test postbuild. Jalan di tiap pull request, dan dipanggil `deploy-page.yml` (`needs: check`), jadi deploy tidak jalan kalau ada yang merah. Seluruh kode sudah diformat dengan `cargo fmt` (diff besar satu kali, sekali ini saja) dan 21 warning clippy dibereskan
-  - [x] Run pertama gagal hanya di langkah `cargo fmt` (baris kosong ekstra di `packages/mobile/src/main.rs`); clippy dan test lulus. Diperbaiki dengan `cargo fmt --all`
-  - [ ] Pastikan run berikutnya hijau sampai job `build` dan `deploy`
-  - [ ] Makro `rsx!` tidak diformat oleh `cargo fmt`; kalau mau seragam, jalankan `dx fmt` (belum dipakai di CI)
-- [x] **#17** Pin versi
-  - [x] `rust-toolchain.toml` + `dtolnay/rust-toolchain@1.97.0` (komponen rustfmt, clippy; target wasm32 di job build)
-  - [x] Binary Tailwind v4.1.11: `curl -f`, dan checksum diverifikasi kalau variable repo `TAILWIND_SHA256` di-set; kalau belum, step memberi **warning berisi hash**. Tindakan kamu: jalankan deploy sekali, salin hash dari warning ke Settings → Secrets and variables → Actions → **Variables** → `TAILWIND_SHA256`
-  - [x] `cargo-bins/cargo-binstall` dipin ke tag `v1.25.2` (sebelumnya `@main`, yang berarti setiap build memakai commit terbaru branch itu). Naikkan tag-nya sengaja saat perlu
-  - [x] Versi `dx` di CI disamakan dengan crate `dioxus` di `Cargo.lock` (0.7.10, bukan 0.7.1)
-- [x] **#18** Test: 53 test Rust (`normalize_url`, `relative_time_between`, parsing semua JSON data, link `generations.json` valid sebagai `Route`, state window manager, mapping ikon embience, engine kalkulator) + 13 test JS + 6 test postbuild. Logika state window kini fungsi murni (`open_or_focus_in`, `close_in`, `toggle_maximize_in`, ...) dengan wrapper `Signal` tipis
-- [x] **#19** JS inline dipindah ke `crates/components/js/*.js` (`include_str!`, semantik `document::eval` tidak berubah), lengkap dengan test node. JS satu-dua baris di Live Chat (kini diganti `guestbook_editor.js`) dan `geometry_sync_js` (berisi interpolasi id) sengaja dibiarkan inline
-- [x] **#20** `relative_time` digabung ke `time.rs` (dipakai Guestbook dan `tty/chat_preview.rs`), dengan test
-- [x] **#21** Rapikan repo: `AGENTS.md` kini diawali panduan khusus project, kedua `Dioxus.toml` diberi catatan "ubah bersamaan" (belum terverifikasi mana yang dibaca `dx`, jadi keduanya dipertahankan), README diperbarui
-  - [x] Baris `/packages/components/src/nixdesk/mod.rs` di `.gitignore` dihapus
-
-> Bug yang ikut ketemu dan diperbaiki saat refactor: tombol brightness tidak berpengaruh karena overlay peredupnya tidak pernah dirender (`pages/interface/mod.rs`). Dicek dengan `cargo fmt`/`clippy`/`test` dan test JS, belum dijalankan di browser.
-
----
-
-## 🔧 Tindak lanjut (2026-10-10)
-
-- [x] CI: perbaikan di #16/#17/#21 di atas (fmt, pin `cargo-binstall`, versi `dx`, `.gitignore`)
-- [x] Navbar: jam + tanggal kini **tombol** yang beralih 24 jam ↔ 12 jam (`nixdesk/clock.rs`: `ClockFormat`, `format_hm`; dipakai navbar, panel jam Terminal, dan perintah `date`). Default **24 jam**; ubah di `ClockFormat::default()`. Pilihan disimpan di context `Signal<ClockFormat>` (provider di `MainPage`), jadi Settings nanti tinggal memakai `use_clock_format()`. Belum disimpan ke `localStorage`, jadi kembali ke default saat halaman dimuat ulang
-- [x] **AI chat: riwayat, side panel, textarea** (2026-10-26; hanya repo ini, backend tidak berubah)
-  - **Model Gemini** dinaikkan ke `gemini-3.6-flash` dan `gemini-3.8-flash` (lihat #3)
-  - **Textarea**: kolom pertanyaan kini `<textarea>` (`js/autosize.js`): mulai 1 baris, tumbuh sampai **5 baris** lalu bisa digulir, menyusut lagi saat teks dihapus, dan menyesuaikan diri bila lebar jendela berubah. **Enter mengirim, Shift+Enter baris baru** (Enter saat memakai IME tidak mengirim)
-  - **Tombol "+" diganti tombol panel riwayat** (ikon baru `icon-sidebar.svg`). Panel menempel **di dalam area jendela AI** (bukan viewport) dan menutup bila area di luarnya diklik
-  - **Riwayat chat** di panel: **New chat**, daftar chat (terbaru dulu, dengan tanggal), buka, **Download** (JSON) per chat, **Delete** (klik kedua mengonfirmasi), dan **Download all (JSON)**. Disimpan **hanya di IndexedDB browser** (`js/chat_store.js`, database `tquilla-ai-chat`, dua store: `meta` ringkas dan `chats` lengkap), jadi tiap pengguna punya riwayatnya sendiri dan tidak ada yang dikirim ke server. **Kunci API tidak pernah disimpan** (tidak ada kolomnya). Chat disimpan segera setelah pesan pertama terkirim dan lagi setelah jawaban datang; judul = pesan pertama (maks. 40 karakter); maksimal 100 chat (yang paling lama tidak diperbarui dibuang); selama permintaan berjalan, berpindah chat dan menghapus chat aktif dinonaktifkan
-  - **Format ekspor** (`format: "tquilla-ai-chat"`, `version: 1`): `{format, version, exported_at, chats: [{id, title, model, created_at, updated_at, messages: [{role: "user" | "assistant", text}]}]}`, waktu ISO 8601 UTC; sama untuk satu chat maupun semua. Nama berkas `chat-<judul>-<YYYYMMDD>.json` atau `chats-<YYYYMMDD>.json`
-  - Kode: `nixdesk/gui/ai.rs` (UI dan `ChatState`), `nixdesk/gui/ai_history.rs` (model data, ekspor, jembatan ke skrip), `js/{chat_store,download_file,autosize}.js`; semua teks baru ada di `Strings` (`ai.*`)
-  - Diuji di sandbox: 14 test Rust untuk `ai_history` (judul, urutan, batas 100, tanggal, bentuk ekspor, nama berkas, kutipan/escape ke skrip), 21 test node baru (IndexedDB tiruan, unduhan, tinggi textarea), `fmt`, `clippy -D warnings`; uji mutasi (hapus batas teks, lupa hapus ringkasan, tanpa batas 5 baris, tanpa pemangkasan, peran ekspor salah) membuat tes gagal
-  - **Belum terverifikasi** (sandbox tidak punya wasm32, `dx`, atau browser): tampilan panel dan textarea di browser sungguhan, **IndexedDB sungguhan** (hanya versi tiruan yang diuji), unduhan berkas di browser, `prevent_default` pada Enter, perilaku di mode privat, dan di desktop/mobile (webview). Catatan: `Cargo.lock` di zip ini tidak diubah; di sandbox `Cargo.lock` yang ada ternyata masih menunjuk `api-types` tag `v0.3.0` dan belum memuat crate `markdown`, jadi pastikan `Cargo.lock` di repomu sudah diperbarui (`cargo update -p api-types`)
-  - [ ] **Uji manual (Moch):** buka AI chat; (1) ketik beberapa baris dengan Shift+Enter: kolom tumbuh sampai 5 baris lalu menggulir, hapus teks: menyusut ke 1 baris; Enter mengirim; (2) kirim pesan (key sendiri): chat muncul di panel dengan judul pesan pertama, jawaban datang; muat ulang halaman: chat masih ada; (3) New chat, kirim pesan lain, buka chat pertama dari panel: isinya kembali; (4) **Download** lalu buka berkasnya: bentuknya sesuai di atas dan tidak memuat key; **Download all**; (5) **Delete** (klik dua kali) menghapus, hapus chat yang sedang dibuka kembali ke chat kosong; (6) panel menutup saat area di luarnya diklik; ubah lebar jendela: panel tetap di dalam jendela; (7) jendela privat/tanpa izin penyimpanan: pesan "This browser blocked local storage..." muncul dan chat tetap bisa dipakai; (8) pilih "3.6 Flash" dan "3.8 Flash": keduanya menjawab
-- [x] **D10 (Stage 3): mitigasi gambar eksternal di Guestbook** (2026-10-27; hanya repo ini, backend dan database tidak berubah; tetap **tanpa unggah gambar dan tanpa base64 di DB**)
-  - **Masalah:** entri boleh memuat gambar dari host mana pun lewat `https://`; memuatnya membuat browser pembaca menghubungi server orang asing (IP, browser, waktu), yaitu cara kerja *tracking pixel*
-  - **Aturan baru:** hanya host di daftar pendek yang dimuat otomatis; gambar dari host lain **tidak diminta ke jaringan sama sekali** sampai pembaca mengeklik tombol **"Load image from <host>"**. Satu klik membuka semua gambar dari host itu selama kunjungan itu (hanya di memori, tidak disimpan), jadi deretan badge cukup satu klik. Gambar kecil (sisi `width`/`height` ≤ 64 px, mis. ikon dan badge) mendapat kotak kecil `▣`, bukan tombol penuh. Alamat yang hostnya tidak bisa dibaca dengan aman dibuka satu per satu
-  - **Daftar** (`crates/markdown/src/images.rs`, `TRUSTED_HOSTS` dan `TRUSTED_SUFFIXES`; ubah di sana): `img.shields.io`, `github.com`, `tquilla.is-a.dev`, dan `githubusercontent.com` beserta subdomainnya (`raw.`, `avatars.`, `user-images.`, `camo.`). Sengaja **tidak** ada: `komarev.com` (penghitung kunjungan, memang pelacak), `i.imgur.com`, dan host lain
-  - **Ketat terhadap trik alamat:** pencocokan memakai host yang akan dipakai browser, dan menjawab "tidak tepercaya" untuk user info (`https://raw.githubusercontent.com@evil.dev/`), `\` (browser membacanya `/`), port selain 443, karakter kontrol/spasi, `%`-escape, huruf non-ASCII, literal IP, label kosong, subdomain palsu (`raw.githubusercontent.com.evil.dev`, `evilgithubusercontent.com`)
-  - Tampilan: `markdown_view.rs` (`Picture`). Teks baru di `Strings` (`guestbook.image_load`, `image_unknown_host`). Tab Preview di editor memakai aturan yang sama
-  - Diuji di sandbox: 8 test kebijakan host (daftar, host lain, trik alamat, host yang ditampilkan, batas label, ukuran ikon, daftar itu sendiri); uji mutasi (batas titik subdomain, `\`, user info, port) membuat tes gagal. Pemeriksaan karakter kontrol berlebih dengan pemeriksaan karakter host (jaring pengaman ganda, tidak terdeteksi mutasi)
-  - Yang **tidak** dilakukan: CSP `img-src` (GitHub Pages tidak bisa mengirim header; `<meta>` CSP tidak bisa menerima host yang dibuka lewat klik), jadi aturan ini ditegakkan oleh kode tampilan, bukan oleh browser
-  - **Diuji Moch (2026-10-28, tag frontend `generation_8.1`)**: Guestbook dengan aturan baru berjalan (butir per butir uji di bawah tidak dirinci; ulangi bila ragu)
-  - [x] **Uji manual (Moch):** di Guestbook kirim entri berisi (a) `![x](https://raw.githubusercontent.com/msalmanrafadhlih/msalmanrafadhlih/main/<gambar>.png)` dan badge `img.shields.io`: muncul langsung; (b) `<img src="https://komarev.com/ghpvc/?username=x" width="20">` dan `![x](https://i.imgur.com/<id>.png)`: muncul kotak `▣` dan tombol "Load image from i.imgur.com", Network tab **tidak** menunjukkan permintaan ke host itu; klik: gambar dimuat dan gambar lain dari host yang sama ikut terbuka; muat ulang halaman: kembali tertutup; (c) `<img src="https://raw.githubusercontent.com@example.com/a.png">`: diminta klik dan host yang tampil `example.com`; (d) `<div align="center">` dengan beberapa badge kecil: tata letak tetap rapi
-- [x] **Skeleton loading** (2026-10-27): komponen bersama `crates/components/src/skeleton.rs` (`pub mod skeleton`): `SkeletonGroup` (pembungkus: satu pengumuman "loading" yang sopan untuk pembaca layar, bentuk di dalamnya `aria-hidden`), `Skeleton` (persegi panjang, ukuran lewat kelas), `SkeletonCircle`, `SkeletonText { lines }`, `SkeletonRows { rows }`, `SkeletonEntries { rows, avatar }`. Warna mengikuti warna teks sekitar (jadi cocok di desktop gelap dan di jurnal berwarna kertas); denyutnya berhenti bila pembaca meminta *reduced motion*. Dipakai sekarang di Guestbook, Radio, Browser, Embience, dan jurnal (`/profile`); `Home` (layar boot) sengaja tetap teks, dan `remote::Loading` tetap ada untuk tempat lain. Contoh pakai ada di komentar modul. Diuji: 3 test (lebar baris, kelas bentuk). **Diverifikasi Moch (2026-10-28, `generation_8.1`)**: skeleton tampil dan berdenyut, kelas `animate-pulse` dan `motion-reduce:` bekerja. Catatan Moch: bentuknya generik (sama di semua layar) dan belum menirukan bentuk komponen aslinya; diterima untuk sekarang
-- [ ] Brightness: **ditunda**. Rencana: diganti popup window untuk theme/preferences yang tersambung ke aplikasi Settings. Overlay peredup (`pages/interface/mod.rs`) sudah ada, tinggal disambungkan
-- [X] **Ukur ukuran wasm** (kerjaanmu, langkah di bawah)
-  - update: wasm_compresed: size: 1.4mb gzip: 452141  brotli: 389603
-  - update: wasm_uncompresed: size: 3.5mb gzip: 762299  brotli: 654407
-- [ ] **Self-host font** (kerjaanmu, langkah di bawah)
-
-### Mengukur ukuran wasm
+## Build dan deploy
 
 ```sh
-# 1. Build produksi persis seperti CI
-web-build        # = dx bundle --package web --platform web --release
-W=target/dx/web/release/web/public/assets
-ls -l $W/*.wasm                                   # ukuran mentah
-for f in $W/*.wasm; do
-  echo "$f  gzip: $(gzip -9 -c "$f" | wc -c)  brotli: $(brotli -9 -c "$f" | wc -c)"
-done                                              # ukuran yang benar-benar diunduh pengunjung (GitHub Pages memakai gzip)
+web-build        # dx bundle --package web --platform web --release
 ```
 
-Untuk membandingkan sebelum/sesudah `[profile.release]` (isi: `opt-level = "z"`, `lto`, `codegen-units = 1`, `panic = "abort"`, `strip`): catat angka di atas, ganti sementara blok `[profile.release]` di `Cargo.toml` dengan `[profile.release]` kosong, `cargo clean -p web -p components`, build ulang, catat lagi, lalu kembalikan. Hasil yang masuk akal dicatat di README: ukuran mentah dan gzip.
+Deploy ke GitHub Pages hanya lewat tag `generation_*` (atau tombol *Run workflow*), dengan variable repo `API_BASE_URL` berisi alamat Worker produksi. Rilis aplikasi desktop dan Android lewat tag `app-v*`. Push biasa ke `main` tidak men-deploy.
 
-Kalau mau tahu isi yang paling besar: `cargo install twiggy`, lalu `twiggy top -n 25 $W/*.wasm`. Build berbeda (`debug = false`, `strip = true`) menghapus nama fungsi, jadi untuk analisis build dengan `strip = false` dulu.
+## Pemecahan masalah
 
-### Self-host font
-
-Font yang dipakai sekarang (semuanya lewat Google Fonts):
-
-| Font | Dipakai di | Berat/gaya | Catatan |
-| --- | --- | --- | --- |
-| JetBrains Mono | semua route (`app.rs`) | 400 | |
-| Inter | `/profile` (`journal/mod.rs`) | 300, 400, 500 | |
-| Playfair Display | `/profile` dan tombol italik kalkulator | 400, 700, dan italik 400, 700 | |
-| Material Symbols Outlined | `/profile` | enam ikon: `bolt`, `code`, `public`, `star`, `timeline`, `trending_up` | file penuhnya sangat besar; lihat opsi di bawah |
-
-**Unduh (sumber yang sama dengan Google Fonts, sudah dipecah per subset, format woff2):**
-
-- [JetBrains Mono di Fontsource](https://fontsource.org/fonts/jetbrains-mono/cdn), [Inter](https://fontsource.org/fonts/inter/cdn), [Playfair Display](https://fontsource.org/fonts/playfair-display/cdn). Lewat npm, di folder sementara di luar repo:
-
-  ```sh
-  mkdir /tmp/fonts && cd /tmp/fonts && npm init -y >/dev/null
-  npm i @fontsource/jetbrains-mono @fontsource/inter @fontsource/playfair-display
-  F=node_modules/@fontsource
-  D=<repo>/crates/components/assets/fonts && mkdir -p $D
-  cp $F/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2 $D/
-  cp $F/inter/files/inter-latin-{300,400,500}-normal.woff2 $D/
-  cp $F/playfair-display/files/playfair-display-latin-{400,700}-{normal,italic}.woff2 $D/   # {normal,italic} untuk 400 dan 700
-  ```
-
-  Cek nama file yang sebenarnya dengan `ls $F/<nama>/files | grep latin-`. Hanya subset `latin` yang perlu; teks situs ini berbahasa Inggris dan Indonesia.
-- Alternatif GUI: [JetBrains Mono (rilis resmi, ada folder webfonts)](https://github.com/JetBrains/JetBrainsMono).
-
-**Memasang:** hapus `FONTS_URL`/`INTER_FONT_URL`/`PLAYFAIR_FONT_URL` dan dua `preconnect` ke Google di `app.rs`, lalu deklarasikan `@font-face` dari aset lokal. Taruh CSS-nya lewat `document::Style` supaya URL berhash dari `asset!` ikut masuk (URL relatif di dalam file `.css` tidak dijamin ditulis ulang oleh bundler):
-
-```rust
-const JB_400: Asset = asset!("/assets/fonts/jetbrains-mono-latin-400-normal.woff2");
-
-fn font_face(family: &str, weight: u16, style: &str, file: &Asset) -> String {
-    format!(
-        "@font-face{{font-family:'{family}';font-weight:{weight};font-style:{style};\
-         font-display:swap;src:url({file}) format('woff2');}}"
-    )
-}
-// di rsx!: document::Style { {font_face("JetBrains Mono", 400, "normal", &JB_400)} }
-// + document::Link { rel: "preload", href: JB_400, r#as: "font", r#type: "font/woff2", crossorigin: "" }  // hanya font utama
-```
-
-Lalu pindahkan pemanggilan Inter/Playfair ke komponen yang memakainya (seperti sekarang: `journal/mod.rs`, `calculator/mod.rs`). Cek di tab Network: tidak ada lagi request ke `fonts.googleapis.com` / `fonts.gstatic.com`.
-
-**Material Symbols (pilih salah satu):**
-
-1. *Paling mudah:* tetap pakai Google tetapi hanya enam ikon, tambahkan `&icon_names=bolt,code,public,star,timeline,trending_up` ke `MATERIAL_SYMBOLS_URL` (nama ikon **harus berurutan alfabet**, lihat [panduan Material Symbols](https://developers.google.com/fonts/docs/material_symbols)). Ukuran turun dari ratusan KB ke beberapa KB. Belum saya uji (sandbox tidak bisa menjangkau Google Fonts).
-2. *Tanpa font sama sekali:* ganti enam ikon itu dengan SVG inline. Enam saja, jadi ringan dan tanpa request tambahan.
-3. Self-host font penuh tidak disarankan: file variabelnya besar dan kamu juga perlu menulis sendiri CSS kelas `.material-symbols-outlined` (ligature).
-
----
-
-## 🖥️ Platform desktop dan mobile
-
-Diagnosis (2026-10-10), `platform/desktop` dan `platform/mobile`:
-
-- **Penyebab error yang terkonfirmasi:** kedua `main.rs` memakai `asset!("/assets/tailwind.css")`, tetapi file itu hasil generate Tailwind dan di-`.gitignore`, jadi tidak ada di checkout bersih. `cargo check` gagal dengan `Asset at /assets/tailwind.css doesn't exist`. Kode Rust-nya sendiri sehat: dengan file itu ada, `cargo check` dan `clippy -D warnings` lolos di Linux (rustc 1.97.0, `--locked`).
-- **Syarat di luar kode:** `cargo check -p desktop`/`-p mobile` di host Linux butuh library sistem webview (webkit2gtk-4.1, GTK3, libxdo). Di Nix sudah disediakan `devenv.nix`; di CI lihat `platforms.yml`.
-
-- [x] Diagnosis di atas
-- [x] `build.rs` di `platform/desktop` dan `platform/mobile`: membuat `assets/tailwind.css` kosong kalau belum ada (tidak pernah menimpa file yang ada). `dx`, CI, dan `nix build` tetap menimpanya dengan CSS asli. `platform/web` sengaja **tidak** diubah supaya jalur deploy yang berjalan tidak tersentuh
-- [x] `.github/workflows/platforms.yml`: `cargo check` + `clippy -D warnings` untuk desktop dan mobile. Workflow **terpisah** dari `ci.yml`, jadi tidak menahan deploy Pages
-- [x] `platforms.yml` terbukti lulus di runner GitHub sungguhan (log dari Moch, 2026-10-11)
-- [x] Uji manual `desktop-dev` (2026-10-11, Moch): build selesai (±246 dtk), aplikasi terbuka, keluar dengan normal. Bagian dalamnya belum dirinci: CSS termuat, jam, window manager, kalkulator, Radio/Embience (audio di webview GTK butuh GStreamer), AI chat (HTTP lewat `reqwest`)
-- [ ] Uji manual `android-dev` / `android-build`:
-  - Percobaan 1 (2026-10-11) **gagal**: `Failed to install the following SDK components: platforms;android-34, build-tools;34.0.0 ... The SDK directory is not writable (/nix/store/...)`. Penyebab: project Gradle buatan `dx` 0.7.10 (AGP 8.7.0) memakai `compileSdk`/`targetSdk` 34 dan build-tools 34.0.0, sedangkan modul template `android` di `devenv.nix` hanya memasang platform dan build-tools 35/36. Gradle lalu mencoba memasang sendiri ke `/nix/store` yang read-only
-  - Perbaikan (belum diuji): `devenv.nix` kini membangun SDK sendiri lewat `android-nixpkgs` (platform 34/35/36, build-tools 34.0.0/35.0.0/36.0.0, NDK 26.1.10909125, `platform-tools`, `cmdline-tools`) dan menimpa `env.ANDROID_HOME` dengan `lib.mkForce`. Sintaks Nix sudah dicek, evaluasinya belum (sandbox tidak bisa mengunduh flake). Jalankan ulang `android-build`; kalau Nix menolak nama atribut, kirim pesan errornya
-  - Masih mungkin bermasalah setelah itu: `reqwest` + `rustls` (kompilasi `ring` dengan NDK), `[bundle]` identifier di `Dioxus.toml`, izin `INTERNET`
-- [x] Catatan versi Rust (2026-10-28): kode ini **diuji di Rust 1.97.0** (sandbox memakai tepat versi itu: `fmt`, `clippy -D warnings`, semua test, `dx build/bundle` desktop), sama dengan pin `rust-toolchain.toml` dan semua workflow (termasuk `release-apps.yml`). Shell devenv memakai `fenix stable` dari template (`flake.lock` saat ini 1.98.1), jadi clippy lokal bisa menampilkan lint yang belum ada di 1.97.0: itu bukan galat di CI. Untuk hasil identik dengan CI: `cargo +1.97.0 clippy --all-targets -- -D warnings`. Menaikkan pin = ubah `rust-toolchain.toml` dan semua `dtolnay/rust-toolchain@...` bersamaan
-- [x] Mobile: `open_external` memakai `webbrowser` (lihat butir "`open_external` mobile" di bawah; jalur Android belum teruji di perangkat)
-- [x] **Desktop Linux dijalankan di sandbox (2026-10-28)** (Xvfb + WebKitGTK 4.1, `dx build --package desktop --platform desktop`, ±4 mnt dari nol; ±2 mnt inkremental). Hasil yang terlihat sungguhan: layar boot, login (demo ketik otomatis, ketik manual, "Wrong"), desktop, File Manager, kalkulator, AI Assistant (panel riwayat, IndexedDB, textarea 1–3 baris), TTY shell (perintah, panah atas). Menu bar bawaan GTK (*Window/Edit/Help*) tadinya muncul di atas jendela (sudah disembunyikan, lihat bawah)
-  - **Bug ditemukan dan diperbaiki: karakter hilang saat mengetik cepat.** Di webview desktop peristiwa `input` sampai ke Rust secara asinkron; kolom yang diikat ke signal (`value: "{signal}"`) menimpa DOM dengan nilai usang, jadi ketikan 40 ms/karakter kehilangan huruf (`lineline…` menjadi `linelieielielinline`); pada 250 ms aman, dan tanpa ikatan `value` aman di 40 ms. Web tidak terkena, tetapi desktop dan kemungkinan seluler ya. Perbaikan: kolom teks **tanpa** `value`; DOM pemilik teks, signal hanya cermin lewat `oninput`, dan perubahan dari kode lewat helper baru `js_util::set_field` + `js/set_field.js` (parameter `EXPECT`: dikosongkan hanya bila DOM masih memuat persis teks yang dikirim, jadi ketikan yang menyusul tidak hilang). Dipakai di textarea dan kunci API AI, Guestbook (nama, URL, editor; editor yang dibuat ulang saat pindah tab Write/Preview mengambil `initial_value` dari draft), Browser (label/URL tab), TTY shell (kosongkan + panggil riwayat), dan login (demo hanya menggambar titik; fokus saat demo berjalan memulai dari kosong). Slider volume sengaja tetap terikat. Diuji: 7 test JS + 2 test Rust baru, dan ulang di desktop (ketik 30–40 ms/karakter bersih di AI, TTY, login)
-  - Bug kecil ikut diperbaiki: pesan error AI memakai kelas Tailwind rusak (`text-[var(--red text)]-xs`), sehingga tampil besar dan terpotong; kini `text-[var(--red)] text-xs`, bisa terlipat, dan `role="alert"`
-  - **`API_BASE_URL` wajib saat build desktop** (opsional di web, lihat D1): tanpa itu Home, Browser, Radio, Guestbook menampilkan "The server address is not configured" (terkonfirmasi di sandbox). Pakai `API_BASE_URL=https://<worker> desktop-dev` atau `desktop-build`; tugas devenv kini memberi peringatan kalau kosong. Bagian yang butuh API belum teruji jalan karena sandbox tidak bisa menjangkau Worker
-  - **Belum terverifikasi:** Radio/Embience (audio via GStreamer; sandbox tanpa perangkat audio), Guestbook/Browser/Home dengan API sungguhan, `dx bundle --release` desktop, build desktop di mesin Moch, Windows/macOS, dan perilaku IME di webview
-- [x] **Menu bar bawaan GTK disembunyikan** (2026-10-28, permintaan Moch): `Config::new().with_menu(None)` di `platform/desktop/src/main.rs`. Terlihat di tangkapan layar app rilis yang terpasang: tidak ada baris *Window/Edit/Help*
-- [x] **Rilis app per arsitektur** (2026-10-28): workflow `release-apps.yml` (tag `app-v*` atau *Run workflow*) membangun, tiap arsitektur jadi berkas sendiri (tidak ada build "universal"), lalu menaruhnya + `SHA256SUMS.txt` + catatan pemasangan di Release GitHub untuk tag itu. Satu arsitektur gagal tidak membatalkan yang lain. Yang dibangun: Linux x86_64 dan arm64 (`.deb`, `.rpm`), Windows x86_64 (`.exe` NSIS), macOS Apple Silicon dan Intel (`.dmg`), Android arm64-v8a (`.apk`). **Sengaja tidak**: Windows ARM64, Linux 32-bit, Android x86/armv7, iOS, dan AppImage (alat pengemasnya tidak bisa diuji di sandbox dan WebKitGTK + GStreamer di dalam AppImage rapuh). Runner arm64 Linux (`ubuntu-24.04-arm`) gratis hanya untuk repo publik; kalau repo ini privat, hapus entri `linux-arm64`. Tambah/kurangi arsitektur = ubah `matrix.include`
-  - **Terbukti di sandbox (Linux x86_64):** `dx bundle --release --package-types deb --package-types rpm` menghasilkan `nixos-desktop_0.1.0_amd64.deb` (±3,2 MB) dan `nixos-desktop-0.1.0-1.x86_64.rpm`; `.deb` dipasang dengan `apt install` (dependensi WebKitGTK/GStreamer ikut), dijalankan dari `/usr/bin/nixos-desktop`, tampil dengan gaya penuh, tanpa menu bar. `actionlint` bersih untuk semua workflow
-  - **Masalah yang ketahuan karena dicoba, dan sudah diperbaiki:** (1) ikon: PNG kecil di `[bundle].icon` + konversi `.ico` menabrak ukuran yang sama dan RPM gagal ("duplicate file entry"); sekarang hanya `icon.png` (512) + `icon.ico`; (2) nama paket/biner `desktop` (`/usr/bin/desktop`): biner kini `nixos-desktop` lewat `[[bin]]` (nama paket Cargo tetap `desktop`; `wrapProgram` di `flake.nix` disesuaikan; Android: `nixos-mobile`, jadi label "NixosMobile"); (3) **`dx bundle` tidak menjamin Tailwind sudah jadi sebelum compile**: tanpa langkah sendiri, bundel berhasil tetapi app tampil tanpa gaya (CSS 0 byte); workflow menjalankan Tailwind v4.1.11 standalone dulu; (4) `build.rs` desktop/mobile kini juga `rerun-if-changed=assets/tailwind.css`, jadi menghapus file hasil generate tidak membuat `cargo check` memakai hasil lama
-  - **Belum terverifikasi (tidak bisa dijalankan di sandbox):** semua job di runner GitHub sungguhan; `.exe` NSIS di Windows; `.dmg` di macOS (app tidak ditandatangani/dinotarisasi, jadi Gatekeeper menolak sampai dibuka lewat klik-kanan atau `xattr`); `.rpm` dipasang di Fedora (hanya dibuat); build arm64; seluruh jalur Android (SDK/NDK 26.1.10909125, Gradle, `--target aarch64-linux-android` wajib karena tanpa itu dx memilih arsitektur mesin build). Android: APK ditandatangani kunci debug kecuali secret `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (opsional `ANDROID_KEY_PASSWORD`) diisi; ikon peluncur dan nama aplikasi (lihat di bawah) serta `open_external` mobile (lihat di bawah) sudah dikerjakan tetapi belum pernah jalan di perangkat/emulator
-  - Langkah pertama untuk Moch: pasang variable repo `API_BASE_URL` (sudah ada untuk web), push tag `app-v0.1.0` (atau *Run workflow*), lalu laporkan job mana yang merah; log job menunjukkan langkah penyebabnya
-- [x] **Ikon peluncur Android = logo NixOS** (2026-10-28): dx tidak punya pengaturan ikon Android (ikon bawaan ditulis ulang tiap build), jadi `platform/mobile/android-res/` berisi resource pengganti (ikon adaptif: logo berwarna `logo-nixos.svg` di latar `#2A2A2A`; ikon lama `mipmap-*/ic_launcher.webp` 48–192 px; nama aplikasi "NixOS Desktop") dan `release-apps.yml` menimpanya ke project Gradle buatan dx lalu merakit ulang APK (`assembleRelease` bila keystore ada, selain itu `assembleDebug`, sama dengan pilihan dx). Pratinjau hasil render (lingkaran adaptif dan ikon lama) sudah dilihat; **belum terverifikasi**: langkah CI itu sendiri (path project Gradle dicari dengan `find target/dx -name gradlew`) dan tampilan ikon di HP. Mau mengganti ikon: ubah berkas di `android-res/` (foreground 432×432 PNG transparan, logo di tengah ±56% lebar agar aman dari mask bulat)
-- [x] **Run pertama `release-apps.yml` (tag `app-v0.1.0`, 2026-10-28, log dari Moch)**: 5 job desktop **berhasil** (Linux x86_64 dan arm64, Windows x86_64, macOS arm64 dan Intel) dan Release GitHub terbit; job **Android gagal** di langkah "Build Tailwind CSS" (49 dtk), jadi langkah sesudahnya (`dx bundle` Android, ikon NixOS, tanda tangan) **belum pernah jalan**
-  - **Penyebab:** `platform/mobile/tailwind.css` masih memakai path dari tata letak lama `packages/` (`../components/theme.css`); sejak workspace dipindah ke `crates/components` path yang benar `../../crates/components/theme.css` (seperti web dan desktop). Galat: `Can't resolve '../components/theme.css' in '.../platform/mobile'`. `platforms.yml` tidak melihatnya karena `build.rs` membuat `assets/tailwind.css` kosong
-  - **Perbaikan:** path `@import` dan `@source` di `platform/mobile/tailwind.css` disamakan dengan desktop. Terbukti di sandbox dengan Tailwind v4.1.11 (galat yang sama muncul dengan path lama; dengan path baru CSS mobile identik dengan desktop, 58.218 byte). Tes baru `scripts/test_tailwind_paths.py` (jalan di `ci.yml`): semua `@import` lokal harus ada, glob `@source` harus menunjuk folder yang ada, dan ketiga platform harus memakai `theme.css` yang sama; uji mutasi dengan path lama membuatnya gagal
-  - **Belum terverifikasi:** Android sesudah langkah Tailwind (SDK 34 + build-tools + NDK 26.1 lewat `sdkmanager` sudah lolos di log, sisanya belum). Windows: installer 184 MB (Linux ±3 MB), dugaan WebView2 offline ikut tertanam; lihat catatan di balasan, belum diubah
-- [x] **`open_external` mobile** (2026-10-28): `platform/mobile/src/main.rs` memakai crate `webbrowser` (Android `Intent.ACTION_VIEW`, iOS `openURL`; crate yang sama dipakai dioxus-desktop untuk klik tautan), jadi tautan keluar membuka browser sistem dan app tidak ditinggalkan. `Home` sudah menyaring hanya `http(s)` sebelum memanggilnya. Lolos `clippy -D warnings`; jalur Android/iOS **belum terverifikasi** (sandbox tanpa target Android dan perangkat). **Catatan `Cargo.lock`:** `mobile` kini bergantung pada `webbrowser` (sudah ada di lock lewat dioxus-desktop); jalankan `cargo check -p mobile` tanpa `--locked` dan commit `Cargo.lock`, kalau tidak `platforms.yml` (`--locked`) gagal
-- [x] Mobile: URL API (`API_BASE_URL` saat build, sama seperti desktop; sudah ikut di `release-apps.yml`). Belum dicoba di perangkat
-
----
-
-## 🗄️ Fullstack dan database
-
-Tujuan: mengganti file JSON dummy di `crates/components/data/` dengan database sungguhan lewat API terpisah.
-
-### Keputusan (D0, 2026-10-10)
-
-| Hal | Keputusan |
+| Gejala | Penyebab dan solusi |
 | --- | --- |
-| Hosting | **Opsi B**: frontend tetap di GitHub Pages (workflow, `CNAME`, `404.html`, `postbuild.py` tidak berubah) + API terpisah |
-| Runtime API | **Axum** (Rust) di **Cloudflare Workers** lewat `workers-rs` (fitur `http`). Bukan Cloudflare Containers |
-| Database | **Turso (libSQL)** untuk produksi; SQLite lokal untuk development (`turso dev`, protokol HTTP yang sama) |
-| Repo | **Dua repo**: ini (frontend, GitHub Actions ke Pages) dan repo backend baru, **publik** (nama rencana `tquilla-api`, tetapi repo yang dibuat Moch bernama **`deisktify-worker.rs`**; URL itu yang dipakai di git dependency), deploy ke Cloudflare lewat Actions miliknya sendiri |
-| Klien ↔ server | **REST + JSON** lewat `platform::http`. Tanpa `#[server]` dan tanpa `dx serve --fullstack`, karena server function Dioxus butuh binary server Dioxus |
-| Tipe bersama | crate `api-types` (struct serde, batas validasi, `normalize_url`) hidup di repo backend; frontend memakainya dari **crates.io** sejak B6 (paket `tquilla-api-types`, nama library tetap `api_types`; dulu git dependency dengan **tag**) |
-| Migrasi | file `.sql` biasa di repo backend, dijalankan lewat Turso CLI. `sqlx` tidak dipakai: tidak bisa compile ke wasm32 dan tidak bicara ke Turso |
-| Domain API | `*.workers.dev` dulu. Belum dipastikan apakah `is-a.dev` mengizinkan `api.tquilla.is-a.dev` |
-| CORS | hanya origin `https://tquilla.is-a.dev`; `localhost` hanya lewat env var di development |
+| "The server address is not configured" | Dijalankan dengan `web-dev`; pakai `web-dev-local` (atau isi `API_BASE_URL`) dan build ulang |
+| "Could not reach the server." atau error CORS di console | Backend belum jalan, atau origin di tab browser tidak ada di `ALLOWED_ORIGINS` backend (`crates/api/.dev.vars`). `dx` memakai port 8080; kalau berpindah port, tambahkan origin barunya dan mulai ulang backend |
+| Port 8080 terpakai, `dx` memilih port lain | Bebaskan 8080 (port 8081 dipakai database backend) |
+| Daftar kosong padahal backend jalan | Database belum di-seed: jalankan ulang `dev-local` di repo backend |
+| `wasm-bindgen version mismatch` | Versi `dx` tidak cocok dengan `Cargo.lock`; lihat <https://wiki.nixos.org/wiki/Dioxus> |
+| Gaya hilang di desktop/mobile | `assets/tailwind.css` belum dibuat; `dx serve/bundle` membuatnya otomatis |
+| Build pertama sangat lama | Wajar (kompilasi ke WASM, ±3 menit); build berikutnya inkremental |
 
-> **B6 (keputusan Moch, 2026-10-30):** repo backend akan dibuat **privat**, repo ini tetap publik (GitHub Pages gratis, Release publik, runner arm64 gratis hanya untuk repo publik). Karena itu kontrak `api-types` diterbitkan ke crates.io sebagai **`tquilla-api-types`** dan repo ini memakainya dari sana, bukan lewat git. **Kerugian yang diterima:** tag lama repo ini (`generation_*`, `app-v0.1.0`, dst.) terkunci ke git dependency di repo backend dan **tidak bisa dibangun ulang** setelah backend privat; hanya tag baru yang bisa. Status tahap dan catatan "belum terverifikasi" ada di README repo backend, bagian "B6". Yang terbit di crates.io bersifat **permanen dan publik**.
->
-> **Status (2026-10-31):** `tquilla-api-types 0.1.0` sudah terbit di crates.io dan repo ini memakainya (`Cargo.lock` mencatat sumber `registry` dengan checksum). Sandbox: `cargo fmt`, `clippy -D warnings`, 179 test Rust (118 + 61), 55 test JS, 10 test Python, `actionlint`, semuanya dengan `--locked`. **Diverifikasi Moch (2026-10-31):** CI hijau, deploy tag `generation_8` dan `release-apps` tag `app-v0.2.0` berjalan tanpa log gagal. **Belum terverifikasi:** `nix build`, `platforms.yml` setelah perubahan ini (sandbox tidak punya pustaka GTK, jadi `clippy -p desktop -p mobile` tidak bisa dijalankan di sana), dan build dengan cache kosong setelah repo backend privat (dicek di tahap 6 B6).
+## Dokumentasi lain
 
-```text
-Browser / Desktop / Android  (Dioxus, repo ini)
-        │  REST + JSON, tipe dari crate api-types
-        ▼
-Cloudflare Worker  (Axum via workers-rs, repo tquilla-api)
-        │  HTTP ke Turso            │ (R2 dibatalkan: butuh kartu)
-        ▼                           ▼
-Turso (libSQL)               Cron Trigger (D5, D7)
-```
-
-Rencana isi repo backend: `crates/api-types` (dites native), `crates/api` (Worker, hanya wasm32), `migrations/*.sql`, `wrangler.toml`, `.github/workflows/{ci,deploy}.yml`.
-
-### Risiko dan yang belum terverifikasi
-
-- `workers-rs` sendiri mengaku "rough edges" ([README](https://github.com/cloudflare/workers-rs)). Tokio dan semua crate native tidak bisa dipakai; semua dependensi harus compile ke `wasm32-unknown-unknown`.
-- Klien Rust Turso untuk Workers: `libsql-client` (backend Workers) sudah deprecated, dan dukungan wasm32 crate `libsql` belum terkonfirmasi. Rencananya klien HTTP kecil sendiri (`worker::Fetch`) ke API HTTP Turso. Bahwa `turso dev` memakai protokol yang sama belum diverifikasi.
-- Batas plan gratis Workers (ukuran wasm, waktu CPU per request) harus dicek di dokumentasi Cloudflare sebelum D4. Kalau terlampaui, jalur cadangannya Workers Paid atau Cloudflare Containers ($5/bulan, tanpa free tier).
-- Sandbox tidak bisa membangun wasm32 maupun menjangkau Cloudflare/Turso: semua yang menyentuh keduanya baru terbukti setelah Anda mengujinya sendiri.
-
-### Rencana bertahap
-
-- [x] **D0** Putuskan opsi hosting dan database produksi (lihat tabel di atas)
-- [x] **D1** Fondasi, dipecah dua: **D1a** (repo backend) dan **D1b** (sisi repo ini). Keduanya selesai dan sudah dicek Moch (2026-10-15): `Cargo.lock` sudah di-commit, variable `API_BASE_URL` sudah di-set
-  - [x] **D1a** Repo backend `tquilla-api` (zip terpisah): workspace Cargo, `crates/api-types`, `crates/turso-http` (klien Hrana-over-HTTP, tanpa dependensi native), `crates/api` (Axum + `workers-rs`, `GET /api/v1/health`, CORS allowlist, header keamanan, batas body 16 KiB), `wrangler.toml`, CI (fmt, clippy, test native, build wasm32, fixture dari klien referensi). Terverifikasi native: fmt, clippy `-D warnings`, 41 test. **Terverifikasi oleh Moch (2026-10-14):** CI hijau, `worker-build` + `wrangler dev` jalan, `GET /api/v1/health` → 200 `{"status":"ok","db":true}` (`SELECT 1` lewat protokol Hrana ke server libSQL). **Belum:** `batch`/transaksi (baru dipakai di D2), `wrangler deploy` ke Cloudflare, batas plan gratis. Temuan di jalan: `strip = true` membuat `worker-build` gagal (`externref table required for catch wrappers`), diganti `strip = "debuginfo"`; `turso dev` butuh `sqld`; `worker-build` dari `cargo install` gagal di NixOS (`libssl.so.3`), pakai paket nixpkgs + `WASM_OPT_BIN`
-  - [x] D1a Dev lokal: `turso dev` + `wrangler dev`; `.dev.vars.example` (tanpa kredensial asli); `flake.nix`/`devenv.nix` backend (turso-cli, wrangler; sintaks dicek, evaluasi belum)
-  - [x] **D1b** Repo ini (kode selesai, 2026-10-14): `crates/components/src/api.rs` (`pub mod api`): base URL dari `option_env!("API_BASE_URL")` (hanya `http(s)://host[:port]`, tanpa path; kalau kosong/salah → `ApiError::NotConfigured`, bukan host tebakan), `ApiError` (`NotConfigured`, `InvalidPath`, `BodyTooLarge`, `Network`, `Status{status, detail}`, `Decode`; `Display` singkat berbahasa Inggris dan tidak membocorkan URL/body), `get`/`post` bertipe di atas `platform::http`, `health()` (503 `degraded` dianggap data). Path hanya boleh di bawah `/api/v1/`. `api-types` jadi git dependency di `[workspace.dependencies]` (`tag = "v0.1.1"`). `API_BASE_URL` diteruskan ke `dx bundle` di `deploy-page.yml`. 9 test baru (62 total). Terverifikasi di sandbox dengan `api-types` lewat `path` (clippy `-D warnings` + test); lewat git belum, lihat langkah di bawah
-    - Dev lokal web: `API_BASE_URL=http://127.0.0.1:8787 dx serve --package web --platform web` (backend: `db-dev` + `api-dev`; tambahkan `http://127.0.0.1:8080` ke `ALLOWED_ORIGINS` di `.dev.vars`)
-    - Belum ada UI yang memakai `api` (tahap D3). `api::health()` belum dipanggil dari mana pun
-  - Tidak dikerjakan: `devenv.nix`/`flake.nix` repo ini tidak perlu `turso-cli` dan `wrangler` selama dev backend dijalankan dari repo backend
-- [x] **L1** Bahasa UI (kode selesai 2026-10-15; lihat uji manual di bawah)
-  - [x] Modul `languages/` di `components` (`mod.rs` + `language.rs`): semua teks UI default **Inggris** terkumpul di satu tabel `Strings`/`EN` (grup `home`, `login`, `navbar`, `terminal`, `calc`, `calc_err`, dst.), ditulis lewat macro `strings!` supaya struct, tabel, dan daftar kunci untuk test lahir dari satu daftar. Template memakai `{nama}` dan diisi lewat method bertipe (`Time::ago`, `Home::generation_line`, ...), bukan `format!` di komponen
-  - [x] Kalkulator ikut Inggris: mode **Algebra/Trigonometry/Calculus**, `True/False`, pemisah desimal `.`. Mesin kalkulator netral-locale (angka kanonik `.`; tampilan lewat `Strings.calc.decimal_separator`), input `,` tetap diterima. `CalcError` kini enum bertipe dan baru diterjemahkan saat tampil (`message(&Strings)`), `engine/tests.rs` disesuaikan
-  - [x] Multi-bahasa: `enum Language` (sekarang hanya `En`) + `Signal<Language>` lewat context (`use_language_provider()` di `App`, `use_language()`, `use_strings()`), pola yang sama dengan `ClockFormat`. Menambah bahasa = varian baru di `Language` + satu literal `Strings { .. }` (compiler memaksa semua kunci terisi). Pesan error lain juga bertipe: `ApiError::message`, `Notice`, `UploadError`, `AiError`. **Belum ada** pemilih bahasa di Settings dan belum ada penyimpanan ke localStorage (sesuai rencana)
-  - [x] Test (`languages/tests.rs`, 9 test): semua kunci terisi dan unik, kurung `{}` seimbang dan nama placeholder dikenal, semua method template tanpa sisa placeholder, kode bahasa unik, dan **pemindai sumber** yang gagal bila ada teks tampilan (teks node rsx, `title`/`alt`/`placeholder`/`aria-label`/`label`, literal berhuruf kapital/berkalimat) tertinggal di luar `languages/`. Pengecualian harus didaftarkan dengan alasan di `ALLOWED_LITERALS`/`ALLOWED_CONSTS`
-  - Bukan teks UI (sengaja tidak dipindah): nama perintah shell, nama ikon Material Symbols, URL, id/kunci DOM, nama file/folder dari filesystem simulasi terminal, nama model AI, `BOOT_LOG` (log `systemd` palsu di layar boot), `MONTHS_SHORT` di `journal/util.rs` (kunci data "Sep 14" yang dicocokkan dengan data Worker), dan isi `data/*.json`
-  - [ ] **Uji manual (Moch):** buka `/`, `/profile`, `/deisktify`; cek login, boot menu, navbar (menu dan hint), dock, Settings, File Manager, Radio, Embience, Guestbook (kirim entri; lihat uji manual D4), AI chat (tanpa key dan key salah), terminal (`help`, `neofetch`, `cd`/`cat` salah, perintah tak dikenal), jam (ganti 12/24 jam), jurnal; kalkulator (tiga mode, `1/0`, `x+1`, `2+2=4`, `0.1+0.2`, mengetik `,`)
-- [x] **D2** Skema dan migrasi dari JSON ke tabel (selesai 2026-10-16 di repo backend; `up` dan `seed --samples` sudah dicoba Moch di `turso dev` sungguhan: 6 migrasi diterapkan, ulangan "nothing to do", seed idempotent)
-
-  | File JSON (dummy) | Tabel | Kolom utama |
-  | --- | --- | --- |
-  | `generations.json` | `generations` | `number` (PK), `label`, `link`, `kernel`, `built_on` |
-  | `browser.json` | `bookmarks` | `id`, `label`, `url`, `sort_order` |
-  | `radio.json` | `radio_stations` | `id`, `label`, `slogan`, `stream_url`, `official_link`, `image_url`, `sort_order`, `is_active` |
-  | `embience.json` | `embiences`, `embience_presets`, `embience_preset_items` | `id`, `name`, `icon_url`, `stream_url`; preset dan relasi ke embience |
-  | `chat_sample.json` (dihapus di D4a) | `chat_messages` | `id`, `username`, `url`, `avatar_url`, `message`, `attachment_url`, `created_at` |
-  | `journal.sample.json` | `journal_snapshots` | `payload` (JSON), `fetched_at`; pengganti cache Worker (D5: sekarang diisi cron, sampel hanya untuk dev) |
-
-  - [x] Migrasi `.sql` di repo backend: `migrations/0001`–`0006` (satu berkas per fitur; `0004` memuat tiga tabel embience). Dialek SQLite tanpa `STRICT`. Kolom URL punya `CHECK` skema `http(s)://` (avatar dan lampiran chat hanya `https://`, jadi base64/`data:` ditolak di tingkat database); `generations.link` boleh rute internal tetapi menolak `//host` dan `/\`. Panjang teks dibatasi longgar (pagar terakhir; batas ketat ada di API, D4). Kolom tambahan dari rencana awal: `journal_snapshots.source` (`github` atau `seed`)
-  - [x] Runner migrasi di `turso-http::migrate` + CLI `crates/migrate` (`status`, `up`, `seed [--samples]`). Satu migrasi = satu transaksi bersama pencatatan di tabel `_migrations` (checksum FNV-1a, CRLF dianggap LF). Ditolak: migrasi yang isinya berubah setelah dijalankan, migrasi yang hilang dari daftar, nomor baru di bawah nomor terakhir yang dijalankan, `BEGIN`/`COMMIT`/`ROLLBACK` di dalam berkas, kutip/komentar tak tertutup. Pemecah statement paham kutip, komentar, dan badan `CREATE TRIGGER`. Database non-lokal butuh `--yes`; `--samples` ditolak di sana. Token hanya dari environment dan tidak pernah dicetak
-  - [x] Seed satu kali dari JSON yang ada: `scripts/gen_seed.mjs` (repo backend) menghasilkan `seeds/0001_content.sql` (generations, bookmarks, radio, embience + preset) dan `seeds/0002_samples.sql` (pesan chat contoh + satu snapshot jurnal bertanda `seed`). Dipisah supaya data palsu ("Username 1", dst.) tidak ikut ke produksi tanpa sengaja. Semua `INSERT OR IGNORE` dengan id eksplisit (aman diulang). Temuan di data sumber: `embience.json` punya dua preset ber-`preset_id` 2 ("Chill" dan "Busy"); id preset dibuat dari urutan (1, 2, 3). URL ikon embience masih menunjuk `raw.githubusercontent.com` repo frontend ini, jadi memindahkan atau mengganti nama `assets/logo-*.svg` mematahkannya
-  - Terverifikasi di sandbox (rustc 1.97.0): fmt, clippy `-D warnings` (workspace), 68 test Rust, 18 test node. Migrasi + seed diterapkan di SQLite 3.45 sungguhan (idempotent, constraint menolak input buruk), dan CLI dijalankan end-to-end lewat server Hrana tiruan di atas SQLite. **Belum:** terhadap `sqld`/`turso dev` dan Turso cloud sungguhan; clippy/build wasm32 (target tidak ada di sandbox, jalan di CI backend)
-  - [x] Tindakanmu 2 (dicoba terhadap `turso dev` sungguhan, hasil sesuai harapan). Tindakanmu 1 (push backend, CI hijau, tag) digabung dengan langkah D3 di bawah, karena tag yang sama membawa endpoint baru
-  - Catatan: tidak ada kode di repo ini yang berubah di D2 selain README. `include_str!` data JSON dihapus per fitur di D3 (lihat di bawah)
-- [x] **D3** Endpoint baca (read-only): `GET /api/v1/{generations,bookmarks,radio,embiences,presets}`; komponen memakai `use_resource` dengan state loading dan error (kode selesai 2026-10-16; tinggal uji manual dan deploy, urutannya di bawah) **Diuji dan beres oleh Moch (2026-10-20).**
-  - [x] **Backend** (zip terpisah, tag `v0.2.0`): lima endpoint `GET`, query di `crates/api/src/queries/*.sql` dengan `ORDER BY` eksplisit (`generations.number DESC`, `sort_order`, `embience_preset_items.position`). Query yang sama dijalankan di test node terhadap SQLite sungguhan. Bentuk respons `{"items":[...]}` (tipe di `api-types`: `Generation`, `Bookmark`, `RadioStation`, `Embience`, `Preset`); preset memakai **id** embience, bukan nama. Baris dengan URL tidak aman (bukan `http(s)`, atau link menu `//host`) dibuang di server; URL opsional radio yang buruk dikosongkan. Sukses diberi `Cache-Control: public, max-age=60, stale-while-revalidate=300`; error tidak di-cache. DB tidak terjangkau → 503 `unavailable`
-  - [x] **Frontend**: `api::{generations, bookmarks, radio, embiences, presets}` dengan sanitizer kedua di sisi klien (`api_types::validate`, definisi yang sama dengan server): baris dengan URL yang tidak bisa dipakai dibuang sebelum sampai ke `<iframe src>`, `<audio>`, atau tautan. `remote.rs`: komponen `Loading` dan `LoadFailed` (pesan dari `ApiError::message`, tombol "Try again" hanya untuk error yang layak diulang). Home, Browser, Radio, Embience memuat datanya lewat `use_resource`; di Embience preset yang gagal dimuat tidak menghalangi papan suara, dan preset kosong disembunyikan
-  - [x] Home bergantung pada API sekarang. Kalau gagal atau kosong, halaman menampilkan error + "Try again" + dua tautan biasa ke `/deisktify` dan `/profile`, jadi situs tetap bisa dijangkau saat server mati. Hitung mundur auto-boot baru mulai setelah data termuat. Link menu dari server diperiksa: rute yang tidak dikenal **tidak** lagi dibuka sebagai URL eksternal, tetapi diabaikan
-  - [x] File `generations.json`, `browser.json`, `radio.json`, `embience.json` dan semua `include_str!`-nya dihapus (isi aslinya hidup di `seeds/source/` repo backend sebagai sumber seed). `chat_sample.json` (dihapus di D4a) dan `journal.sample.json` tetap sampai D4/D5
-  - [x] Terverifikasi di sandbox: frontend fmt, clippy `-D warnings`, 78 test Rust, 13 test JS, 6 test Python; backend fmt, clippy workspace, 86 test Rust, 23 test node. **Belum:** build wasm32 dan `dx` (target tidak ada di sandbox), menjalankan UI di browser, endpoint terhadap `sqld`/Turso cloud, CI job `wasm`
-  - Rilis frontend sekarang lewat tag: `git tag generation_N && git push origin generation_N` (atau "Run workflow" di tab Actions). Push biasa ke `main` tidak men-deploy. Backend sama: tag `v*` menjalankan cek + migrasi database + seed (lihat README backend, "Migrasi otomatis di CI")
-  - [x] Tindakanmu 1–3 selesai (tag backend `v0.2.0`, `Cargo.lock` frontend naik ke `v0.2.0`, Worker terdeploy dengan secret)
-  - [x] **Temuan 2026-10-16 (laporan Moch):** Home menampilkan "The boot menu could not be loaded". Kodenya tidak salah; dua gejala berbeda, dua penyebab:
-    1. `GET /api/v1/generations` → **404** `{"error":{"code":"not_found"...}}` dari Worker production: itu Worker **lama** (sebelum D3) yang belum punya rute baru. Setelah Worker D3 terdeploy, gejalanya berganti jadi
-    2. **500** di `/radio`, `/embiences`, `/presets`, `/bookmarks`; di `wrangler dev` lokal pesannya `no such table: generations`. Artinya Worker sudah baru, tetapi **database yang dibacanya belum dimigrasi**. Migrasi yang kamu jalankan masuk ke database lain (kandidat: `turso dev` lokal, atau database Turso lain, mis. yang ada di `TURSO_DATABASE_URL2`), atau `turso dev` dijalankan ulang tanpa `--db-file` sehingga isinya hilang (mode memori)
-    - Cek: di repo backend, dengan `TURSO_DATABASE_URL` dan `TURSO_AUTH_TOKEN` yang **sama persis** dengan secret Worker, jalankan `cargo run -p migrate -- status`. Kalau `pending 0001_generations` dan seterusnya, database itu kosong. Untuk lokal: `set -a; . crates/api/.dev.vars; set +a` lalu perintah yang sama
-    - Perbaikan production: isi kedua secret GitHub di bawah dengan nilai yang sama seperti secret Worker, lalu jalankan job `migrate` (Run workflow dari `main`, atau tag `v*` baru). Perbaikan lokal: `cargo run -p migrate -- up` dan `seed --samples` ke database yang dipakai `.dev.vars`
-  - [x] **Tindakanmu (setelah temuan di atas):**
-    1. Repo backend → Settings > Secrets and variables > Actions: tambah `TURSO_DATABASE_URL` dan `TURSO_AUTH_TOKEN` (nilai sama dengan secret Worker)
-    2. Push `ci.yml` baru, lalu jalankan job `migrate` (Run workflow dari `main`). Log harus berakhir "up to date (6 applied)"
-    3. Buka `https://<worker>.workers.dev/api/v1/generations`: harus `200` dengan 5 item. Lalu buka https://tquilla.is-a.dev (hard refresh)
-    4. Deploy frontend hanya lewat tag `generation_*` dengan `API_BASE_URL` = alamat Worker (variable repo)
-    5. Lokal: backend (`db-dev`, `api-dev`) lalu `API_BASE_URL=http://127.0.0.1:8787 dx serve --package web --platform web`, dengan `http://127.0.0.1:8080` di `ALLOWED_ORIGINS`. Desktop dan mobile juga butuh `API_BASE_URL` saat build
-  - [x] **Uji manual:** Home (loading, error saat Worker dimatikan, Try again, tautan cadangan, navigasi keyboard, auto-boot setelah termuat); Browser (bookmark tampil, tambah bookmark valid dan `javascript:...`); Radio (putar, ganti stasiun, stasiun tanpa gambar/tautan); Embience (nyalakan beberapa suara, preset, preset ikut menyala/mati); semua jendela saat API mati
-- [x] **D4** Live Chat sungguhan, lalu **dirombak jadi Guestbook** (2026-10-19). Kode selesai; tinggal tindakan dan uji manual Moch **Tindakan dan uji manual selesai, diuji Moch (2026-10-20): dianggap beres.**
-  - **Keputusan (2026-10-19):** R2 butuh kartu pembayaran dan Moch tidak punya, jadi **unggah gambar dibatalkan seluruhnya** (D4b versi lama). Avatar = avatar bawaan acak yang stabil per username (`default_avatar_for`, lima SVG). Live Chat diganti **Guestbook** yang mendukung **Markdown dengan preview**. Moderasi (laporkan, daftar admin, sembunyikan) ikut diselesaikan, di luar permintaan tertulis (revisi sore harinya: tag HTML dan gambar lewat `<img>` ikut didukung, lihat renderer): scaffolding-nya sudah ada di zip backend (tipe, path, migrasi `0008`) dan repo gagal `cargo test` tanpanya, dan buku tamu publik yang menerima Markdown butuh tombol mati
-  - [x] **Backend** (tag **`v0.4.0`**, migrasi `0008_chat_moderation`): kontrak `ChatMessage` = `{id, username, url?, message, created_at}` (tanpa `avatar_url`/`attachment_url`; klien lama tetap bisa membaca karena field yang tak dikenal diabaikan). Pesan 1–**2000** karakter, maks **40** baris, tab jadi 4 spasi, ZWJ (emoji gabungan) diizinkan; disimpan **apa adanya**, server tidak merender. `GET /messages` mendapat `before=<id>` (halaman lebih lama); entri tersembunyi tidak pernah keluar. `POST /messages/{id}/report` (`204`, satu laporan per pengirim per entri, 20 laporan/jam per pengirim, tanpa auto-hide). `GET /admin/reports` dan `DELETE /admin/messages/{id}` lewat `Authorization: Bearer <ADMIN_TOKEN>` (secret ≥ 32 karakter, perbandingan waktu-konstan, gagal tertutup; CORS tidak mengizinkan `Authorization`/`DELETE`, jadi hanya lewat `curl`). Nama tabel `chat_messages` dan path `/messages` tidak diganti supaya Worker lama tetap jalan selama migrasi
-  - [x] **Frontend, jendela Guestbook** (`nixdesk/gui/guestbook.rs`; app id `Guestbook`, kunci window `guestbook`, ikon baru `logo-guestbook.svg`): daftar entri **terbaru dulu**, tanpa polling (dimuat saat jendela dibuka; tombol **Refresh** hanya meminta entri lebih baru dari yang tampil, sampai 5 putaran; **Load older** memakai `before`; 20 entri per halaman, jadi tidak ada request saat tak ada yang melihat). Form: nama, website (opsional), editor dengan tab **Write / Preview**, toolbar (heading, bold, italic, strikethrough, code, link, image, quote, list, task list; hasilnya lewat `js/guestbook_editor.js`, dites dengan DOM palsu), penghitung karakter (merah saat lewat batas), **Ctrl/Cmd+Enter** untuk kirim, Enter biasa = baris baru. Preview menampilkan teks seperti yang akan disimpan server. Setiap entri punya tombol **Report** dua klik (klik pertama meminta konfirmasi). Entri sendiri langsung muncul dari jawaban POST dan daftar digulir ke atas
-  - [x] **Renderer Markdown** (crate `crates/markdown`: `src/lib.rs` + `src/html.rs`; digambar oleh `crates/components/src/markdown_view.rs`; `pulldown-cmark` 0.13 tanpa fitur bawaan): peristiwa parser → pohon sendiri (`Block`/`Inline`) → komponen Dioxus. **Tidak pernah membuat string HTML dan tidak memakai `dangerous_inner_html`**. Didukung: paragraf, heading, **bold**, *italic*, ~~strikethrough~~, `code` dan blok kode berpagar (label bahasa disaring), kutipan, daftar bertingkat dan bernomor, **task list**, tabel (perataan kolom), garis pemisah, tautan, URL telanjang jadi tautan, **alert GitHub** (`> [!NOTE]`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`), **gambar** (`![alt](https://…)` dan `<img src="https://…">`), dan **subset HTML ala README** (rincian di bawah)
-    - **Subset HTML:** `<img>` (`src`, `alt`, `width`, `height`, `align`: left/right = mengambang di tepi dan teks mengalir di sampingnya, center = baris sendiri di tengah; nilai lain diabaikan), `<br>`, `<hr>`, `<b>`/`<strong>`, `<i>`/`<em>`, `<s>`/`<del>`/`<strike>`, `<u>`, `<mark>`, `<sub>`, `<sup>`, `<kbd>`, `<code>`, `<a href>`, `<h1>`–`<h6>`, `<p>`/`<div>`/`<center>` (atribut `align`: left/center/right), `<details>` dan `<summary>`. `markdown/html.rs` hanya memecah teks jadi token; daftar putihnya ada di `Builder::html_open`. Tag lain dibuang dan isinya dipertahankan; `<script>`, `<style>`, `<iframe>`, `<svg>`, `<object>`, dsb. dibuang **beserta isinya**. Komentar HTML dibuang. Atribut di luar daftar di atas (`style`, `class`, `id`, `onerror`, `srcset`, ...) tidak pernah dibaca: pohonnya tidak punya tempat untuk menyimpannya, jadi tidak bisa sampai ke halaman. Entitas (`&amp;`, `&#65;`) didekode, kecuali yang menghasilkan karakter kontrol atau pembalik arah (U+202E, zero-width); filter yang sama berlaku untuk teks yang didekode parser Markdown. Tag HTML tidak bisa melewati batas elemen Markdown tempat ia dibuka (tidak ada kebocoran gaya ke item/paragraf berikutnya)
-    - **Gambar:** hanya `https://` yang dimuat (`http://` akan diblokir browser di halaman https); `loading="lazy"`, `decoding="async"`, `referrerpolicy="no-referrer"`, tinggi maksimum 20rem dan lebar maksimum selebar entri; `width`/`height` hanya petunjuk piksel (1–1000, persen diabaikan) dan hanya satu sisi dipakai supaya proporsi terjaga. Gagal dimuat → diganti teks alt. Sumber lain (`javascript:`, `data:`, relatif, `//host`, `http://`) tidak pernah dimuat; tampil sebagai teks alt. **Konsekuensi yang perlu kamu sadari:** siapa pun bisa menaruh gambar dari server mana saja, jadi IP pengunjung terlihat oleh server itu dan isi gambar tidak bisa dicek sebelum tampil. Pengamannya hanya tombol Report dan `DELETE` admin (menyembunyikan seluruh entri). Kalau nanti jadi masalah: batasi ke daftar host (satu `const` di `markdown/view.rs`) atau ubah jadi "klik untuk memuat"
-    - Aturan lain: hanya `http(s)` dan `mailto:` polos yang jadi tautan (`javascript:`, `data:`, dll. kehilangan tautan tetapi teksnya tetap); tautan memakai `rel="noopener noreferrer nofollow ugc"` dan `title` berisi alamat aslinya; kedalaman daftar/kutipan/`<div>`/`<details>` dan span inline (Markdown maupun HTML) dibatasi 6 (sisanya diratakan, teks tetap ada); urutan peristiwa atau tag yang aneh tidak pernah membuat panik (ada test noise acak yang menyisipkan tag HTML)
-  - [x] Mode Terminal: preview shell 4 memakai `markdown::plain_text` (tanpa sintaks Markdown, satu baris, dipotong 240 karakter), `Page::Latest`; teks kosong "No entries yet."
-  - [x] Teks UI hanya lewat `Strings` (grup `guestbook`; scanner teks tetap hijau; "www." diizinkan di scanner karena awalan URL, bukan teks UI). Dock: tombol "Guestbook" (`dock.guestbook`, `dock.guestbook_group`, `dock.open_guestbook_menu`); `meta.desktop_description` disesuaikan
-  - [x] Dihapus: `chat.rs` (digantikan `guestbook.rs`), `gui/livechat.rs`, `logo-livechat.svg`, polling dan indikator "Connection lost", rendering `avatar_url`/`attachment_url`
-  - [x] Terverifikasi di sandbox: frontend `cargo fmt --check`, `cargo clippy -p components -p markdown --all-targets -D warnings`, 146 test Rust, 27 test JS, 6 test Python; backend fmt, clippy workspace, 140 test Rust, 31 test node. Frontend dibangun dengan `api-types` lewat `path` ke backend lokal (tag `v0.4.0` belum ada di GitHub), jadi `Cargo.lock` di zip **masih entri git lama**: lihat langkah (6) di bawah
-  - **Belum terverifikasi** (sandbox tidak punya target wasm32, `dx`, atau browser; gambar sungguhan juga belum pernah dimuat, dan `onerror`/`referrerpolicy` pada `img` baru lolos compile): build wasm32; tampilan jendela di browser (kelas Tailwind belum pernah dirender, jadi kemungkinan perlu sedikit tweak spasi/tinggi); toolbar editor di browser asli (`document::eval`, event `input` yang dikirim ulang ke Dioxus, posisi kursor setelah klik); perilaku `pulldown-cmark` pada Markdown nyata di browser (hanya dites lewat test unit); **ukuran wasm** yang bertambah karena `pulldown-cmark` (tidak bisa diukur di sini; cek hasil `dx bundle` dan, bila perlu, `wasm-opt`); aksesibilitas (pembaca layar, urutan fokus tab); Turso cloud dan Worker sungguhan untuk laporan/admin
-  - [x] **Restrukturisasi workspace (2026-10-19):** `packages/*` diganti `crates/{components,markdown}` + `platform/{web,desktop,mobile}`. Engine Markdown (`lib.rs` + `html.rs`) dipisah jadi crate `markdown` tanpa Dioxus; `markdown_view.rs` tetap di `components` (butuh komponen dan `Strings`). Perilaku tidak berubah (142 test sama, 92 + 50). Path diperbarui di `Cargo.toml`, `ci.yml`, `deploy-page.yml`, `flake.nix`, `devenv.nix`, `.gitignore`, `tailwind.css` (`@import`/`@source`), dan dokumen. Tes pemindai teks UI ikut memindai `crates/markdown/src`. **Belum terverifikasi:** `dx bundle` web dengan path baru, `nix build` (fileset baru), `cargo check -p desktop -p mobile` (sandbox tanpa GTK), dan `Cargo.lock` (anggota `markdown` baru masuk saat kamu menjalankan `cargo update -p api-types`).
-  - [x] **`align` pada `<img>` (2026-10-20):** `Inline::Image` punya field `align`; `left`/`right`/`center` (huruf besar/kecil dan spasi di sekitarnya tidak masalah) dibaca, nilai lain (`top`, `middle`, CSS) tetap inline. `style` tetap tidak pernah dibaca. Di view: `float-left`/`float-right` dengan margin, `block mx-auto` untuk center; paragraf memakai `flow-root` supaya gambar mengambang tidak keluar dari bloknya. Test baru memakai baris badge sosial (`<p align ="center">` + `<code><a><img></a></code>` + badge `align="left"` + counter `align="right"`): 7 gambar, urutan dan perataan terjaga. **Belum terverifikasi:** tampilan nyata di browser (apakah baris ikon + float kiri/kanan muat satu baris di lebar jendela Guestbook; kalau tidak muat, float turun ke bawah, sama seperti di GitHub). Snippet itu 1412 karakter dari batas 2000.
-  - [x] **Tindakanmu D4**, berurutan: (1) push repo backend, tunggu CI hijau (termasuk job `wasm`, yang belum pernah menjalankan kode laporan/admin), beri tag **`v0.4.0`**; (2) job `migrate` jalan otomatis di tag itu, log harus "up to date (8 applied)"; (3) `openssl rand -hex 32` lalu `npx wrangler secret put ADMIN_TOKEN` (dari `crates/api`; simpan nilainya di password manager untuk `curl`); (4) `npx wrangler deploy`; (5) di repo frontend ini: `cargo update -p api-types`, commit `Cargo.lock` (juga menarik `pulldown-cmark` ke lockfile); (6) cek `cargo clippy -p components --all-targets -- -D warnings` dan `dx bundle` hijau di mesinmu, lalu tag `generation_N`
-  - [x] **Uji manual D4:** buka Guestbook: entri seed muncul, terbaru di atas, Markdown-nya ter-render; ketik `**tebal**`, `# judul`, daftar, `- [ ] tugas`, tabel, blok kode, `> [!NOTE]`, URL telanjang, `<b>tebal</b>`, `<u>`, `<kbd>`, `<details><summary>x</summary>…</details>`, `<div align="center"><img src="https://…" width="120"></div>` (gambar muncul di tengah), `![x](https://…)`, gambar di dalam tautan (badge), `<img src="https://alamat-rusak/x.png">` (diganti teks alt), `<img src="http://…">` dan `<img src="javascript:alert(1)">` (tidak memuat apa pun), `<script>alert(1)</script>`, `<img src=x onerror=alert(1)>`, `<a href="javascript:alert(1)">x</a>` dan `[x](javascript:alert(1))` (tidak boleh jadi tautan atau menjalankan apa pun); di Network tab pastikan permintaan gambar tidak mengirim header `Referer`; tab Preview sama dengan hasil setelah dikirim; tiap tombol toolbar (termasuk Image) dengan dan tanpa seleksi (klik kedua pada bold melepas tanda); Ctrl+Enter mengirim, Enter biasa menambah baris; nama kosong / `bad url` / `javascript:x` / 2001 karakter / 41 baris menampilkan error tanpa request; kirim 6 entri dalam semenit: yang ke-6 → "Too many requests"; Refresh dari tab lain menampilkan entri baru, tanpa entri baru → "You are up to date."; Load older sampai habis ("That is the first entry."); Report: klik pertama meminta konfirmasi, klik kedua → "Reported. Thank you."; `curl` daftar laporan lalu `DELETE` entri itu, Refresh/muat ulang jendela, entri hilang; `curl` admin tanpa token → `401`; matikan Worker: pesan error + Try again; mode Terminal: preview berputar dan tanpa sintaks Markdown; ganti bahasa; layar sempit (ponsel): form dan toolbar tidak melebar
-- [x] **D5** Jurnal GitHub (2026-10-21): kode selesai di kedua repo; tinggal tindakan dan uji manual Moch (di bawah). Dikerjakan dua langkah seperti D1:
-  - [x] **D5a** Repo backend (tag **`v0.5.0`**): Cron Trigger `0 */6 * * *` mengambil statistik dari GitHub GraphQL (port Rust dari Worker JavaScript lama `github-journal-stats`) dan menyimpannya ke `journal_snapshots` (`source = 'github'`, 28 terbaru dipertahankan). `GET /api/v1/journal` membaca snapshot terakhir; `POST /api/v1/admin/journal/refresh` (curl, `ADMIN_TOKEN`, paling cepat sekali per menit) mengambil sekarang. **Akun, repositori sematan, dan stack ada di tabel** (`journal_profile`, `journal_pinned_repos`, `journal_stack`, migrasi `0009`; nilai awal = isi `CONFIG` Worker lama) supaya D6 bisa mengubahnya; nilainya masuk query GraphQL hanya sebagai variabel. Payload adalah data, bukan tampilan: tidak ada HTML dan tidak ada kalimat (`api_types::journal`), diperiksa lagi sebelum disimpan dan sebelum dikirim.
-  - [x] **D5b** Repo ini: `components::api::journal()` (`GET /api/v1/journal`, lalu `Data::validate` lagi di klien; payload yang tidak lolos jadi error `Decode`). `journal/data.rs`, `journal.sample.json`, `include_str!`-nya, banner "offline snapshot", dan variable `STATS_API_URL` **dihapus** (menggantikan D5 Tahap 0): tidak ada lagi data contoh yang bisa tertukar dengan data asli; kalau API mati atau belum ada snapshot, halaman menulis galat. Hanya snapshot `source = "seed"` (dev lokal) yang diberi banner. `fetched_at` tampil di Hero sebagai "Updated 3 hours ago". Kalimat "Monthly Focus" disusun dari templat `Strings` (`focus_sentence`) dan `journal.activity_for(bahasa)`; kata yang ditonjolkan adalah `span` biasa. **Tidak ada lagi `dangerous_inner_html` untuk teks dari server** (grafik SVG tetap memakainya, tetapi hanya berisi angka, tanggal dari digit, dan teks `Strings`; ada catatan di `chart.rs`). Nama hari memakai `s.calendar.weekday`, warna bahasa hanya `#rrggbb` (selain itu warna cadangan), `stack` kosong menyembunyikan bagiannya (dulu ada daftar bawaan Linux/Neovim/Arch), deskripsi kosong menampilkan `journal.no_description`, bahasa kosong `journal.unknown_language`. 8 test baru (`api` 2, `journal::util` 6; 4 test `stats_url` dan 1 test sampel ikut hilang); 99 test `components` + 54 `markdown`.
-  - [ ] **Tindakanmu (urut):**
-    1. Repo backend: `cargo run -p migrate -- status` lalu pastikan `0009_journal_config.sql` akan jalan (job `migrate` di CI menjalankannya saat tag `v*`). Commit, push, **tag `v0.5.0`**
-    2. Buat token GitHub baru (scope `read:user`), lalu `cd crates/api && npx wrangler secret put GITHUB_TOKEN`. Setelah jurnal jalan, cabut token Worker lama
-    3. `npx wrangler deploy` (membaca `[triggers] crons` dari `wrangler.toml`; cek di dashboard Cloudflare, Worker `tquilla-api` > Settings > Trigger Events, bahwa cron `0 */6 * * *` muncul)
-    4. Ambil data pertama tanpa menunggu cron: `curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/api/v1/admin/journal/refresh"` (harus `{"fetched_at":"…"}`), lalu `curl -s "$API/api/v1/journal"`
-    5. Repo ini: `cargo update -p api-types` (tag sudah `v0.5.0` di `Cargo.toml`), commit `Cargo.lock`, push (sebelum langkah ini `Cargo.lock` masih menunjuk tag lama, jadi `--locked` di CI akan gagal), lalu deploy lewat tag `generation_*`. Hapus variable repo `STATS_API_URL` (tidak dipakai lagi) dan Worker lama `github-journal-stats` di Cloudflare kalau sudah yakin
-  - [x] **Uji manual:** `/profile` diuji Moch (2026-10-21) dan berjalan dengan baik. Yang belum dicek: kegagalan API (Worker mati / `API_BASE_URL` salah) dan **waktu CPU cron pertama di dashboard Cloudflare: harus di bawah 10 ms** (plan gratis), kalau tidak snapshot tidak diperbarui
-- [x] **D6** Dashboard admin: konten dan operasi bisa diubah tanpa `curl` dan tanpa deploy ulang. Keputusan (2026-10-21): UI-nya **JavaScript biasa tanpa build step** (Preact + htm yang disalin ke repo) di **repo backend**, dilayani Worker yang sama di `/admin/` (satu origin dengan API, jadi CORS tidak dilonggarkan dan situs publik tidak membawa kode admin). Teks UI bahasa Indonesia biasa (bukan `Strings`). Perubahan skema (kolom baru) hanya lewat `migrations/`, bukan dashboard. Tiga tahap, semuanya di repo backend; repo ini tidak berubah selain README:
-  - [x] **D6a** Fondasi (backend tag **`v0.6.0`**, migrasi `0010`): `/admin/` dilayani lewat Workers Static Assets (`web/`, `[assets]`, CSP di `web/_headers`); login dengan `ADMIN_TOKEN` (hanya di memori halaman, kunci otomatis 10 menit, tombol Kunci); pembatas percobaan gagal (10 per 15 menit per IP-hash, juga untuk token benar); riwayat aksi admin (`admin_audit`); Ringkasan (jumlah baris tiap tabel, status Guestbook dan journal, migrasi terakhir). Endpoint baru: `POST /admin/login`, `GET /admin/overview`, `GET /admin/audit`. Diuji: 208 test Rust, 86 test node, dan halaman dijalankan di jsdom. **Belum** teruji di browser/Worker sungguhan (lihat README backend, "Yang sudah dan belum terverifikasi")
-  - [x] **D6b** (backend tag **`v0.7.0`**, tanpa migrasi baru) Tab **Journal**: refresh dengan hitung mundur `Retry-After`, riwayat snapshot, ganti akun GitHub, repo sematan dan stack (tambah, ubah, hapus dengan konfirmasi, geser urutan; batas 12 ditegakkan di SQL, nama kembar → `409`). Tab **Guestbook**: saringan Dilaporkan / Disembunyikan / Semua, teks entri lengkap sebagai teks biasa, sembunyikan, tampilkan lagi, tolak laporan, muat yang lebih lama. 11 endpoint admin baru; riwayat mencatat tiap aksi. Diuji: 233 test Rust, 106 test node, dan halaman dijalankan di jsdom dengan server palsu berkeadaan. **Belum** teruji di browser/Worker sungguhan. Perubahan Journal baru terlihat di situs setelah refresh berikutnya
-  - [x] **D6c** (backend tag **`v0.8.0`**, tanpa migrasi baru) Tab **Data**: editor satu-untuk-semua dari daftar putih tabel (`generations`, `bookmarks`, `radio_stations`, `embiences`, `embience_presets`; empat tabel lain hanya lihat dan ekspor), tambah / ubah / hapus dengan konfirmasi, tanpa SQL mentah (nama kolom dari daftar, nilai selalu parameter; batas baris ditegakkan di SQL). Editor isi preset Embience, ekspor JSON/CSV, dan **hapus permanen** entri Guestbook (hanya yang sudah disembunyikan, harus mengetik `#id`). **Seed konten kini berlaku sekali** (penanda `_seeded`): mengubah `seeds/source/*.json` tidak lagi mengubah database yang sudah terisi, kelola konten lewat dashboard. Diuji: 264 test Rust, 143 test node, dan halaman dijalankan di jsdom (13 alur). **Belum** teruji di browser/Worker sungguhan, termasuk unduhan ekspor di bawah CSP
-  - [x] Autentikasi admin lewat secret Cloudflare (jangan hardcode kredensial; password demo di `login.rs` hanya untuk animasi): sudah berlaku di D6a (`ADMIN_TOKEN`)
-- [x] **D7** Perbaiki data yang usang: URL stream radio mengandung token (`rj-tok`) yang bisa kedaluwarsa; Cron Trigger memvalidasi berkala dan menandai `is_active = false`. Dua tahap, keduanya di repo backend (repo ini tidak berubah selain README):
-  - [x] **D7a** (backend tag **`v0.7.1`** yang dipakai Moch; saran awal `v0.9.0`; migrasi `0011`) Pemeriksa: cron kedua `17 * * * *` (tiap jam) mengetuk stasiun aktif (maksimal 12 per putaran, yang paling lama belum dicek dulu), hanya membaca header lalu memutus koneksi, mencatat hasilnya di tabel baru `radio_checks`, dan menandai `is_active = 0` hanya setelah **3 kegagalan berturut-turut dan sedikitnya 6 jam** sejak kegagalan pertama. Hanya URL `https` berhost DNS biasa dan port 443 yang diketuk (yang lain `skipped`, tidak pernah dimatikan; termasuk Jak FM dan Gen98 yang memakai port 1936, karena `fetch` Workers dilaporkan mengabaikan port); redirect diikuti satu per satu (maksimal 2, tiap tujuan diperiksa ulang); putaran di mana semua stasiun yang dinilai gagal dianggap tidak meyakinkan (dugaan: IP Cloudflare diblokir). Tidak ada pengaktifan otomatis; tautan baru tetap ditempel lewat tab Data (riwayat mulai dari nol). Anggaran subrequest terburuk 38 dari 50 (plan gratis), dijaga `const` assertion. Diuji: 293 test Rust, 162 test node. **Diverifikasi Moch (2026-10-26)** di produksi: 5 stasiun, 3 diperiksa dan sehat, 0 gagal, 0 dimatikan otomatis; 2 stasiun (Jak FM dan Gen98 FM, port khusus) tampil "Tidak diperiksa" dan memang tidak akan pernah dimatikan otomatis; tidak ada error *exceeded CPU* di metrik Cloudflare, tidak ada masalah koneksi (jadi `redirect: manual`, pemutusan koneksi, slot koneksi, dan waktu CPU plan gratis terbukti aman untuk 3 stasiun yang diperiksa). **Keterbatasan yang diketahui:** stasiun dengan port non-standar tidak bisa dipantau dari Cloudflare, jadi kalau salah satunya mati, hanya telinga pendengar (atau tab Data) yang tahu
-  - [x] **D7b** (masuk di backend tag **`v0.7.1`**; saran awal `v0.10.0`; tanpa migrasi baru) Tab **Radio** di dashboard: ringkasan (aktif, sehat, sedang gagal, dimatikan otomatis, jadwal cron berikutnya), daftar semua stasiun dengan keadaannya dalam kalimat, dan tombol **Cek sekarang** (paling cepat sekali per menit sejak pemeriksaan terakhir; memakai putaran yang sama dengan cron, jadi ambang 3 kegagalan dan jeda 6 jam tetap berlaku). Endpoint baru `GET /admin/radio` dan `POST /admin/radio/check`; **tidak ada URL stream** di respons maupun di halaman. Aturan dibaca dari respons, bukan disalin ke JavaScript. Diuji: 302 test Rust, 172 test node, dan komponen dirender di jsdom. **Terverifikasi Moch (2026-10-24):** uji browser sukses, header CSP ada di `/admin/`, semua stasiun diputar lancar di situs
-- [x] **D8** Deploy dan operasi. Dibagi tiga tahap, semuanya di repo backend (repo ini tidak berubah selain README; deploy Pages tidak berubah dan `404.html` fallback tetap):
-  - [x] **D8a** Deploy Worker otomatis: job `deploy` di `ci.yml` pada push tag `v*`, **sesudah** job `migrate` (yang menunggu semua cek). `npx wrangler@4.151.0 deploy` dari `crates/api` (wrangler menjalankan `worker-build`); hanya secret Actions `CLOUDFLARE_API_TOKEN` dan `CLOUDFLARE_ACCOUNT_ID` yang dipakai, rahasia Worker tetap di Cloudflare. Tombol *Run workflow* tetap hanya menjalankan migrasi. Cek `/health` dan `/admin/` sesudah deploy bila variable `API_BASE_URL` diisi. Diuji: `actionlint` bersih dan 9 tes statis. **Diverifikasi Moch (2026-10-26)**: token Cloudflare dan secret di environment `production` dipasang, tag `v*` dipush, dan job `migrate` lalu `deploy` berjalan di GitHub Actions tanpa galat (jadi `wrangler@4.151.0` dengan `[build]` di runner dan izin token *Edit Cloudflare Workers* terbukti cukup)
-  - [x] **D8b** Cadangan database mingguan (`.github/workflows/backup.yml` di repo backend): dump satu transaksi baca lewat HTTP Turso → verifikasi (dimuat ke SQLite kosong) → `gzip` + enkripsi **`age` kunci publik** → satu commit biasa per berkas `dump-<waktu>.enc` ke branch **`_dump`** (cabang yatim; **tanpa force-push**, tanpa hapus otomatis; membersihkan berkas lama adalah tugas Moch). Keputusan Moch: branch `_dump` di repo yang sama (publik), jadi keamanan hanya bergantung pada kunci privat age yang disimpan Moch sendiri; PITR Turso plan Free hanya 1 hari, jadi cadangan ini yang menutup sisanya. Secret/variable baru di repo backend: `BACKUP_TURSO_URL`, `BACKUP_TURSO_TOKEN` (token `--read-only`), variable `BACKUP_AGE_RECIPIENT`. Diuji di sandbox: 20 tes cadangan (SQLite sungguhan lewat server Hrana palsu, `age` sungguhan, langkah simpan dengan git sungguhan di remote lokal), 17 tes workflow, `actionlint` bersih. **Diverifikasi Moch (2026-10-25)**: push, *Run workflow* manual di GitHub Actions, dan latihan pemulihan, semuanya sukses (jadi token `--read-only`, `BEGIN`, dan `--from-dump` terbukti jalan). Pengamatan jadwal mingguan otomatis dilaporkan baik oleh Moch (2026-10-26; catatan: jadwal otomatis pertama setelah tanggal itu jatuh Minggu 2026-11-01 19:23 UTC, jadi bila yang diamati adalah run manual, run terjadwal pertama masih layak dicek sekali)
-  - [x] **D8c** Health check terjadwal (`health.yml` di repo backend, tiap jam): `/api/v1/health` (200, `db` true), `/admin/` (CSP ketat), situs frontend (opsional, variable `SITE_URL`), umur cadangan di branch `_dump` (maks. 9 hari), dan status workflow backup (GitHub mematikan workflow terjadwal di repo publik setelah 60 hari tanpa aktivitas). Merah = email kegagalan dari GitHub; input `uji_gagal` untuk menguji jalur email. Dokumen rotasi: `docs/rotasi-rahasia.md` di repo backend (tiap rahasia: lokasi, langkah putar, cek, dan urutan bila bocor). Diuji di sandbox: 11 tes health check (server palsu), 5 tes workflow/dokumen baru, `actionlint` bersih. **Diverifikasi Moch (2026-10-26)**: variable `API_BASE_URL` (dan `SITE_URL`) diisi, run manual hijau, dan run `uji_gagal` merah dengan email notifikasi tiba (jadi `github.token` dengan `actions: read` terbukti cukup). **Belum**: health check ini sendiri juga bisa dimatikan GitHub setelah 60 hari tanpa aktivitas (tidak ada pengaktifan ulang otomatis, karena butuh token pribadi)
----
+- [docs/alur-project.md](docs/alur-project.md): TODO per prioritas, catatan verifikasi, keputusan fullstack (D0–D8), dan rencana bertahap.
+- [AGENTS.md](AGENTS.md): aturan kerja khusus project ini (teks UI, JS, keamanan Markdown, dua `Dioxus.toml`, dll.).
 
 ## Lisensi
 
-Lihat `LICENSE`.
+MIT, lihat [LICENSE](LICENSE).
