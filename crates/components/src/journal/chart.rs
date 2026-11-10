@@ -21,7 +21,7 @@ pub fn build_chart_svg(chronicle: &Chronicle, s: &Strings) -> String {
     let timeline = &chronicle.timeline;
 
     let mut svg = format!(
-        r#"<svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 {WIDTH} {HEIGHT}" xmlns="http://www.w3.org/2000/svg">"#
+        r#"<svg class="chart__svg" preserveAspectRatio="none" viewBox="0 0 {WIDTH} {HEIGHT}" xmlns="http://www.w3.org/2000/svg">"#
     );
     svg.push_str(
         r##"<defs><linearGradient id="gradient-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#C94B28" stop-opacity="0.1"></stop><stop offset="100%" stop-color="#C94B28" stop-opacity="0"></stop></linearGradient></defs>"##,
@@ -72,7 +72,7 @@ pub fn build_chart_svg(chronicle: &Chronicle, s: &Strings) -> String {
             };
             let (cx, cy) = points[idx];
 
-            svg.push_str(r#"<g class="cursor-pointer group/point">"#);
+            svg.push_str(r#"<g class="chart__point">"#);
             svg.push_str(&format!(
                 r##"<circle cx="{cx}" cy="{cy}" r="4" fill="#1A1A1A"></circle>"##
             ));
@@ -118,7 +118,7 @@ pub fn build_chart_svg(chronicle: &Chronicle, s: &Strings) -> String {
             placed.push((fx, fy, TOOLTIP_W, TOOLTIP_H));
 
             svg.push_str(&format!(
-                r#"<foreignObject x="{fx}" y="{fy}" width="{TOOLTIP_W}" height="{TOOLTIP_H}"><div xmlns="http://www.w3.org/1999/xhtml" class="bg-primary text-paper p-4 shadow-2xl border border-white/10"><div class="font-serif italic text-lg opacity-80 mb-1">{}</div><div class="font-mono text-xl font-bold tracking-tight">{}</div></div></foreignObject>"#,
+                r#"<foreignObject x="{fx}" y="{fy}" width="{TOOLTIP_W}" height="{TOOLTIP_H}"><div xmlns="http://www.w3.org/1999/xhtml" class="chart__tip"><div class="chart__tip-title">{}</div><div class="chart__tip-value">{}</div></div></foreignObject>"#,
                 format_short_date(&activity.date),
                 s.journal.chart_commits(activity.count)
             ));

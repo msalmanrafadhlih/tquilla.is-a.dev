@@ -37,24 +37,24 @@ pub fn SettingsWindowContent() -> Element {
     let mut section = use_signal(|| SettingsSection::About);
 
     rsx! {
-        div { class: "flex items-start w-full h-full justify-center gap-5 relative",
-            nav { class: "inline-flex flex-col h-full min-w-[100px] items-center relative self-stretch flex-[0_0_auto] border-r border-solid border-[var(--fg-secondary)]",
+        div { class: "settings__layout",
+            nav { class: "settings__nav",
                 for item in SettingsSection::ALL {
                     button {
                         key: "{item.key()}",
                         r#type: "button",
-                        class: "flex items-center p-2 relative self-stretch w-full flex-[0_0_auto] border-0 text-xs",
-                        class: if section() == item { "bg-[var(--fg-main)]  text-[var(--bg-secondary)] " } else { "text-[var(--fg-secondary)] hover:text-[var(--fg-main)]" },
+                        class: "settings__nav-item",
+                        class: if section() == item { "settings__nav-item--on " } else { "settings__nav-item--off" },
                         onclick: move |_| section.set(item),
                         "{item.label(s)}"
                     }
                 }
             }
-            section { class: "max-w-[500px] flex w-full h-full flex-col items-center justify-start gap-[25px] pb-5 relative flex-1 grow self-stretch",
-                class: "overflow-auto [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            section { class: "app-window__panel",
+                class: "app-window__scroll",
                 match section() {
                     SettingsSection::About => rsx! { InfoBlock {} },
-                    SettingsSection::Preferences => rsx! { p { class: "text-white/40 text-[11px]", "{s.settings.coming_soon}" } },
+                    SettingsSection::Preferences => rsx! { p { class: "settings__note", "{s.settings.coming_soon}" } },
                 }
             }
         }

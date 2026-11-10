@@ -1,0 +1,54 @@
+/* ==========================================================================
+   about.css — App About
+   ========================================================================== */
+
+@layer components {
+  .about__header {
+    @apply flex items-center justify-center gap-2.5 relative w-full flex-none;
+  }
+
+  .about__logo-box {
+    @apply flex w-[75px] h-16 items-center justify-center gap-2.5 relative aspect-[1.16];
+  }
+
+  .about__logo {
+    @apply relative flex-1 aspect-[1.15];
+  }
+
+  .about__title-box {
+    @apply flex flex-col w-[67px] items-start relative;
+  }
+
+  .about__title {
+    @apply relative flex items-center w-max text-xs tracking-normal leading-[normal];
+    font-weight: 400;
+  }
+
+  .about__link {
+    @apply relative flex items-center w-fit mr-[-11.00px] text-[#7db1ff] text-3xs
+      tracking-normal leading-[normal] whitespace-nowrap;
+    font-weight: 400;
+  }
+
+  .about__info {
+    @apply w-full text-left text-2xs leading-relaxed;
+  }
+
+  .about__row {
+    @apply flex justify-between gap-4 py-0.5 border-white/5;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .about__label {
+    @apply text-white/40;
+  }
+
+  .about__value {
+    @apply text-white/80 text-right;
+  }
+
+  .about__window {
+    @apply flex w-full h-full items-center justify-center overflow-auto;
+  }
+}

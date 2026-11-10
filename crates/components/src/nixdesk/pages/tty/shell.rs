@@ -138,9 +138,9 @@ pub fn ShellPanel(
     let mut log_cursor = use_signal(|| Option::<usize>::None);
 
     let container_class = if compact {
-        "flex flex-col h-full overflow-y-auto px-4 py-3 gap-1.5 text-[12px] leading-relaxed"
+        "terminal__shell terminal__shell--compact"
     } else {
-        "flex flex-col h-full overflow-y-auto px-5 py-4 gap-1.5 text-[13px] leading-relaxed"
+        "terminal__shell terminal__shell--roomy"
     };
 
     let mut submit = move || {
@@ -198,29 +198,29 @@ pub fn ShellPanel(
                 });
             },
 
-            p { class: "text-white/40 mb-1",
+            p { class: "terminal__motd",
                 "{s.terminal.welcome_before}"
-                span { class: "text-white/70", "help" }
+                span { class: "terminal__help", "help" }
                 "{s.terminal.welcome_after}"
             }
 
             for entry in history() {
-                div { key: "{entry.id}", class: "flex flex-col gap-0.5",
-                    div { class: "flex gap-2",
-                        span { class: "text-white/40", "$" }
-                        span { class: "text-white", "{entry.input}" }
+                div { key: "{entry.id}", class: "terminal__entry",
+                    div { class: "terminal__entry-line",
+                        span { class: "terminal__dim", "$" }
+                        span { class: "terminal__cmd", "{entry.input}" }
                     }
                     for (i , line) in entry.output.iter().enumerate() {
-                        div { key: "{entry.id}-{i}", class: "pl-4 text-white/60 whitespace-pre-wrap", "{line}" }
+                        div { key: "{entry.id}-{i}", class: "terminal__output", "{line}" }
                     }
                 }
             }
 
-            div { class: "flex gap-2 items-center",
-                span { class: "text-white/40", "$" }
+            div { class: "terminal__input-row",
+                span { class: "terminal__dim", "$" }
                 input {
                     id: SHELL_INPUT_ID,
-                    class: "flex-1 bg-[var(--bg-main)] outline-none border-none text-white font-mono caret-white",
+                    class: "terminal__input",
                     autocomplete: "off",
                     spellcheck: "false",
                     onmounted: move |evt| {
@@ -279,12 +279,12 @@ pub fn ShellPanel(
 pub fn ShellHistoryPeek(history: Signal<Vec<ShellEntry>>) -> Element {
     let s = use_strings();
     rsx! {
-        div { class: "h-full overflow-y-auto px-4 py-3 text-[11px] leading-relaxed",
+        div { class: "terminal__peek",
             if history().is_empty() {
-                p { class: "text-white/30", "{s.terminal.no_commands}" }
+                p { class: "terminal__peek-empty", "{s.terminal.no_commands}" }
             } else {
                 for entry in history() {
-                    div { key: "{entry.id}", class: "text-white/60 truncate", "$ {entry.input}" }
+                    div { key: "{entry.id}", class: "terminal__peek-line", "$ {entry.input}" }
                 }
             }
         }

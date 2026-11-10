@@ -25,56 +25,50 @@ const AUTOSIZE_JS: &str = include_str!("../../../js/autosize.js");
 
 /// Pembungkus jendela: tempat panel riwayat menempel (di dalam area jendela,
 /// bukan viewport; `overflow-hidden` memotong panel di tepi jendela).
-const OUTER_CLASS: &str = "relative w-full h-full overflow-hidden";
-const SCRIM_CLASS: &str = "absolute inset-0 z-10 bg-black/40";
-const PANEL_CLASS: &str = "absolute inset-y-0 left-0 z-20 flex w-[min(18rem,85%)] flex-col gap-2 p-2.5 border-r border-solid border-[var(--fg-secondary)] bg-[var(--bg-secondary)]";
-const PANEL_HEADER_CLASS: &str = "flex items-center justify-between gap-2";
-const PANEL_TITLE_CLASS: &str =
-    "m-0 text-xs font-normal text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]";
-const NEW_CHAT_CLASS: &str = "flex items-center gap-2 px-2 py-1.5 text-xs text-[var(--fg-main)] bg-[var(--bg-secondary)] border border-solid border-[var(--fg-secondary)] cursor-pointer hover:border-[var(--fg-main)] disabled:opacity-40 disabled:cursor-default";
-const NOTE_CLASS: &str = "m-0 text-[10px] text-[var(--fg-secondary)] leading-snug";
-const LIST_CLASS: &str = "m-0 p-0 list-none flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto";
-const ROW_CLASS: &str = "flex flex-col gap-0.5 p-1.5 border border-solid border-transparent";
-const ROW_ACTIVE_CLASS: &str =
-    "flex flex-col gap-0.5 p-1.5 border border-solid border-[var(--fg-secondary)]";
-const ROW_OPEN_CLASS: &str = "flex flex-col items-start gap-0.5 min-w-0 p-0 text-left bg-transparent border-0 cursor-pointer disabled:cursor-default";
-const ROW_TITLE_CLASS: &str = "w-full truncate text-xs text-[var(--fg-main)]";
-const ROW_DATE_CLASS: &str = "text-[10px] text-[var(--fg-secondary)]";
-const ROW_ACTIONS_CLASS: &str = "flex items-center gap-3";
-const TEXT_BUTTON_CLASS: &str = "p-0 text-[10px] text-[var(--fg-secondary)] hover:text-[var(--fg-main)] bg-transparent border-0 cursor-pointer disabled:opacity-40 disabled:cursor-default";
+const OUTER_CLASS: &str = "ai";
+const SCRIM_CLASS: &str = "ai__scrim";
+const PANEL_CLASS: &str = "ai__history";
+const PANEL_HEADER_CLASS: &str = "ai__history-head";
+const PANEL_TITLE_CLASS: &str = "ai__history-title";
+const NEW_CHAT_CLASS: &str = "ai__new-chat";
+const NOTE_CLASS: &str = "ai__note";
+const LIST_CLASS: &str = "ai__history-list";
+const ROW_CLASS: &str = "ai__row ai__row--idle";
+const ROW_ACTIVE_CLASS: &str = "ai__row ai__row--active";
+const ROW_OPEN_CLASS: &str = "ai__row-open";
+const ROW_TITLE_CLASS: &str = "ai__row-title";
+const ROW_DATE_CLASS: &str = "ai__row-date";
+const ROW_ACTIONS_CLASS: &str = "ai__row-actions";
+const TEXT_BUTTON_CLASS: &str = "ai__text-btn";
 
-const ROOT_CLASS: &str =
-    "flex flex-col items-center justify-center gap-[25px] relative w-full h-full overflow-y-scroll";
-const CONVERSATION_CLASS: &str = "flex flex-col-reverse items-end gap-[25px] relative flex-1 w-full max-w-[48rem] h-full grow overflow-y-scroll";
-const USER_BUBBLE_CLASS: &str = "flex flex-col rounded-b-xl rounded-tl-xl items-start w-full max-w-max p-5 relative flex-[0_0_auto] bg-[var(--fg-main)]";
-const USER_TEXT_CLASS: &str = "relative self-stretch whitespace-pre-wrap [font:'JetBrains_Mono-Regular',Helvetica] text-[var(--bg-secondary)] text-xs text-left tracking-[0] leading-[normal]";
-const ASSISTANT_ARTICLE_CLASS: &str = "flex items-start gap-[var(--size-space-200)] relative self-stretch w-full flex-[0_0_auto] rounded-lg overflow-hidden";
-const ASSISTANT_ICON_CLASS: &str = "relative w-5 h-5 aspect-[1]";
-const ASSISTANT_BODY_CLASS: &str = "flex flex-col gap-3 flex-1 min-w-0";
-const ASSISTANT_TEXT_CLASS: &str = "relative whitespace-pre-wrap [font:'JetBrains_Mono-Regular',Helvetica] text-[var(--fg-main)] text-xs tracking-[0] leading-[normal]";
-const CODE_FIGURE_CLASS: &str = "flex items-start bg-white relative self-stretch w-full flex-[0_0_auto] rounded-xl overflow-hidden border border-solid border-color-border-default-default";
-const CODE_GUTTER_CLASS: &str = "flex flex-col w-12 items-end pt-[var(--size-space-400)] pr-[var(--size-space-200)] pb-[var(--size-space-400)] pl-[var(--size-space-200)] relative self-stretch bg-color-background-default-default border-r [border-right-style:solid] border-color-border-default-default";
-const CODE_NUMBERS_CLASS: &str = "relative w-fit mt-[-1.00px] whitespace-pre font-body-code font-[number:var(--body-code-font-weight)] text-color-text-default-tertiary text-[length:var(--body-code-font-size)] text-right tracking-[var(--body-code-letter-spacing)] leading-[var(--body-code-line-height)] [font-style:var(--body-code-font-style)]";
-const CODE_PRE_CLASS: &str = "inline-flex flex-col items-start pt-[var(--size-space-400)] pr-[var(--size-space-200)] pb-[var(--size-space-400)] pl-[var(--size-space-200)] relative flex-1 min-w-0 overflow-auto bg-color-background-default-secondary border-r [border-right-style:solid] border-color-border-default-default whitespace-pre font-body-code font-[number:var(--body-code-font-weight)] text-[length:var(--body-code-font-size)] tracking-[var(--body-code-letter-spacing)] leading-[var(--body-code-line-height)] [font-style:var(--body-code-font-style)]";
-const FOOTER_CLASS: &str = "flex flex-col items-start relative w-full max-w-[48rem] flex-[0_0_auto] border border-solid border-[var(--fg-secondary)]";
-const FORM_CLASS: &str =
-    "flex items-end gap-5 p-2.5 relative self-stretch w-full h-max flex-[0_0_auto]";
+const ROOT_CLASS: &str = "ai__root";
+const CONVERSATION_CLASS: &str = "ai__conversation";
+const USER_BUBBLE_CLASS: &str = "ai__user";
+const USER_TEXT_CLASS: &str = "ai__user-text";
+const ASSISTANT_ARTICLE_CLASS: &str = "ai__reply";
+const ASSISTANT_ICON_CLASS: &str = "ai__reply-icon";
+const ASSISTANT_BODY_CLASS: &str = "ai__reply-body";
+const ASSISTANT_TEXT_CLASS: &str = "ai__reply-text";
+const CODE_FIGURE_CLASS: &str = "ai__code";
+const CODE_GUTTER_CLASS: &str = "ai__code-gutter";
+const CODE_NUMBERS_CLASS: &str = "ai__code-lines";
+const CODE_PRE_CLASS: &str = "ai__code-pre";
+const FOOTER_CLASS: &str = "ai__footer";
+const FORM_CLASS: &str = "ai__form";
 // Tinggi diatur `js/autosize.js` (1 sampai 5 baris); padding 3px + 19.6px baris
 // = 25.6px, setara tombol ikon di sampingnya.
-const QUESTION_INPUT_CLASS: &str = "relative flex-1 min-w-0 min-h-[25px] py-[3px] resize-none overflow-y-hidden bg-[var(--bg-secondary)] border-0 outline-none [font:'JetBrains_Mono-Light',Helvetica] font-light text-[var(--fg-main)] text-sm tracking-[0] leading-[19.6px]";
-const ICON_BUTTON_CLASS: &str = "flex relative h-max opacity-70 hover:opacity-100 aspect-[1] bg-[var(--bg-secondary)] border-0 items-center justify-center cursor-pointer";
-const KEY_ROW_CLASS: &str =
-    "w-full h-12 flex items-center justify-center p-2.5 relative max-w-full";
-const KEY_GROUP_CLASS: &str = "flex items-center gap-2.5 relative flex-1 self-stretch grow";
-const KEY_LABEL_CLASS: &str = "relative flex text-left w-fit [font:'JetBrains_Mono-Thin',Helvetica] font-thin text-[var(--fg-secondary)] text-xs text-center tracking-[0] leading-[normal] whitespace-nowrap";
-const KEY_FIELD_CLASS: &str =
-    "w-full flex items-center gap-[5px] p-[5px] relative flex-1 self-stretch grow";
-const KEY_INPUT_CLASS: &str = "flex-1 min-w-0 w-full text-xs bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] opacity-50 focus:opacity-100 transition-opacity duration-300";
-const SHOW_BUTTON_CLASS: &str = "text-[var(--fg-secondary)] hover:text-[var(--fg-main)] transition-colors duration-150 text-xs bg-[var(--bg-secondary)] border-0 cursor-pointer";
-const INFO_BUTTON_CLASS: &str = "h-full relative aspect-[1] border-0 bg-[var(--bg-secondary)] p-[1px] opacity-70 hover:opacity-100 cursor-pointer";
-const SETTINGS_WRAP_CLASS: &str = "relative flex-[0_0_auto] h-full";
-const SETTINGS_TOGGLE_CLASS: &str = "inline-flex h-full p-[5px] items-center relative bg-[var(--bg-secondary)] border-0 opacity-70 hover:opacity-100 cursor-pointer";
-const MODEL_MENU_CLASS: &str = "absolute bottom-full right-0 mb-2 flex flex-col gap-1 p-1 border border-solid border-[var(--fg-secondary)] bg-[var(--bg-secondary)]";
+const QUESTION_INPUT_CLASS: &str = "ai__question";
+const ICON_BUTTON_CLASS: &str = "ai__icon-btn";
+const KEY_ROW_CLASS: &str = "ai__key-row";
+const KEY_GROUP_CLASS: &str = "ai__key-group";
+const KEY_LABEL_CLASS: &str = "ai__key-label";
+const KEY_FIELD_CLASS: &str = "ai__key-field";
+const KEY_INPUT_CLASS: &str = "ai__key-input";
+const SHOW_BUTTON_CLASS: &str = "ai__key-show";
+const INFO_BUTTON_CLASS: &str = "ai__info-btn";
+const SETTINGS_WRAP_CLASS: &str = "ai__settings";
+const SETTINGS_TOGGLE_CLASS: &str = "ai__settings-toggle";
+const MODEL_MENU_CLASS: &str = "ai__model-menu";
 
 const ICON_ASSISTANT: Asset = asset!("/assets/logo-Ai-Assistent.svg");
 const ICON_ADD: Asset = asset!("/assets/icon-add.svg");
@@ -469,9 +463,9 @@ fn code_gutter(code: &str) -> String {
 
 fn model_option_class(active: bool) -> &'static str {
     if active {
-        "px-2 py-1 text-left whitespace-nowrap text-[10px] bg-[var(--fg-main)] text-black border-0"
+        "ai__model-option ai__model-option--on"
     } else {
-        "px-2 py-1 text-left whitespace-nowrap text-[10px] text-[var(--fg-secondary)] hover:text-[var(--fg-main)] bg-[var(--bg-secondary)] border-0"
+        "ai__model-option ai__model-option--off"
     }
 }
 
@@ -547,10 +541,10 @@ pub fn AiAssistantWindowContent() -> Element {
                 class: CONVERSATION_CLASS,
 
                 if sending {
-                    p { class: "text-[var(--fg-secondary)] text-xs", "{s.ai.thinking}" }
+                    p { class: "ai__muted", "{s.ai.thinking}" }
                 }
                 if has_error {
-                    p { role: "alert", class: "text-[var(--red)] text-xs [overflow-wrap:anywhere]", "{error_message}" }
+                    p { role: "alert", class: "ai__error", "{error_message}" }
                 }
 
                 for (idx, turn) in turns.iter().enumerate().rev() {
@@ -590,7 +584,7 @@ pub fn AiAssistantWindowContent() -> Element {
                                                         figure {
                                                             key: "code-{j}",
                                                             class: CODE_FIGURE_CLASS,
-                                                            figcaption { class: "sr-only", "{s.ai.code_block}" }
+                                                            figcaption { class: "visually-hidden", "{s.ai.code_block}" }
                                                             div {
                                                                 class: CODE_GUTTER_CLASS,
                                                                 "aria-hidden": "true",
@@ -620,7 +614,7 @@ pub fn AiAssistantWindowContent() -> Element {
 
                 if turns.is_empty() {
                     p {
-                        class: "text-[var(--fg-secondary)] text-xs",
+                        class: "ai__muted",
                         "{s.ai.empty_prompt}"
                     }
                 }
@@ -659,7 +653,7 @@ pub fn AiAssistantWindowContent() -> Element {
 
                     label {
                         r#for: QUESTION_ID,
-                        class: "sr-only",
+                        class: "visually-hidden",
                         "{s.ai.question_prompt}"
                     }
                     // Enter mengirim, Shift+Enter baris baru. Tinggi: 1 sampai 5 baris.
@@ -682,7 +676,7 @@ pub fn AiAssistantWindowContent() -> Element {
                     }
                     p {
                         id: "assistant-question-hint",
-                        class: "sr-only",
+                        class: "visually-hidden",
                         "{s.ai.question_hint}"
                     }
 
@@ -708,7 +702,7 @@ pub fn AiAssistantWindowContent() -> Element {
                         div {
                             class: KEY_FIELD_CLASS,
                             div {
-                                class: "flex items-center justify-center relative flex-1 grow",
+                                class: "ai__center",
                                 input {
                                     id: "api-key",
                                     "aria-describedby": "api-key-help",
@@ -735,7 +729,7 @@ pub fn AiAssistantWindowContent() -> Element {
                                     src: ICON_INFO,
                                     alt: "",
                                     "aria-hidden": "true",
-                                    class: "h-full",
+                                    class: "ai__img-fill",
                                 }
                             }
                         }
@@ -754,7 +748,7 @@ pub fn AiAssistantWindowContent() -> Element {
                                 src: ICON_TOGGLE,
                                 alt: "",
                                 "aria-hidden": "true",
-                                class: "relative aspect-[1] h-full",
+                                class: "ai__img-square",
                             }
                         }
 
@@ -780,7 +774,7 @@ pub fn AiAssistantWindowContent() -> Element {
 
                 p {
                     id: "api-key-help",
-                    class: "sr-only",
+                    class: "visually-hidden",
                     "{s.ai.api_key_help}"
                 }
             }
@@ -812,7 +806,7 @@ pub fn AiAssistantWindowContent() -> Element {
                             show_history.set(false);
                             confirm_delete.set(None);
                         },
-                        img { src: ICON_CLOSE, alt: "", "aria-hidden": "true", class: "h-3 w-3" }
+                        img { src: ICON_CLOSE, alt: "", "aria-hidden": "true", class: "ai__img-xs" }
                     }
                 }
 
@@ -825,7 +819,7 @@ pub fn AiAssistantWindowContent() -> Element {
                         show_history.set(false);
                         confirm_delete.set(None);
                     },
-                    img { src: ICON_ADD, alt: "", "aria-hidden": "true", class: "h-4 w-4" }
+                    img { src: ICON_ADD, alt: "", "aria-hidden": "true", class: "ai__img-sm" }
                     span { "{s.ai.new_chat}" }
                 }
 

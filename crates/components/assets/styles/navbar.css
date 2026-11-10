@@ -1,0 +1,252 @@
+/* ==========================================================================
+   navbar.css — Navbar desktop
+   ========================================================================== */
+
+@layer components {
+  .navbar__tip {
+    @apply pointer-events-none absolute top-full z-20 mt-1 border-white/30 bg-bg-main
+      font-['JetBrains_Mono'];
+    transition: opacity 150ms var(--ease-in-out);
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .navbar__menu-item {
+    @apply w-full px-2 py-2 text-left text-xs transition-colors duration-150
+      font-['JetBrains_Mono'];
+  }
+
+  .navbar {
+    @apply relative z-[999] flex w-full shrink-0 items-center justify-center gap-2.5 px-[15px]
+      py-2 text-xs rounded-3xl border-t-[0.5px] border-white backdrop-blur-sm
+      bg-[image:var(--linear-t)];
+  }
+
+  .navbar__clock {
+    @apply absolute left-1/2 top-1/2 z-[4] flex -translate-x-1/2 -translate-y-1/2 select-none
+      flex-col items-center gap-1 rounded-md px-3 py-0.5 hover:bg-white/5 active:scale-95
+      cursor-pointer;
+    transition-property: var(--transition-colors);
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .navbar__clock-time {
+    @apply text-center text-sm;
+    font-weight: 300;
+  }
+
+  .navbar__clock-date {
+    @apply hidden text-[12px] text-white/40 min-[500px]:block;
+  }
+
+  .navbar__left {
+    @apply flex min-w-0 flex-col items-start gap-3 h-[35px] xl:flex-row lg:items-center;
+  }
+
+  .navbar__menu-btn {
+    @apply relative flex shrink-0 items-center gap-2 rounded-md px-1 py-1 hover:bg-white/5
+      active:scale-95;
+    transition-property: var(--transition-colors);
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .navbar__logo {
+    @apply h-[26px] w-[26px];
+  }
+
+  .navbar__name--wide {
+    @apply hidden text-sm lg:inline;
+    font-weight: 400;
+  }
+
+  .navbar__name--narrow {
+    @apply max-[370px]:hidden text-sm lg:hidden;
+    font-weight: 400;
+  }
+
+  .navbar__menu {
+    @apply grid p-1 w-full duration-300 ease-out overflow-hidden shrink-0 xl:flex
+      xl:overflow-visible;
+  }
+
+  .navbar__menu-inner {
+    @apply overflow-hidden xl:overflow-visible;
+  }
+
+  .navbar__menu-list {
+    @apply relative flex w-full flex-col items-stretch gap-0.5 xl:w-auto xl:flex-row;
+  }
+
+  .navbar__spacer {
+    @apply h-[30px] flex-1;
+  }
+
+  .navbar__right {
+    @apply flex flex-none flex-col h-[20px] items-center gap-[25px] md:flex-row;
+  }
+
+  .navbar__status-toggle {
+    @apply pt-1 sm:hidden;
+    border-width: 0px;
+  }
+
+  .navbar__chevron--open {
+    @apply w-[10px] pt-0.5 cursor-pointer;
+    transition-property: transform, translate, scale, rotate;
+    transition-duration: 300ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .navbar__chevron--closed {
+    @apply w-[15px] cursor-pointer rotate-180;
+    transition-property: transform, translate, scale, rotate;
+    transition-duration: 300ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .navbar__status {
+    @apply grid p-1 duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible;
+  }
+
+  .navbar__status-inner {
+    @apply overflow-hidden sm:overflow-visible;
+  }
+
+  .navbar__status-list {
+    @apply flex flex-col items-center gap-3 sm:flex-row;
+  }
+
+  .navbar__btn {
+    @apply hover:scale-125 active:scale-90;
+    transition-property: transform, translate, scale, rotate;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .navbar__icon {
+    @apply h-4 w-4;
+    transition: opacity 150ms var(--ease-in-out);
+  }
+
+  .navbar__slash {
+    @apply pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45;
+  }
+
+  .navbar__item {
+    @apply relative;
+  }
+
+  .navbar__lang-btn {
+    @apply flex flex-col items-center gap-0.5 hover:scale-110 active:scale-90;
+    transition-property: transform, translate, scale, rotate;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .navbar__lang-flag {
+    @apply h-2 w-4.5 object-contain;
+  }
+
+  .navbar__lang-code {
+    @apply text-[8px] font-['JetBrains_Mono'];
+    font-weight: 400;
+  }
+
+  .navbar__battery-btn {
+    @apply flex flex-none items-center gap-1;
+  }
+
+  .navbar__battery-text {
+    @apply hidden text-3xs text-center sm:block opacity-70 hover:opacity-100 hover:scale-110
+      active:scale-90 sm:h-full sm:px-2;
+    transition-property: transform, translate, scale, rotate;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .navbar__tip--about {
+    @apply left-0 w-max max-w-[220px] px-2 py-1 text-2xs text-white/70 opacity-0;
+  }
+
+  .navbar__tip--hint {
+    @apply left-0 whitespace-nowrap px-2.5 py-1.5 text-2xs text-white/60;
+  }
+
+  .navbar__tip--battery {
+    @apply right-0 whitespace-nowrap px-2 py-1 text-3xs text-white/70;
+  }
+
+  .navbar__menu-item--active {
+    @apply text-bg-main xl:text-fg-main lg:w-auto lg:rounded-sm lg:px-2 lg:py-1 bg-fg-main
+      xl:bg-transparent;
+  }
+
+  .navbar__menu-item--idle {
+    @apply text-fg-main ease-out opacity-50 hover:opacity-100 hover:bg-fg-secondary xl:w-auto
+      xl:rounded-sm xl:px-2 xl:py-1;
+  }
+
+  .navbar__menu--open {
+    @apply grid-rows-[1fr] bg-bg-main xl:bg-transparent border xl:border-0 border-fg-secondary
+      transition-[grid-template-rows];
+  }
+
+  .navbar__menu--closed {
+    @apply grid-rows-[0fr] bg-transparent transition-all;
+  }
+
+  .navbar__status--open {
+    @apply grid-rows-[1fr] border sm:border-0 border-fg-secondary bg-bg-main sm:bg-transparent
+      transition-[grid-template-rows];
+  }
+
+  .navbar__status--closed {
+    @apply grid-rows-[0fr] bg-transparent transition-all;
+  }
+
+  .navbar__btn--relative {
+    @apply relative;
+  }
+
+  .navbar__battery-icon {
+    @apply sm:hidden opacity-70 hover:opacity-100;
+  }
+
+  .navbar__icon--on {
+    @apply opacity-100;
+  }
+
+  .navbar__icon--off {
+    @apply opacity-30;
+  }
+
+  .navbar__icon--dim {
+    @apply opacity-70;
+  }
+
+  .navbar__icon--dimmer {
+    @apply opacity-40;
+  }
+
+  .navbar__slash--on {
+    @apply bg-white;
+  }
+
+  .navbar__slash--off {
+    @apply bg-transparent;
+  }
+
+  .navbar__tip--on-xl {
+    @apply xl:opacity-100;
+  }
+
+  .navbar__tip--on {
+    @apply opacity-100;
+  }
+
+  .navbar__tip--off {
+    @apply opacity-0;
+  }
+}

@@ -72,30 +72,30 @@ pub fn Calculator() -> Element {
         // Display; font ini tidak lagi dimuat global di `app.rs`.
         document::Stylesheet { href: PLAYFAIR_FONT_URL }
         section {
-            class: "flex flex-col items-center h-full w-full gap-2.5 relative",
+            class: "calc",
             title: s.calc.title,
             header {
-                class: "flex flex-col px-2.5 py-3 relative self-stretch w-full flex-[0_0_auto] rounded-[5px] border-[0.5px] border-solid border-[var(--fg-secondary)] bg-[image:var(--linear-lr)]",
+                class: "calc__display",
                 button {
                     r#type: "button",
-                    class: "self-start appearance-none bg-[var(--bg-secondary)] text-xs opacity-50 hover:opacity-100",
+                    class: "calc__history-btn",
                     title: s.calc.toggle_angle_title,
                     onclick: move |_| state.toggle_angle(),
                     "{angle_label}"
                 }
                 output {
-                    class: "relative w-full min-h-8 text-2xl flex items-center justify-end overflow-x-auto [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-center tracking-[0] leading-[normal]",
+                    class: "calc__result",
                     title: s.calc.output_title,
                     dangerous_inner_html: "{main_html}",
                 }
                 output {
-                    class: "relative flex items-center justify-end w-full min-h-5 opacity-50 [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-sm text-center tracking-[0] leading-[normal]",
+                    class: "calc__expr",
                     title: s.calc.preview_title,
                     dangerous_inner_html: "{secondary_html}",
                 }
             }
-            KeyPad { keys: MAIN, cols: "grid-cols-4" }
-            div { class: "flex flex-row w-full h-max py-2 gap-2 border-b border-solid border-[var(--fg-secondary)]",
+            KeyPad { keys: MAIN, cols: "calc__keys--4col" }
+            div { class: "calc__modes",
                 ModeTab { mode: Mode::Algebra, label: s.calc.mode_algebra }
                 ModeTab { mode: Mode::Trigonometry, label: s.calc.mode_trigonometry }
                 ModeTab { mode: Mode::Calculus, label: s.calc.mode_calculus }

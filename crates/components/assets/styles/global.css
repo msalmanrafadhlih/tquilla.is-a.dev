@@ -1,0 +1,214 @@
+/* ==========================================================================
+   global.css — token, reset, dan blok bangunan yang dipakai banyak UI
+   --------------------------------------------------------------------------
+   Aturan main:
+   1. Nilai yang dipakai lebih dari sekali didefinisikan SEKALI di sini
+      (:root untuk custom property, @theme untuk nama utility Tailwind).
+   2. File per-UI (calculator.css, browser.css, ...) hanya memakai nilai itu
+      lewat @apply / var(--...); jangan menulis ulang warna & durasi.
+   3. Class di dalam rsx! adalah nama semantik (BEM: blok__elemen--modifier)
+      yang didefinisikan di styles/*.css — bukan utility Tailwind.
+   ========================================================================== */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* --------------------------------------------------------------------------
+   1. Tema Tailwind
+   -------------------------------------------------------------------------- */
+@theme {
+  /* Palet editorial (journal + home), dipindah 1:1 dari theme.css lama. */
+  --color-primary: #1a1a1a;
+  --color-paper: #f4f1ea;
+  --color-paper-dark: #eae6dd;
+  --color-accent: #c94b28;
+  --color-line: #d1cdc5;
+  --color-muted: #8c8c8c;
+  --color-ink: #1a1a1a;
+
+  /* `xs:` dipakai home; Tailwind v4 tidak punya breakpoint `xs` bawaan. */
+  --breakpoint-xs: 30rem;
+
+  --font-sans: Inter, sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* Alias palet desktop (:root di bawah) menjadi utility: bg-bg-main,
+   text-fg-main, border-fg-secondary, ... `inline` membuat utility menulis
+   var(--fg-main) langsung, jadi satu perubahan di :root merambat ke semua. */
+@theme inline {
+  --color-bg-main: var(--bg-main);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-fg-main: var(--fg-main);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-signal-green: var(--green);
+  --color-signal-red: var(--red);
+  --color-signal-yellow: var(--yellow);
+
+  /* Ukuran font kecil yang tidak ada di skala bawaan (xs = 12px). */
+  --text-3xs: 10px;
+  --text-2xs: 11px;
+}
+
+/* Desain ini bersudut tajam: `rounded` polos = 0 (4 pemakaian lama). */
+@utility rounded {
+  border-radius: 0px;
+}
+
+/* Sembunyikan scrollbar tapi tetap bisa di-scroll. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. Custom property global
+   -------------------------------------------------------------------------- */
+:root {
+  /* Palet desktop */
+  --bg-main: #111;
+  --bg-secondary: #252525;
+  --bg-linear: #373737;
+  --fg-main: #fff;
+  --fg-secondary: #555;
+  --green: #0f0;
+  --red: #f00;
+  --yellow: #ff0;
+
+  /* Gradasi */
+  --linear-b: linear-gradient(180deg, transparent 0%, var(--bg-secondary) 100%);
+  --linear-t: linear-gradient(180deg, var(--bg-secondary) 10%, transparent 100%);
+  --linear-lr: linear-gradient(90deg, transparent 0%, var(--bg-linear) 50%, transparent 100%);
+  --conic-gradient: conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 25%,
+    var(--bg-linear) 50%,
+    transparent 75%,
+    var(--bg-linear) 100%
+  );
+
+  /* Jarak */
+  --size-space-200: 8px;
+
+  /* Gerak */
+  --transition-colors: color, background-color, border-color, outline-color,
+    text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via,
+    --tw-gradient-to;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-quad: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Lapisan (z-index) paling atas: overlay noise + layar boot */
+  --z-top: 9999;
+}
+
+/* --------------------------------------------------------------------------
+   3. Reset dasar. `@layer base` supaya utility/komponen masih bisa menimpa.
+      (Reset Meyer lama dibuang: preflight Tailwind sudah melakukannya.)
+   -------------------------------------------------------------------------- */
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0px;
+    min-height: 100%;
+  }
+  /* warna biru generik sebagai fokus tombol */
+  button:focus-visible {
+    outline: 2px solid #4a90e2 !important;
+    outline: -webkit-focus-ring-color auto 5px !important;
+  }
+  a {
+    text-decoration: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. Dokumen — sengaja TIDAK di dalam @layer: harus menang atas utility
+   -------------------------------------------------------------------------- */
+::selection {
+  background: #fff;
+  color: #000;
+}
+
+/* WebView desktop/mobile tidak punya <body class="bg-..."> dari index.html */
+html,
+body {
+  background: #000;
+}
+
+/* Grain tipis di atas semua UI; pointer-events:none supaya klik tembus. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-top);
+  pointer-events: none;
+  opacity: 0.15;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Gambar di dalam elemen `.group` membesar mulus saat di-hover. */
+.group img {
+  transform: scale(1);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.group:hover img {
+  transform: scale(1.15);
+}
+
+/* Font lokal (tanpa file unduhan: dipakai bila terpasang di perangkat). */
+@font-face {
+  font-family: "JetBrains Mono-Light";
+  src: local("JetBrains Mono-Light");
+}
+@font-face {
+  font-family: "JetBrains Mono-Regular";
+  src: local("JetBrains Mono-Regular");
+}
+@font-face {
+  font-family: "Inter";
+  src: local("Inter");
+}
+
+/* Hormati "kurangi gerakan" di seluruh situs. Durasi dibuat nyaris nol, bukan
+   `none`, supaya animationend/transitionend yang dipakai window manager tetap
+   terpicu. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Blok bangunan bersama (dipakai >1 UI)
+   -------------------------------------------------------------------------- */
+
+@layer components {
+  .app-window__panel {
+    @apply max-w-[500px] flex w-full h-full flex-col items-center justify-start gap-[25px] pb-5
+      relative flex-1 self-stretch;
+  }
+
+  .app-window__scroll {
+    @apply overflow-auto [-webkit-touch-callout:none] no-scrollbar;
+  }
+
+  .visually-hidden {
+    @apply sr-only;
+  }
+
+  .app-window__loading {
+    @apply p-3;
+  }
+}

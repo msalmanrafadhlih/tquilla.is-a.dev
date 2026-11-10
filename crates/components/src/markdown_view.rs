@@ -15,11 +15,11 @@ use markdown::{parse, Alert, Align, Block, Inline, Item, Style};
 /// that host, so a row of badges needs one click, not five.
 static LOADED_HOSTS: GlobalSignal<Vec<String>> = Signal::global(Vec::new);
 
-const LINK_CLASS: &str = "underline decoration-dotted decoration-[var(--fg-secondary)] underline-offset-4 break-words hover:decoration-solid hover:decoration-[var(--fg-main)]";
+const LINK_CLASS: &str = "md__link";
 // `flow-root`: a floated image (`<img align="left">`) must stay inside the block
 // that holds it instead of spilling over the next one.
-const TEXT_CLASS: &str = "flow-root whitespace-pre-wrap break-words";
-const CODE_BG: &str = "bg-[color-mix(in_srgb,var(--fg-main)_12%,transparent)]";
+const TEXT_CLASS: &str = "md__text";
+const CODE_BG: &str = "md__code-bg";
 
 /// Renders Markdown `source` (an entry's text). Re-parses only when `source`
 /// changes, because Dioxus skips components whose props are equal.
@@ -27,7 +27,7 @@ const CODE_BG: &str = "bg-[color-mix(in_srgb,var(--fg-main)_12%,transparent)]";
 pub fn Markdown(source: String) -> Element {
     let blocks = parse(&source);
     rsx! {
-        div { class: "flex flex-col gap-2 min-w-0 break-words text-xs leading-relaxed text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]",
+        div { class: "md",
             for (i , block) in blocks.into_iter().enumerate() {
                 BlockView { key: "{i}", block }
             }
@@ -55,9 +55,9 @@ fn Inlines(nodes: Vec<Inline>) -> Element {
 
 fn align_class(align: Option<&Align>) -> &'static str {
     match align {
-        Some(Align::Center) => "text-center",
-        Some(Align::Right) => "text-right",
-        _ => "text-left",
+        Some(Align::Center) => "md-align--center",
+        Some(Align::Right) => "md-align--right",
+        _ => "md-align--left",
     }
 }
 
@@ -65,9 +65,9 @@ fn align_class(align: Option<&Align>) -> &'static str {
 /// `text-align`).
 fn group_class(align: Align) -> &'static str {
     match align {
-        Align::Center => "text-center",
-        Align::Right => "text-right",
-        Align::Left => "text-left",
+        Align::Center => "md-align--center",
+        Align::Right => "md-align--right",
+        Align::Left => "md-align--left",
         Align::Default => "",
     }
 }
@@ -75,10 +75,10 @@ fn group_class(align: Align) -> &'static str {
 /// Border/label color for each GitHub alert kind.
 fn alert_class(alert: Alert) -> &'static str {
     match alert {
-        Alert::Note => "border-[var(--fg-main)] text-[var(--fg-main)]",
-        Alert::Tip => "border-[var(--green)] text-[var(--green)]",
-        Alert::Important | Alert::Warning => "border-[var(--yellow)] text-[var(--yellow)]",
-        Alert::Caution => "border-[var(--red)] text-[var(--red)]",
+        Alert::Note => "md-alert--note",
+        Alert::Tip => "md-alert--tip",
+        Alert::Important | Alert::Warning => "md-alert--warning",
+        Alert::Caution => "md-alert--caution",
     }
 }
 
@@ -94,17 +94,15 @@ fn BlockView(block: Block) -> Element {
         },
         Block::Heading { level, content } => {
             let size = match level {
-                1 => "text-sm font-bold border-b border-solid border-[var(--fg-secondary)] pb-1",
-                2 => {
-                    "text-[13px] font-bold border-b border-solid border-[var(--fg-secondary)] pb-1"
-                }
-                _ => "text-xs font-bold",
+                1 => "md__h1",
+                2 => "md__h2",
+                _ => "md__h3",
             };
             rsx! {
                 p {
                     role: "heading",
                     "aria-level": "{level}",
-                    class: "{size} {TEXT_CLASS} mt-1",
+                    class: "{size} {TEXT_CLASS} md__lead",
                     Inlines { nodes: content }
                 }
             }
@@ -121,15 +119,12 @@ fn BlockView(block: Block) -> Element {
                     };
                     (alert_class(kind), Some(label))
                 }
-                None => (
-                    "border-[var(--fg-secondary)] text-[var(--fg-main)]/80",
-                    None,
-                ),
+                None => ("md-alert--none", None),
             };
             rsx! {
-                blockquote { class: "flex flex-col gap-1.5 border-0 border-l-2 border-solid pl-2.5 m-0 {frame}",
+                blockquote { class: "md__quote {frame}",
                     if let Some(label) = label {
-                        p { class: "m-0 font-bold", "{label}" }
+                        p { class: "md__alert-title", "{label}" }
                     }
                     Blocks { blocks }
                 }
@@ -139,14 +134,14 @@ fn BlockView(block: Block) -> Element {
             Some(n) => rsx! {
                 ol {
                     "start": "{n}",
-                    class: "m-0 pl-5 list-decimal flex flex-col gap-1",
+                    class: "md__ol",
                     for (i , item) in items.into_iter().enumerate() {
                         ItemView { key: "{i}", item }
                     }
                 }
             },
             None => rsx! {
-                ul { class: "m-0 pl-5 list-disc flex flex-col gap-1",
+                ul { class: "md__ul",
                     for (i , item) in items.into_iter().enumerate() {
                         ItemView { key: "{i}", item }
                     }
@@ -154,22 +149,22 @@ fn BlockView(block: Block) -> Element {
             },
         },
         Block::Code { lang, code } => rsx! {
-            div { class: "flex flex-col border border-solid border-[var(--fg-secondary)] {CODE_BG}",
+            div { class: "md__code-block {CODE_BG}",
                 if let Some(lang) = lang {
-                    span { class: "px-2 py-0.5 text-[10px] text-[var(--fg-secondary)] border-0 border-b border-solid border-[var(--fg-secondary)]",
+                    span { class: "md__code-lang",
                         "{lang}"
                     }
                 }
-                pre { class: "m-0 p-2 overflow-x-auto [scrollbar-width:thin]",
-                    code { class: "whitespace-pre [font:inherit]", "{code}" }
+                pre { class: "md__pre",
+                    code { class: "md__code", "{code}" }
                 }
             }
         },
         Block::Rule => rsx! {
-            hr { class: "w-full m-0 border-0 border-t border-solid border-[var(--fg-secondary)]" }
+            hr { class: "md__hr" }
         },
         Block::Aligned { align, blocks } => rsx! {
-            div { class: "flex flex-col gap-1.5 min-w-0 {group_class(align)}", Blocks { blocks } }
+            div { class: "md__group {group_class(align)}", Blocks { blocks } }
         },
         Block::Details {
             summary,
@@ -178,26 +173,26 @@ fn BlockView(block: Block) -> Element {
         } => rsx! {
             details {
                 open,
-                class: "border border-solid border-[var(--fg-secondary)] px-2 py-1.5",
-                summary { class: "cursor-pointer font-bold",
+                class: "md__details",
+                summary { class: "md__summary",
                     if summary.is_empty() {
                         "{s.guestbook.details_label}"
                     } else {
                         Inlines { nodes: summary }
                     }
                 }
-                div { class: "flex flex-col gap-1.5 pt-1.5", Blocks { blocks } }
+                div { class: "md__details-body", Blocks { blocks } }
             }
         },
         Block::Table { align, head, rows } => rsx! {
-            div { class: "overflow-x-auto [scrollbar-width:thin]",
-                table { class: "border-collapse text-xs",
+            div { class: "md__table-wrap",
+                table { class: "md__table",
                     thead {
                         tr {
                             for (i , cell) in head.into_iter().enumerate() {
                                 th {
                                     key: "{i}",
-                                    class: "px-2 py-1 font-bold border border-solid border-[var(--fg-secondary)] {align_class(align.get(i))}",
+                                    class: "md__th {align_class(align.get(i))}",
                                     Inlines { nodes: cell }
                                 }
                             }
@@ -209,7 +204,7 @@ fn BlockView(block: Block) -> Element {
                                 for (i , cell) in row.into_iter().enumerate() {
                                     td {
                                         key: "{i}",
-                                        class: "px-2 py-1 border border-solid border-[var(--fg-secondary)] {align_class(align.get(i))}",
+                                        class: "md__td {align_class(align.get(i))}",
                                         Inlines { nodes: cell }
                                     }
                                 }
@@ -227,19 +222,19 @@ fn ItemView(item: Item) -> Element {
     let Item { checked, blocks } = item;
     match checked {
         Some(done) => rsx! {
-            li { class: "list-none -ml-5 flex items-start gap-2",
+            li { class: "md__task",
                 input {
                     r#type: "checkbox",
                     checked: done,
                     disabled: true,
-                    class: "mt-[3px] shrink-0 accent-[var(--fg-main)]",
+                    class: "md__task-box",
                 }
-                div { class: "flex flex-col gap-1 min-w-0", Blocks { blocks } }
+                div { class: "md__task-body", Blocks { blocks } }
             }
         },
         None => rsx! {
-            li { class: "pl-0.5 min-w-0",
-                div { class: "flex flex-col gap-1", Blocks { blocks } }
+            li { class: "md__item",
+                div { class: "md__item-body", Blocks { blocks } }
             }
         },
     }
@@ -254,16 +249,16 @@ fn InlineView(node: Inline) -> Element {
             br {}
         },
         Inline::Code(c) => rsx! {
-            code { class: "px-1 py-px {CODE_BG} [font:inherit] break-words", "{c}" }
+            code { class: "md__icode-pad {CODE_BG} md__icode-font", "{c}" }
         },
         Inline::Emph(nodes) => rsx! {
             em { Inlines { nodes } }
         },
         Inline::Strong(nodes) => rsx! {
-            strong { class: "font-bold", Inlines { nodes } }
+            strong { class: "md__strong", Inlines { nodes } }
         },
         Inline::Strike(nodes) => rsx! {
-            del { class: "opacity-70", Inlines { nodes } }
+            del { class: "md__del", Inlines { nodes } }
         },
         Inline::Link { href, children } => {
             let web = href.starts_with("http");
@@ -284,7 +279,7 @@ fn InlineView(node: Inline) -> Element {
                 u { Inlines { nodes } }
             },
             Style::Mark => rsx! {
-                mark { class: "bg-[var(--yellow)] px-0.5 text-black", Inlines { nodes } }
+                mark { class: "md__mark", Inlines { nodes } }
             },
             Style::Sub => rsx! {
                 sub { Inlines { nodes } }
@@ -293,12 +288,12 @@ fn InlineView(node: Inline) -> Element {
                 sup { Inlines { nodes } }
             },
             Style::Kbd => rsx! {
-                kbd { class: "border border-solid border-[var(--fg-secondary)] px-1 [font:inherit]",
+                kbd { class: "md__kbd",
                     Inlines { nodes }
                 }
             },
             Style::Code => rsx! {
-                code { class: "px-1 py-px {CODE_BG} [font:inherit] break-words", Inlines { nodes } }
+                code { class: "md__icode-pad {CODE_BG} md__icode-font", Inlines { nodes } }
             },
         },
         Inline::Image {
@@ -323,7 +318,7 @@ fn InlineView(node: Inline) -> Element {
                 let label = image_label(s, &alt);
                 let title = other.unwrap_or_default();
                 rsx! {
-                    span { title: "{title}", class: "text-[var(--fg-secondary)]", "{label}" }
+                    span { title: "{title}", class: "md__muted", "{label}" }
                 }
             }
         },
@@ -343,14 +338,14 @@ fn image_label(s: &crate::languages::Strings, alt: &str) -> String {
 /// `align="left|right"` (text wraps around it), or alone on a centered line.
 fn picture_place(align: Align) -> &'static str {
     match align {
-        Align::Left => "float-left mr-2 mb-1",
-        Align::Right => "float-right ml-2 mb-1",
-        Align::Center => "block mx-auto",
-        Align::Default => "inline-block align-middle",
+        Align::Left => "md-float--left",
+        Align::Right => "md-float--right",
+        Align::Center => "md-float--center",
+        Align::Default => "md-float--inline",
     }
 }
 
-const ASK_CLASS: &str = "max-w-full p-1.5 text-left text-[10px] leading-snug text-[var(--fg-secondary)] bg-transparent border border-dashed border-[var(--fg-secondary)] cursor-pointer hover:text-[var(--fg-main)] hover:border-[var(--fg-main)]";
+const ASK_CLASS: &str = "md__ask";
 
 /// An image from an entry. Images from hosts on the list in
 /// [`markdown::images`] load at once; every other one waits behind a button,
@@ -396,7 +391,7 @@ fn Picture(
                     title: "{ask}",
                     "aria-label": "{ask}",
                     style: "width:{side}px;height:{side}px",
-                    class: "{place} {ASK_CLASS} p-0 text-center",
+                    class: "{place} {ASK_CLASS} md__ask-reset",
                     onclick: on_click,
                     "\u{25A3}"
                 }
@@ -408,8 +403,8 @@ fn Picture(
                     title: "{src}",
                     class: "{place} {ASK_CLASS}",
                     onclick: on_click,
-                    span { class: "block", "{label}" }
-                    span { class: "block underline decoration-dotted", "{ask}" }
+                    span { class: "md__ask-line", "{label}" }
+                    span { class: "md__ask-action", "{ask}" }
                 }
             }
         };
@@ -417,14 +412,14 @@ fn Picture(
     if failed() {
         let label = image_label(s, &alt);
         return rsx! {
-            span { title: "{src}", class: "text-[var(--fg-secondary)]", "{label}" }
+            span { title: "{src}", class: "md__muted", "{label}" }
         };
     }
     // One side is enough: the other follows, so the picture keeps its shape
     // even when `max-w-full` shrinks it.
     let (w, h, fit) = match (width, height) {
-        (Some(w), _) => (Some(w), None, "h-auto"),
-        (None, Some(h)) => (None, Some(h), "w-auto"),
+        (Some(w), _) => (Some(w), None, "md-size--h-auto"),
+        (None, Some(h)) => (None, Some(h), "md-size--w-auto"),
         (None, None) => (None, None, ""),
     };
     let place = picture_place(align);
@@ -438,7 +433,7 @@ fn Picture(
             loading: "lazy",
             decoding: "async",
             referrerpolicy: "no-referrer",
-            class: "{place} max-w-full max-h-80 object-contain {fit}",
+            class: "{place} md__img {fit}",
             onerror: move |_| failed.set(true),
         }
     }

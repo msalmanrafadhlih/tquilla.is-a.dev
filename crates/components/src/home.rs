@@ -78,7 +78,7 @@ pub fn Home() -> Element {
                     headline: s.home.failed,
                     on_retry: move |_| generations.restart(),
                     nav {
-                        class: "flex flex-col gap-1 text-[var(--fg-main,#fff)] underline",
+                        class: "home__nav",
                         "aria-label": s.home.list_label,
                         Link { to: Route::DesktopPage {}, "{s.home.open_desktop}" }
                         Link { to: Route::JournalPage {}, "{s.home.open_journal}" }
@@ -98,7 +98,7 @@ pub fn Home() -> Element {
             {body}
         } else {
             section {
-                class: "min-h-screen w-full bg-[var(--bg-main)] text-neutral-200 font-mono flex items-center justify-center px-3 py-10",
+                class: "home__screen",
                 {body}
             }
         }
@@ -198,7 +198,7 @@ fn BootMenu(generations: Vec<Generation>) -> Element {
 
     rsx! {
         section {
-            class: "min-h-screen w-full bg-[var(--bg-main)] text-neutral-200 font-mono flex flex-col items-center justify-center px-3 py-10 outline-none select-none",
+            class: "home__screen home__screen--menu",
             // Klik di area kosong menghilangkan fokus dari daftar; kembalikan.
             onclick: move |_| {
                 cancelled.set(true);
@@ -211,7 +211,7 @@ fn BootMenu(generations: Vec<Generation>) -> Element {
             ontouchstart: move |_| cancelled.set(true),
 
             div {
-                class: "w-full max-w-3xl",
+                class: "boot-menu__body",
                 // Pola listbox ARIA: fokus tetap di <ul>, opsi aktif
                 // diumumkan lewat `aria-activedescendant`. Ini juga mencegah
                 // Enter/Space terpicu dua kali (sekali oleh tombol yang
@@ -221,7 +221,7 @@ fn BootMenu(generations: Vec<Generation>) -> Element {
                     "aria-label": s.home.list_label,
                     "aria-activedescendant": "{active_id}",
                     tabindex: "0",
-                    class: "flex flex-col outline-none",
+                    class: "boot-menu__list",
                     onkeydown,
                     onmounted: move |evt| {
                         let data = evt.data();
@@ -251,9 +251,9 @@ fn BootMenu(generations: Vec<Generation>) -> Element {
                                 move |_| open.call(url.clone())
                             },
                             class: if selected() == idx {
-                                "bg-neutral-200 text-black px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75 text-center"
+                                "boot-menu__item boot-menu__item--selected"
                             } else {
-                                "bg-[var(--bg-main)] text-neutral-200 px-3 py-1.5 cursor-pointer text-[11px] xs:text-xs sm:text-sm break-words transition-colors duration-75 hover:bg-neutral-800 text-center"
+                                "boot-menu__item boot-menu__item--idle"
                             },
                             if hovered() == Some(idx) {
                                 "{gen.label}"
@@ -265,12 +265,12 @@ fn BootMenu(generations: Vec<Generation>) -> Element {
                     }
                 }
                 p {
-                    class: "text-center text-[11px] sm:text-sm py-2 border-t border-neutral-700 text-neutral-500",
+                    class: "boot-menu__status",
                     "{s.home.reboot_firmware}"
                 }
             }
             p {
-                class: "mt-6 text-center text-[10px] sm:text-xs text-neutral-600 max-w-md",
+                class: "boot-menu__hint",
                 if cancelled() {
                     "{s.home.auto_boot_cancelled}"
                 } else {
@@ -278,7 +278,7 @@ fn BootMenu(generations: Vec<Generation>) -> Element {
                 }
             }
             p {
-                class: "mt-6 text-center text-[10px] sm:text-xs text-neutral-600 max-w-md",
+                class: "boot-menu__hint",
                 "{s.home.hint}"
             }
         }

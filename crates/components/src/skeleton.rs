@@ -10,7 +10,7 @@
 //!   (a list of bars, a list of avatar + text entries) are the pieces.
 //!
 //! ```ignore
-//! SkeletonGroup { label: s.radio.loading, class: "p-3",
+//! SkeletonGroup { label: s.radio.loading,
 //!     SkeletonRows { rows: 5 }
 //! }
 //! ```
@@ -23,21 +23,26 @@ use dioxus::prelude::*;
 
 use crate::languages::use_strings;
 
-const SHAPE_CLASS: &str = "block shrink-0 animate-pulse motion-reduce:animate-none bg-[color-mix(in_srgb,currentColor_14%,transparent)]";
+const SHAPE_CLASS: &str = "skeleton";
 
 /// Widths for the lines of a text placeholder: ragged like real text, and the
 /// last line shorter (a paragraph rarely ends at the margin). One line is full
 /// width, since there is no "last" to shorten.
 pub fn line_width_class(index: usize, lines: usize) -> &'static str {
-    const RAGGED: [&str; 4] = ["w-full", "w-11/12", "w-full", "w-10/12"];
+    const RAGGED: [&str; 4] = [
+        "skeleton__line--full",
+        "skeleton__line--w11",
+        "skeleton__line--full",
+        "skeleton__line--w10",
+    ];
     if lines > 1 && index + 1 == lines {
-        "w-2/3"
+        "skeleton__line--last"
     } else {
         RAGGED[index % RAGGED.len()]
     }
 }
 
-/// A grey rectangle. Give it a size with classes: `Skeleton { class: "h-4 w-32" }`.
+/// A grey rectangle. Give it a size with a class from `skeleton.css`: `Skeleton { class: "skeleton__row" }`.
 #[component]
 pub fn Skeleton(#[props(default, into)] class: String) -> Element {
     rsx! {
@@ -50,7 +55,7 @@ pub fn Skeleton(#[props(default, into)] class: String) -> Element {
 pub fn SkeletonCircle(#[props(default = 32)] size: u32) -> Element {
     rsx! {
         span {
-            class: "{SHAPE_CLASS} rounded-full",
+            class: "{SHAPE_CLASS} skeleton__circle",
             style: "width:{size}px;height:{size}px",
             "aria-hidden": "true",
         }
@@ -61,9 +66,9 @@ pub fn SkeletonCircle(#[props(default = 32)] size: u32) -> Element {
 #[component]
 pub fn SkeletonText(#[props(default = 3)] lines: usize) -> Element {
     rsx! {
-        span { class: "flex w-full flex-col gap-1.5", "aria-hidden": "true",
+        span { class: "skeleton__text", "aria-hidden": "true",
             for i in 0..lines {
-                Skeleton { key: "{i}", class: "h-3 {line_width_class(i, lines)}" }
+                Skeleton { key: "{i}", class: "skeleton__text-line {line_width_class(i, lines)}" }
             }
         }
     }
@@ -73,9 +78,9 @@ pub fn SkeletonText(#[props(default = 3)] lines: usize) -> Element {
 #[component]
 pub fn SkeletonRows(#[props(default = 5)] rows: usize) -> Element {
     rsx! {
-        span { class: "flex w-full flex-col gap-2", "aria-hidden": "true",
+        span { class: "skeleton__rows", "aria-hidden": "true",
             for i in 0..rows {
-                Skeleton { key: "{i}", class: "h-8 w-full" }
+                Skeleton { key: "{i}", class: "skeleton__row" }
             }
         }
     }
@@ -89,14 +94,14 @@ pub fn SkeletonEntries(
     #[props(default = true)] avatar: bool,
 ) -> Element {
     rsx! {
-        span { class: "flex w-full flex-col gap-4", "aria-hidden": "true",
+        span { class: "skeleton__entries", "aria-hidden": "true",
             for i in 0..rows {
-                span { key: "{i}", class: "flex w-full items-start gap-3",
+                span { key: "{i}", class: "skeleton__entry",
                     if avatar {
                         SkeletonCircle { size: 32 }
                     }
-                    span { class: "flex min-w-0 flex-1 flex-col gap-2",
-                        Skeleton { class: "h-3 w-24" }
+                    span { class: "skeleton__entry-body",
+                        Skeleton { class: "skeleton__entry-title" }
                         SkeletonText { lines: 2 }
                     }
                 }
@@ -117,11 +122,11 @@ pub fn SkeletonGroup(
     let label = label.unwrap_or(s.remote.loading);
     rsx! {
         div {
-            class: "flex w-full flex-col gap-3 {class}",
+            class: "skeleton__group {class}",
             role: "status",
             "aria-live": "polite",
             "aria-busy": "true",
-            span { class: "sr-only", "{label}" }
+            span { class: "visually-hidden", "{label}" }
             {children}
         }
     }
@@ -134,28 +139,42 @@ mod tests {
     #[test]
     fn the_last_line_is_shorter_when_there_are_several() {
         let widths: Vec<_> = (0..3).map(|i| line_width_class(i, 3)).collect();
-        assert_eq!(widths, ["w-full", "w-11/12", "w-2/3"]);
-        assert_eq!(line_width_class(4, 5), "w-2/3");
+        assert_eq!(
+            widths,
+            [
+                "skeleton__line--full",
+                "skeleton__line--w11",
+                "skeleton__line--last"
+            ]
+        );
+        assert_eq!(line_width_class(4, 5), "skeleton__line--last");
     }
 
     #[test]
     fn a_single_line_is_full_width_and_long_runs_do_not_panic() {
-        assert_eq!(line_width_class(0, 1), "w-full");
+        assert_eq!(line_width_class(0, 1), "skeleton__line--full");
         for lines in 0..40 {
             for i in 0..lines {
                 assert!(!line_width_class(i, lines).is_empty());
             }
         }
         // Only the last of several lines is short; the rest follow the pattern.
-        assert_eq!(line_width_class(1, 10), "w-11/12");
-        assert_eq!(line_width_class(3, 10), "w-10/12");
-        assert_eq!(line_width_class(4, 10), "w-full");
+        assert_eq!(line_width_class(1, 10), "skeleton__line--w11");
+        assert_eq!(line_width_class(3, 10), "skeleton__line--w10");
+        assert_eq!(line_width_class(4, 10), "skeleton__line--full");
     }
 
     #[test]
     fn the_shape_class_honours_reduced_motion_and_the_text_colour() {
-        assert!(SHAPE_CLASS.contains("animate-pulse"));
-        assert!(SHAPE_CLASS.contains("motion-reduce:animate-none"));
-        assert!(SHAPE_CLASS.contains("currentColor"));
+        // The look now lives in `assets/styles/skeleton.css` (`@apply`), so check the rule there.
+        let css = include_str!("../assets/styles/skeleton.css");
+        let rule = css
+            .split(&format!(".{SHAPE_CLASS} {{"))
+            .nth(1)
+            .and_then(|r| r.split('}').next())
+            .expect("skeleton shape rule");
+        assert!(rule.contains("animate-pulse"));
+        assert!(rule.contains("motion-reduce:animate-none"));
+        assert!(rule.contains("currentColor"));
     }
 }

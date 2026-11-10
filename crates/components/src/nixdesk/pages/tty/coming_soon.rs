@@ -6,9 +6,9 @@ use dioxus::prelude::*;
 pub fn ComingSoonPanel(label: &'static str) -> Element {
     let s = use_strings();
     rsx! {
-        div { class: "flex flex-col items-center justify-center h-full gap-2 border border-white/15 px-6 py-8 text-center text-white/30",
-            span { class: "text-[10px] tracking-[0.2em] uppercase", "{label}" }
-            span { class: "text-sm", "{s.terminal.coming_soon}" }
+        div { class: "terminal__panel terminal__panel--muted",
+            span { class: "terminal__soon-tag", "{label}" }
+            span { class: "terminal__soon-text", "{s.terminal.coming_soon}" }
         }
     }
 }

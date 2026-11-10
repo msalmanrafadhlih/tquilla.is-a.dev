@@ -5,7 +5,7 @@
 //! native `IntersectionObserver`, driven through `document::eval` so the
 //! exact same code runs on web, desktop and mobile (every one of them
 //! renders in a browser engine). The actual transition (opacity/transform)
-//! is plain CSS in `assets/base.css`; this module only flips the
+//! is plain CSS in `assets/styles/journal.css`; this module only flips the
 //! `is-visible` class.
 
 use dioxus::prelude::*;

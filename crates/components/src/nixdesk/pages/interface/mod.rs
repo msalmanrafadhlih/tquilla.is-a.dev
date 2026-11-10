@@ -6,7 +6,7 @@ mod window;
 
 use dock::Dock;
 use navbar::Navbar;
-use window::{AppId, OpenWindow, WindowFrame, WINDOW_FRAME_CSS, WINDOW_MANAGER_JS};
+use window::{AppId, OpenWindow, WindowFrame, WINDOW_MANAGER_JS};
 
 use crate::nixdesk::gui::{
     AboutWindowContent, AiAssistantWindowContent, BrowserWindowContent, Calculator,
@@ -66,17 +66,17 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
     let brightness = use_signal(|| 0u8);
 
     let dim_class = if brightness() == 0 {
-        "pointer-events-none absolute inset-0 z-30 bg-[var(--bg-main)] opacity-0 transition-opacity duration-300"
+        "desktop__dim desktop__dim--off"
     } else if brightness() == 1 {
-        "pointer-events-none absolute inset-0 z-30 bg-[var(--bg-main)] opacity-30 transition-opacity duration-300"
+        "desktop__dim desktop__dim--soft"
     } else {
-        "pointer-events-none absolute inset-0 z-30 bg-[var(--bg-main)] opacity-60 transition-opacity duration-300"
+        "desktop__dim desktop__dim--dark"
     };
 
     rsx! {
         main {
-            class: "relative h-screen w-full items-start overflow-hidden bg-[var(--bg-main)] text-white font-mono flex flex-col gap-2.5 p-2.5 transition-opacity duration-500 ease-in",
-            class: if loaded() { "opacity-100" } else { "opacity-0" },
+            class: "desktop__root",
+            class: if loaded() { "desktop__fade--in" } else { "desktop__fade--out" },
             onmounted: move |_| {
                 spawn(async move {
                     document::eval(WINDOW_MANAGER_JS).await.ok();
@@ -90,14 +90,9 @@ pub fn DesktopMode(on_toggle: EventHandler<()>) -> Element {
                 });
             },
 
-            // Mounted once for the whole desktop — handles the
-            // mobile-fullscreen vs. desktop-popup switch for every
-            // WindowFrame below, driven by the CSS vars each one sets.
-            style { "{WINDOW_FRAME_CSS}" }
-
             Navbar { time, date, on_toggle, brightness }
 
-            section { class: "relative overflow-hidden flex flex-col items-center gap-2.5 relative flex-1 self-stretch w-full h-full grow", "aria-label": s.window.workspace,
+            section { class: "desktop__stage", "aria-label": s.window.workspace,
                 for ow in open_windows() {
                     WindowFrame {
                         key: "{ow.id.key()}",

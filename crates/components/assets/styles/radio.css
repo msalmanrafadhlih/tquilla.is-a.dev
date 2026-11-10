@@ -1,0 +1,167 @@
+/* ==========================================================================
+   radio.css — App Radio
+   ========================================================================== */
+
+@layer components {
+  .radio {
+    @apply flex h-full w-full flex-col @min-[643px]:flex-row items-center justify-center
+      gap-2.5 relative overflow-hidden;
+  }
+
+  .radio__list {
+    @apply flex items-center @min-[643px]:flex-col justify-start @min-[643px]:p-0 p-2 relative
+      self-stretch w-full h-max @min-[643px]:max-w-max max-w-full @min-[643px]:h-full
+      overflow-scroll border-b-[0.5px] @min-[643px]:border-0 @min-[643px]:border-r-[0.5px]
+      border-white/30 no-scrollbar;
+  }
+
+  .radio__station {
+    @apply w-full max-w-[300px] flex flex-col @min-[643px]:flex-row items-center gap-2 px-3
+      py-2 text-left;
+    border-width: 0px;
+  }
+
+  .radio__station--on {
+    @apply bg-white text-black;
+  }
+
+  .radio__station--off {
+    @apply bg-bg-secondary text-white/30 hover:text-white;
+  }
+
+  .radio__station-img {
+    @apply @min-[643px]:w-6 @min-[643px]:h-6 w-[70px] h-[70px] object-cover shrink-0;
+  }
+
+  .radio__station-name {
+    @apply w-[70px] @min-[643px]:w-full text-center @min-[643px]:text-left truncate;
+  }
+
+  .radio__stage {
+    @apply @container flex-1 w-full h-full min-w-0 flex flex-col items-center justify-start
+      @min-[643px]:justify-center gap-4 px-6 py-6 text-center overflow-scroll
+      [-webkit-touch-callout:none] no-scrollbar;
+  }
+
+  .radio__cover {
+    @apply w-28 h-28 object-cover border-white/30;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .radio__title {
+    @apply text-sm text-white;
+    font-weight: 600;
+  }
+
+  .radio__subtitle {
+    @apply text-white/30 text-3xs mt-1;
+  }
+
+  .radio__player {
+    @apply flex flex-col items-center justify-center gap-[15px] relative;
+  }
+
+  .radio__brand {
+    @apply flex-col flex items-center justify-center gap-5 relative self-stretch w-full
+      flex-none;
+  }
+
+  .radio__logo-box {
+    @apply relative max-w-[200px] w-full max-h-[83.4px] aspect-[2.4];
+  }
+
+  .radio__logo {
+    @apply absolute w-[95.09%] h-[82.80%] top-[17.20%] left-[4.91%];
+  }
+
+  .radio__controls {
+    @apply flex flex-col @min-[643px]:flex-row w-[284px] items-center justify-center gap-5
+      relative flex-none;
+  }
+
+  .radio__buttons {
+    @apply flex items-center justify-center gap-5 relative w-max flex-none;
+  }
+
+  .radio__btn {
+    @apply w-7 h-7 flex items-center bg-bg-secondary justify-center relative appearance-none
+      p-0;
+    border-width: 0px;
+  }
+
+  .radio__btn-icon {
+    @apply relative w-4 h-4;
+  }
+
+  .radio__play {
+    @apply w-10 h-10 bg-bg-secondary hover:bg-white aspect-square flex items-center
+      justify-center relative appearance-none p-0;
+    border-width: 0px;
+  }
+
+  .radio__play-icon {
+    @apply group-hover:invert relative w-[18px] h-[18px] aspect-square;
+  }
+
+  .radio__volume {
+    @apply flex w-32 h-10 items-center justify-center gap-3 relative;
+  }
+
+  .radio__volume-icon-box {
+    @apply flex flex-col w-4 items-start gap-8 relative;
+  }
+
+  .radio__volume-icon {
+    @apply relative w-4 h-4 aspect-square;
+  }
+
+  .radio__volume-track {
+    @apply flex w-[100px] h-1 items-start relative bg-white/30;
+  }
+
+  .radio__volume-fill {
+    @apply relative self-stretch bg-white;
+  }
+
+  .radio__volume-input {
+    @apply absolute inset-0 w-full h-full opacity-0 cursor-pointer;
+  }
+
+  .radio__progress {
+    @apply flex flex-col h-10 items-center justify-end gap-2 w-full relative self-stretch;
+  }
+
+  .radio__progress-track {
+    @apply flex h-1 items-start w-full bg-white/30 relative self-stretch;
+  }
+
+  .radio__progress-bar {
+    @apply bg-white relative self-stretch;
+  }
+
+  .radio__meta {
+    @apply flex items-end justify-between relative self-stretch w-full flex-none;
+  }
+
+  .radio__meta-text {
+    @apply relative w-fit mt-[-1.00px] [font-family:'JetBrains_Mono-Regular',Helvetica]
+      text-white text-3xs tracking-normal leading-[normal];
+    font-weight: 400;
+  }
+
+  .radio__link {
+    @apply text-white/30 hover:text-white text-3xs;
+    transition-property: var(--transition-colors);
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-in-out);
+  }
+
+  .radio__progress-bar--on {
+    @apply w-full animate-pulse;
+  }
+
+  .radio__progress-bar--off {
+    @apply w-0;
+  }
+}

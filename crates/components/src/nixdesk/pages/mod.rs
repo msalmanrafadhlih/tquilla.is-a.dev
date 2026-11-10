@@ -60,18 +60,13 @@ pub fn MainPage() -> Element {
 
     rsx! {
         div {
-            class: "transition-opacity duration-[250ms] ease-out select-none [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            style: if switching() {
-                "opacity: 0; pointer-events: none;"
-            } else {
-                "opacity: 1; pointer-events: auto;"
-            },
+            class: if switching() { "mode-switch mode-switch--busy" } else { "mode-switch" },
 
             // Selalu ter-mount supaya window yang terbuka (dan prosesnya,
             // misal radio/embience) tidak mati saat pindah ke Terminal.
             // Cukup disembunyikan dengan display:none.
             div {
-                style: if mode() == Mode::Desktop { "display: block;" } else { "display: none;" },
+                class: if mode() == Mode::Desktop { "mode-pane" } else { "mode-pane mode-pane--hidden" },
                 DesktopMode { on_toggle: move |_| toggle_mode() }
             }
 

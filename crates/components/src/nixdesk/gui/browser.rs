@@ -53,8 +53,8 @@ fn add_bookmark(
 }
 
 fn tab_class(active: bool) -> &'static str {
-    const TAB_ACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate bg-[var(--fg-main)] text-xs text-[var(--bg-secondary)] border-0";
-    const TAB_INACTIVE_CLASS: &str = "w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-[var(--fg-secondary)] text-xs hover:text-white bg-[var(--bg-secondary)] border-0";
+    const TAB_ACTIVE_CLASS: &str = "browser__tab browser__tab--active";
+    const TAB_INACTIVE_CLASS: &str = "browser__tab browser__tab--idle";
 
     if active {
         TAB_ACTIVE_CLASS
@@ -70,7 +70,7 @@ pub fn BrowserWindowContent() -> Element {
     let state = resource.read_unchecked();
     match &*state {
         None => rsx! {
-            SkeletonGroup { class: "p-3",
+            SkeletonGroup { class: "app-window__loading",
                 SkeletonRows { rows: 5 }
             }
         },
@@ -101,15 +101,15 @@ fn BrowserBoard(initial: Vec<Bookmark>) -> Element {
 
     rsx! {
         div {
-            class: "flex flex-col @md:flex-row min-h-0 h-full w-full overflow-auto [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            class: "browser",
 
             // sidebar: tabs + input
             section {
-                class: "w-full h-max @md:h-full @md:max-w-[200px] max-w-full shrink-0 border-r border-solid gap-2 p-2 items-center justify-between border-[var(--fg-main)] flex flex-col",
+                class: "browser__sidebar",
 
                 // list tabs
                 div {
-                    class: "flex gap-1 min-h-0 h-max w-full @md:max-w-full overflow-y-auto flex-row @md:flex-col",
+                    class: "browser__tabs",
                     for (idx, bm) in list.iter().enumerate() {
                         button {
                             key: "{bm.label}-{idx}",
@@ -122,7 +122,7 @@ fn BrowserBoard(initial: Vec<Bookmark>) -> Element {
 
                     button {
                         r#type: "button",
-                        class: "@md:hidden px-2 block text-[var(--fg-secondary)] hover:text-[var(--fg-main)] shrink-0 bg-[var(--bg-secondary)] border-0",
+                        class: "browser__form-toggle",
                         onclick: move |_| form_open.set(!form_open()),
                         // or: onclick: move |_| form_open.toggle(),
                         "+"
@@ -130,30 +130,30 @@ fn BrowserBoard(initial: Vec<Bookmark>) -> Element {
                 }
 
                 div {
-                    class: if form_open() { "w-full flex flex-row @md:flex-col gap-2" } else { "hidden w-full @md:flex flex-col gap-2" },
+                    class: if form_open() { "browser__form browser__form--open" } else { "browser__form browser__form--closed" },
                     div {
-                        class: "w-full flex items-center gap-2",
+                        class: "browser__row",
                         input {
                             id: NEW_LABEL_ID,
                             r#type: "text",
                             placeholder: s.browser.name_placeholder,
-                            class: "w-full py-2 bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
+                            class: "browser__url",
                             oninput: move |evt: FormEvent| new_label.set(evt.value()),
                         }
                         button {
                             r#type: "button",
                             disabled: true,
-                            class: "px-2 @md:pl-2 hidden @md:flex text-transparent shrink-0 bg-[var(--bg-secondary)] border-0",
+                            class: "browser__url-submit",
                             "+"
                         }
                     }
                     div {
-                        class: "w-full flex items-center gap-2",
+                        class: "browser__row",
                         input {
                             id: NEW_URL_ID,
                             r#type: "text",
                             placeholder: "https://...",
-                            class: "w-full h-full py-2 flex-1 min-w-0 bg-[var(--bg-secondary)] outline-none border-0 border-b border-[var(--fg-secondary)] text-[var(--fg-main)] placeholder-[var(--fg-secondary)] text-xs",
+                            class: "browser__search",
                             onkeydown: move |evt: KeyboardEvent| {
                                 if evt.key() == Key::Enter {
                                     evt.prevent_default();
@@ -164,7 +164,7 @@ fn BrowserBoard(initial: Vec<Bookmark>) -> Element {
                         }
                         button {
                             r#type: "button",
-                            class: "px-2 @md:pl-2 text-[var(--fg-secondary)] hover:text-[var(--fg-main)] shrink-0 bg-[var(--bg-secondary)] border-0",
+                            class: "browser__search-submit",
                             onclick: move |_| add_bookmark(bookmarks, selected, new_label, new_url),
                             "+"
                         }
@@ -174,34 +174,34 @@ fn BrowserBoard(initial: Vec<Bookmark>) -> Element {
 
             // main content: url bar + iframe + footer link
             section {
-                class: "flex-1 min-w-0 flex gap-2 flex-col p-2",
+                class: "browser__content",
 
                 div {
-                    class: "flex shrink-0 items-center border-b border-solid border-[var(--fg-secondary)] px-3 pb-2 truncate text-[var(--fg-secondary)] gap-2 text-xs",
+                    class: "browser__title",
                     img {
                         src: ICON_LINK,
                         alt: s.browser.link_alt,
-                        class: "h-4",
+                        class: "browser__favicon",
                     }
                     "{current.url}"
                 }
 
                 div {
-                    class: "flex-1 min-h-0 bg-white/[0.02]",
+                    class: "browser__frame-box",
                     iframe {
                         src: "{current.url}",
-                        class: "w-full h-full border-0",
+                        class: "browser__frame",
                         title: "{current.label}",
                     }
                 }
 
                 div {
-                    class: "shrink-0 border-t border-solid border-[var(--fg-secondary)] px-3 pt-2 flex justify-end",
+                    class: "browser__footer",
                     a {
                         target: "_blank",
                         rel: "noopener noreferrer",
                         href: "{current.url}",
-                        class: "text-[var(--fg-secondary)] hover:text-[var(--fg-main)] transition-colors duration-150 text-xs",
+                        class: "browser__open-link",
                         "{s.browser.go_to_website}"
                     }
                 }

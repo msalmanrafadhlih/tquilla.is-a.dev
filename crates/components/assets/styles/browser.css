@@ -1,0 +1,112 @@
+/* ==========================================================================
+   browser.css — App Browser
+   ========================================================================== */
+
+@layer components {
+  .browser__tab {
+    @apply w-max @md:w-full h-max text-left px-3 py-1.5 truncate text-xs;
+    border-width: 0px;
+  }
+
+  .browser {
+    @apply flex flex-col @md:flex-row min-h-0 h-full w-full overflow-auto
+      [-webkit-touch-callout:none] no-scrollbar;
+  }
+
+  .browser__sidebar {
+    @apply w-full h-max @md:h-full @md:max-w-[200px] max-w-full shrink-0 gap-2 p-2 items-center
+      justify-between border-fg-main flex flex-col;
+    border-right-width: 1px;
+    border-right-style: solid;
+  }
+
+  .browser__tabs {
+    @apply flex gap-1 min-h-0 h-max w-full @md:max-w-full overflow-y-auto flex-row @md:flex-col;
+  }
+
+  .browser__form-toggle {
+    @apply @md:hidden px-2 block text-fg-secondary hover:text-fg-main shrink-0 bg-bg-secondary;
+    border-width: 0px;
+  }
+
+  .browser__form {
+    @apply w-full gap-2;
+  }
+
+  .browser__row {
+    @apply w-full flex items-center gap-2;
+  }
+
+  .browser__url {
+    @apply w-full py-2 bg-bg-secondary outline-none border-0 border-b border-fg-secondary
+      text-fg-main placeholder-fg-secondary text-xs;
+  }
+
+  .browser__url-submit {
+    @apply px-2 @md:pl-2 hidden @md:flex text-transparent shrink-0 bg-bg-secondary;
+    border-width: 0px;
+  }
+
+  .browser__search {
+    @apply w-full h-full py-2 flex-1 min-w-0 bg-bg-secondary outline-none border-0 border-b
+      border-fg-secondary text-fg-main placeholder-fg-secondary text-xs;
+  }
+
+  .browser__search-submit {
+    @apply px-2 @md:pl-2 text-fg-secondary hover:text-fg-main shrink-0 bg-bg-secondary;
+    border-width: 0px;
+  }
+
+  .browser__content {
+    @apply flex-1 min-w-0 flex gap-2 flex-col p-2;
+  }
+
+  .browser__title {
+    @apply flex shrink-0 items-center border-fg-secondary px-3 pb-2 truncate text-fg-secondary
+      gap-2 text-xs;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .browser__favicon {
+    @apply h-4;
+  }
+
+  .browser__frame-box {
+    @apply flex-1 min-h-0 bg-white/[0.02];
+  }
+
+  .browser__frame {
+    @apply w-full h-full;
+    border-width: 0px;
+  }
+
+  .browser__footer {
+    @apply shrink-0 border-fg-secondary px-3 pt-2 flex justify-end;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .browser__open-link {
+    @apply text-fg-secondary hover:text-fg-main text-xs;
+    transition-property: var(--transition-colors);
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-in-out);
+  }
+
+  .browser__tab--active {
+    @apply bg-fg-main text-bg-secondary;
+  }
+
+  .browser__tab--idle {
+    @apply text-fg-secondary hover:text-white bg-bg-secondary;
+  }
+
+  .browser__form--open {
+    @apply flex flex-row @md:flex-col;
+  }
+
+  .browser__form--closed {
+    @apply hidden @md:flex flex-col;
+  }
+}

@@ -266,26 +266,30 @@ pub fn CalcKey(
     #[props(default)] mathml: bool,
     #[props(default)] italic: bool,
     #[props(default)] title: &'static str,
-    #[props(default = "rounded-[5px]")] radius: &'static str,
+    #[props(default = "calc-key--square")] radius: &'static str,
     #[props(default)] tone: &'static str,
     onclick: EventHandler<MouseEvent>,
 ) -> Element {
-    let font = if italic { "italic font-serif" } else { "" };
+    let font = if italic {
+        "calc-key__label--italic"
+    } else {
+        ""
+    };
     rsx! {
         button {
             r#type: "button",
             title: "{title}",
-            class: "relative w-full h-max py-2 border-[0.5px] border-solid border-[var(--fg-secondary)] appearance-none bg-[var(--bg-secondary)] text-inherit {radius} {tone}",
-            class: "active:scale-95 transition-all duration-150 ease-in-out hover:opacity-60",
+            class: "calc-key {radius} {tone}",
+            class: "calc-key__press",
             onclick: move |evt| onclick.call(evt),
             if mathml {
                 span {
-                    class: "h-6 flex items-center justify-center text-lg leading-[normal]",
+                    class: "calc-key__icon",
                     dangerous_inner_html: "{label}",
                 }
             } else {
                 span {
-                    class: "h-6 flex items-center justify-center [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-lg text-center tracking-[0] leading-[normal] {font}",
+                    class: "calc-key__label {font}",
                     "{label}"
                 }
             }
@@ -298,7 +302,7 @@ pub fn CalcKey(
 pub fn KeyPad(
     keys: &'static [Key],
     cols: &'static str,
-    #[props(default = "rounded-[5px]")] radius: &'static str,
+    #[props(default = "calc-key--square")] radius: &'static str,
     #[props(default)] tone: &'static str,
 ) -> Element {
     let state = use_context::<CalcState>();
@@ -306,8 +310,8 @@ pub fn KeyPad(
     rsx! {
         section {
             title: s.calc.keypad_title,
-            class: "w-full grid gap-2 bg-[var(--bg-secondary)] text-xs self-stretch overflow-scroll {cols}",
-            class: "[-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            class: "calc__keys {cols}",
+            class: "calc__keys-scroll",
             for (i , key) in keys.iter().enumerate() {
                 CalcKey {
                     key: "{i}",
@@ -330,21 +334,21 @@ pub fn KeyPad(
 #[component]
 pub fn Algebra() -> Element {
     rsx! {
-        KeyPad { keys: ALGEBRA, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
+        KeyPad { keys: ALGEBRA, cols: "calc__keys--3col", radius: "calc-key--round", tone: "calc-key--soft" }
     }
 }
 
 #[component]
 pub fn Trigonometry() -> Element {
     rsx! {
-        KeyPad { keys: TRIGONOMETRY, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
+        KeyPad { keys: TRIGONOMETRY, cols: "calc__keys--3col", radius: "calc-key--round", tone: "calc-key--soft" }
     }
 }
 
 #[component]
 pub fn Calculus() -> Element {
     rsx! {
-        KeyPad { keys: CALCULUS, cols: "grid-cols-3", radius: "rounded-full", tone: "bg-white/10" }
+        KeyPad { keys: CALCULUS, cols: "calc__keys--3col", radius: "calc-key--round", tone: "calc-key--soft" }
     }
 }
 
@@ -354,9 +358,9 @@ pub fn ModeTab(mode: Mode, label: &'static str) -> Element {
     let state = use_context::<CalcState>();
     let active = *state.mode.read() == mode;
     let class = if active {
-        "w-full p-1 appearance-none text-xs text-[var(--bg-secondary)] bg-[var(--fg-main)]"
+        "calc__mode calc__mode--on"
     } else {
-        "w-full p-1 appearance-none text-xs hover:opacity-100 opacity-50"
+        "calc__mode calc__mode--off"
     };
     rsx! {
         button {

@@ -33,22 +33,22 @@ pub fn NavRail(on_toggle: EventHandler<()>, vertical: bool) -> Element {
     ];
 
     let wrapper_class = if vertical {
-        "flex flex-col pl-2 items-center justify-between h-full py-0 w-max border-l border-white/10 shrink-0 gap-2"
+        "terminal__rail terminal__rail--vertical"
     } else {
-        "flex items-center justify-between w-full shrink-0 gap-2"
+        "terminal__rail terminal__rail--horizontal"
     };
 
     rsx! {
         div { class: wrapper_class,
             button {
                 r#type: "button",
-                class: "text-[9px] leading-tight tracking-wide text-white/60 hover:text-black hover:bg-white transition-colors duration-150 sm:h-[50px] px-2 py-2 text-center cursor-pointer border border-white/15",
+                class: "terminal__rail-btn",
                 onclick: move |_| on_toggle.call(()),
                 "{s.terminal.switch}"
                 br {}
                 "{s.terminal.desktop}"
             }
-            div { class: "h-full w-full w-full border border-white/15" }
+            div { class: "terminal__rail-frame" }
 
             for (label , href , icon , icon_hover) in links {
                 a {
@@ -57,16 +57,16 @@ pub fn NavRail(on_toggle: EventHandler<()>, vertical: bool) -> Element {
                     target: "_blank",
                     rel: "noopener noreferrer",
                     title: "{label}",
-                    class: "group relative w-[50px] sm:h-[50px] aspect-square flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity duration-150 border border-white/20",
+                    class: "group terminal__rail-link",
                     img {
                         src: icon,
                         alt: "{label}",
-                        class: "w-5 h-5 absolute transition-opacity duration-150 group-hover:opacity-0",
+                        class: "terminal__rail-icon terminal__rail-icon--base",
                     }
                     img {
                         src: icon_hover,
                         alt: "{label}",
-                        class: "w-5 h-5 absolute opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+                        class: "terminal__rail-icon terminal__rail-icon--hover",
                     }
                 }
             }

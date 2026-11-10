@@ -1,0 +1,264 @@
+/* ==========================================================================
+   terminal.css — mode Terminal (shell)
+   ========================================================================== */
+
+/* Tiap pesan di preview chat "shell 4" muncul naik pelan saat auto-cycle. */
+@keyframes chat-cycle-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal__chat-body {
+    animation: none !important;
+  }
+}
+
+/* ---- komponen generik (@apply) ---- */
+
+@layer components {
+  .terminal__chat {
+    @apply flex flex-col h-full justify-center gap-2 border-white/15 px-5 py-6 overflow-hidden;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .terminal__chat-body {
+    @apply flex flex-col gap-1.5;
+    animation: chat-cycle-in 320ms ease-out both;
+  }
+
+  .terminal__chat-head {
+    @apply flex items-baseline justify-between gap-3;
+  }
+
+  .terminal__chat-name {
+    @apply text-sm text-white truncate;
+    font-weight: 600;
+  }
+
+  .terminal__chat-time {
+    @apply text-2xs text-white/40 whitespace-nowrap;
+  }
+
+  .terminal__chat-text {
+    @apply text-sm text-white/70 leading-snug line-clamp-3;
+  }
+
+  .terminal__chat-empty {
+    @apply text-white/30 text-sm;
+  }
+
+  .terminal__panel {
+    @apply flex flex-col items-center justify-center h-full gap-2 border-white/15 px-6 py-8
+      text-center;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .terminal__clock-time {
+    @apply text-3xl sm:text-4xl tracking-widest;
+    font-weight: 600;
+  }
+
+  .terminal__clock-date {
+    @apply text-white/50 text-xs sm:text-sm tracking-wide;
+  }
+
+  .terminal__soon-tag {
+    @apply text-3xs tracking-[0.2em] uppercase;
+  }
+
+  .terminal__soon-text {
+    @apply text-sm;
+  }
+
+  .terminal {
+    @apply relative h-screen w-full overflow-hidden bg-bg-main text-white font-mono;
+    transition: opacity 500ms var(--ease-in);
+  }
+
+  .terminal__fade--in {
+    @apply opacity-100;
+  }
+
+  .terminal__fade--out {
+    @apply opacity-0;
+  }
+
+  .terminal__desktop {
+    @apply hidden lg:flex h-full w-full gap-2.5 p-2.5;
+  }
+
+  .terminal__col-main {
+    @apply flex-1 min-w-0 border-white/15;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .terminal__col-side {
+    @apply w-[300px] xl:w-[340px] shrink-0 flex flex-col gap-2.5;
+  }
+
+  .terminal__slot {
+    @apply flex-1 min-h-0;
+  }
+
+  .terminal__mobile {
+    @apply flex lg:hidden gap-2 px-2 py-2 flex-col h-full w-full;
+  }
+
+  .terminal__mobile-main {
+    @apply flex-1 min-h-0 border-white/15;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .terminal__mobile-top {
+    @apply h-[150px] shrink-0 border-white/15;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .terminal__tabs {
+    @apply flex shrink-0 border-white/15;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .terminal__tab {
+    @apply flex-1 py-2.5 text-3xs tracking-wide;
+    transition-property: var(--transition-colors);
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-in-out);
+  }
+
+  .terminal__tab--on {
+    @apply bg-white text-black;
+  }
+
+  .terminal__tab--off {
+    @apply text-white/60 hover:text-white;
+  }
+
+  .terminal__rail {
+    @apply flex items-center justify-between shrink-0 gap-2;
+  }
+
+  .terminal__rail-btn {
+    @apply text-[9px] leading-tight tracking-wide text-white/60 hover:text-black hover:bg-white
+      sm:h-[50px] px-2 py-2 text-center cursor-pointer border-white/15;
+    transition-property: var(--transition-colors);
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-in-out);
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .terminal__rail-frame {
+    @apply h-full w-full w-full border-white/15;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .terminal__rail-link {
+    @apply relative w-[50px] sm:h-[50px] aspect-square flex items-center justify-center
+      opacity-70 hover:opacity-100 border-white/20;
+    transition: opacity 150ms var(--ease-in-out);
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .terminal__rail-icon {
+    @apply w-5 h-5 absolute;
+    transition: opacity 150ms var(--ease-in-out);
+  }
+
+  .terminal__shell {
+    @apply flex flex-col h-full overflow-y-auto gap-1.5 leading-relaxed;
+  }
+
+  .terminal__motd {
+    @apply text-white/40 mb-1;
+  }
+
+  .terminal__help {
+    @apply text-white/70;
+  }
+
+  .terminal__entry {
+    @apply flex flex-col gap-0.5;
+  }
+
+  .terminal__entry-line {
+    @apply flex gap-2;
+  }
+
+  .terminal__dim {
+    @apply text-white/40;
+  }
+
+  .terminal__cmd {
+    @apply text-white;
+  }
+
+  .terminal__output {
+    @apply pl-4 text-white/60 whitespace-pre-wrap;
+  }
+
+  .terminal__input-row {
+    @apply flex gap-2 items-center;
+  }
+
+  .terminal__input {
+    @apply flex-1 bg-bg-main outline-none border-none text-white font-mono caret-white;
+  }
+
+  .terminal__peek {
+    @apply h-full overflow-y-auto px-4 py-3 text-2xs leading-relaxed;
+  }
+
+  .terminal__peek-empty {
+    @apply text-white/30;
+  }
+
+  .terminal__peek-line {
+    @apply text-white/60 truncate;
+  }
+
+  .terminal__panel--muted {
+    @apply text-white/30;
+  }
+
+  .terminal__rail--vertical {
+    @apply flex-col pl-2 h-full py-0 w-max border-white/10;
+    border-left-width: 1px;
+    border-left-style: solid;
+  }
+
+  .terminal__rail--horizontal {
+    @apply w-full;
+  }
+
+  .terminal__rail-icon--base {
+    @apply group-hover:opacity-0;
+  }
+
+  .terminal__rail-icon--hover {
+    @apply opacity-0 group-hover:opacity-100;
+  }
+
+  .terminal__shell--compact {
+    @apply px-4 py-3 text-[12px];
+  }
+
+  .terminal__shell--roomy {
+    @apply px-5 py-4 text-[13px];
+  }
+}

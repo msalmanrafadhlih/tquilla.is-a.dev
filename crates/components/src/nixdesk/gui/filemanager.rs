@@ -47,7 +47,7 @@ impl Folder {
 
 #[component]
 pub fn FileManagerWindowContent() -> Element {
-    const NAV_BUTTON_CLASS: &str = "relative flex items-end justify-center w-fit mt-[-1.00px] appearance-none border-0 bg-[var(--bg-secondary)] p-0 cursor-pointer [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-fg-main text-xs text-center tracking-[0] leading-[normal]";
+    const NAV_BUTTON_CLASS: &str = "files__nav-btn";
     let s = use_strings();
     let mut current = use_signal(|| Option::<Folder>::None);
     let selected = current();
@@ -56,12 +56,12 @@ pub fn FileManagerWindowContent() -> Element {
     rsx! {
         section {
             "aria-label": s.filemanager.file_browser,
-            class: "flex flex-row w-full h-full items-start justify-start flex relative overflow-hidden",
+            class: "files",
 
             // side panel
             aside {
                 "aria-label": s.filemanager.places,
-                class: "inline-flex flex-col w-[30%] h-full min-w-max max-w-[150px] items-center relative border-r border-solid border-[var(--fg-secondary)] ",
+                class: "files__sidebar ",
 
                 button {
                     r#type: "button",
@@ -84,12 +84,12 @@ pub fn FileManagerWindowContent() -> Element {
 
             // current directory
             section {
-                class: "flex-col items-start gap-2.5 flex-1 self-stretch grow flex relative",
+                class: "files__main",
                 "aria-label": s.filemanager.current_directory,
 
                 // top bar: navigation + breadcrumb
                 header {
-                    class: "flex items-start gap-2.5 px-2.5 pb-2.5 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[var(--fg-secondary)]",
+                    class: "files__header",
 
                     button {
                         r#type: "button",
@@ -107,9 +107,9 @@ pub fn FileManagerWindowContent() -> Element {
                     }
 
                     div {
-                        class: "items-center gap-2.5 flex-1 self-stretch grow flex relative",
+                        class: "files__path",
                         p {
-                            class: "items-end justify-center w-fit [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-secondary)]  text-xs text-center tracking-[0] leading-[normal] flex relative whitespace-nowrap",
+                            class: "files__path-text",
                             title: "home/tquilla/{breadcrumb_suffix}",
                             "home/tquilla/{breadcrumb_suffix}"
                         }
@@ -120,7 +120,7 @@ pub fn FileManagerWindowContent() -> Element {
                 div {
                     role: "list",
                     "aria-label": s.filemanager.folder_contents,
-                    class: "flex flex-col min-[400px]:grid min-[400px]:grid-cols-[repeat(auto-fill,minmax(90px,max-content))] justify-start content-start items-start gap-[25px] p-5 w-full h-full max-h-full overflow-y-auto min-h-[200px] relative",
+                    class: "files__grid",
 
                     if selected.is_none() {
                         for folder in Folder::ALL {
@@ -128,22 +128,21 @@ pub fn FileManagerWindowContent() -> Element {
                                 key: "{folder.key()}",
                                 r#type: "button",
                                 role: "listitem",
-                                class: "flex flex-col shrink-0 items-center gap-1.5 p-0 cursor-pointer hover:opacity-50 border-0 bg-[var(--bg-secondary)] w-[90px] opacity-70",
+                                class: "files__item",
                                 onclick: move |_| current.set(Some(folder)),
                                 img {
                                     src: IMG,
                                     alt: folder.name(s),
-                                    class: "hidden min-[400px]:block w-full",
+                                    class: "files__item-icon",
                                 }
                                 span {
-                                    class: "text-[var(--fg-main)] text-left min-[400px]:text-center text-xs w-full break-words",
+                                    class: "files__item-name",
                                     "{folder.name(s)}"
                                 }
                             }
                         }
                     } else {
                         p {
-                            class: "text-fg-secondary",
                             "{s.filemanager.empty}"
                         }
                     }
@@ -154,13 +153,11 @@ pub fn FileManagerWindowContent() -> Element {
 }
 
 fn nav_item_class(active: bool) -> String {
-    const NAV_ITEM_BASE: &str = "w-full p-2 border-0 cursor-pointer [font:'JetBrains_Mono-ExtraLight',Helvetica] font-normal text-xs text-left tracking-[0] leading-[normal] flex relative";
+    const NAV_ITEM_BASE: &str = "files__nav-item";
 
     if active {
-        format!("{NAV_ITEM_BASE} text-[var(--bg-secondary)] bg-[var(--fg-main)]")
+        format!("{NAV_ITEM_BASE} files__nav-item--active")
     } else {
-        format!(
-            "{NAV_ITEM_BASE} bg-[var(--bg-secondary)] text-[var(--fg-secondary)] hover:text-[var(--fg-main)]"
-        )
+        format!("{NAV_ITEM_BASE} files__nav-item--idle")
     }
 }

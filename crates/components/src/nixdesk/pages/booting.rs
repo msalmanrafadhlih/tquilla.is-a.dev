@@ -114,8 +114,7 @@ pub fn Booting(on_skip: EventHandler<()>) -> Element {
 
     rsx! {
         section {
-            id: "boot-screen",
-            class: "outline-none",
+            class: "boot",
             tabindex: "0",
             "aria-label": s.booting.screen_label,
             onkeydown: move |_| on_skip.call(()),
@@ -126,36 +125,36 @@ pub fn Booting(on_skip: EventHandler<()>) -> Element {
                 });
             },
 
-            div { class: "boot-scanlines" }
+            div { class: "boot__scanlines" }
 
             button {
                 r#type: "button",
-                class: "absolute bottom-4 right-4 z-10 cursor-pointer border border-solid border-[var(--fg-secondary)] bg-transparent px-3 py-1.5 font-mono text-xs text-[var(--fg-main)] opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100",
+                class: "boot__skip",
                 onclick: move |_| on_skip.call(()),
                 "{s.booting.skip}"
             }
 
-            div { id: "boot-console",
+            div { class: "boot__console",
                 for (status, text, delay) in timed_lines {
                     div {
                         key: "{text}",
-                        class: "boot-line",
+                        class: "boot__line",
                         style: "animation-delay: {delay}ms;",
 
                         if status.is_empty() {
-                            span { class: "boot-tag boot-tag--empty" }
+                            span { class: "boot__tag" }
                         } else {
                             span {
-                                class: "boot-tag boot-tag--ok",
+                                class: "boot__tag boot__tag--ok",
                                 "[ {status} ]"
                             }
                         }
-                        span { class: "boot-text", "{text}" }
+                        span { class: "boot__text", "{text}" }
                     }
                 }
 
                 span {
-                    class: "boot-cursor",
+                    class: "boot__cursor",
                     style: "animation-delay: {cursor_delay}ms;",
                     "█"
                 }

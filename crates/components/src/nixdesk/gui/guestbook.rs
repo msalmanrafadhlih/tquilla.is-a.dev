@@ -32,8 +32,8 @@ const MAX_REFRESH_ROUNDS: usize = 5;
 /// Rows of the message box.
 const EDITOR_ROWS: &str = "5";
 
-const FIELD_CLASS: &str = "w-full min-w-0 appearance-none border-0 border-b border-solid border-[var(--fg-secondary)] bg-transparent p-1 text-xs text-[var(--fg-main)] outline-none placeholder:text-[var(--fg-secondary)] focus:border-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]";
-const GHOST_BUTTON: &str = "cursor-pointer border border-solid border-[var(--fg-secondary)] bg-transparent px-2 py-1 text-[10px] text-[var(--fg-main)] hover:bg-[var(--fg-main)] hover:text-[var(--bg-secondary)] disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]";
+const FIELD_CLASS: &str = "guestbook__field";
+const GHOST_BUTTON: &str = "guestbook__ghost-btn";
 
 /// Default avatar, "random" but stable: picked from a hash of the username, so
 /// the same person always gets the same avatar on all of their entries.
@@ -91,7 +91,7 @@ pub fn GuestbookWindowContent() -> Element {
     let state = resource.read_unchecked();
     match &*state {
         None => rsx! {
-            SkeletonGroup { label: s.guestbook.loading, class: "p-3",
+            SkeletonGroup { label: s.guestbook.loading, class: "app-window__loading",
                 SkeletonEntries { rows: 4 }
             }
         },
@@ -177,11 +177,11 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
     let count = list.len();
 
     rsx! {
-        div { class: "flex h-full w-full flex-col bg-[var(--bg-secondary)] text-sm",
+        div { class: "guestbook",
 
             // LIST HEADER
-            div { class: "flex flex-none items-center justify-between gap-2.5 border-t border-solid border-[var(--fg-secondary)] px-2.5 py-2",
-                h2 { class: "m-0 text-xs font-normal text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]", "{s.guestbook.entries_title}" }
+            div { class: "guestbook__bar",
+                h2 { class: "guestbook__heading", "{s.guestbook.entries_title}" }
                 button {
                     r#type: "button",
                     class: GHOST_BUTTON,
@@ -196,12 +196,12 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
             }
             match notice() {
                 Some(Notice::UpToDate) => rsx! {
-                    p { role: "status", class: "m-0 flex-none px-2.5 pb-1 text-[10px] text-[var(--fg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                    p { role: "status", class: "guestbook__note",
                         "{s.guestbook.up_to_date}"
                     }
                 },
                 Some(Notice::Failed(e)) => rsx! {
-                    p { role: "alert", class: "m-0 flex-none px-2.5 pb-1 text-[10px] text-[var(--red)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                    p { role: "alert", class: "guestbook__error",
                         {e.message(s)}
                     }
                 },
@@ -212,9 +212,9 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
             section {
                 id: LIST_ID,
                 aria_label: s.guestbook.entries_title,
-                class: "flex min-h-0 flex-1 flex-col overflow-y-scroll border-y border-solid border-[var(--fg-secondary)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+                class: "guestbook__list",
                 if count == 0 {
-                    p { class: "p-5 text-center text-xs text-[var(--fg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                    p { class: "guestbook__empty",
                         "{s.guestbook.empty}"
                     }
                 }
@@ -222,7 +222,7 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
                     Entry { key: "{msg.id}", msg }
                 }
                 if has_older() {
-                    div { class: "flex justify-center p-2.5",
+                    div { class: "guestbook__more",
                         button {
                             r#type: "button",
                             class: GHOST_BUTTON,
@@ -236,7 +236,7 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
                         }
                     }
                 } else if count > 0 {
-                    p { class: "m-0 p-2.5 text-center text-[10px] text-[var(--fg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                    p { class: "guestbook__end",
                         "{s.guestbook.first_entry}"
                     }
                 }
@@ -254,17 +254,17 @@ fn Entry(msg: ChatMessage) -> Element {
     let s = use_strings();
     rsx! {
         article {
-            class: "flex items-start gap-3 border-b border-solid border-[var(--fg-secondary)] p-2.5 last:border-b-0",
+            class: "guestbook__entry",
             aria_labelledby: "guestbook-author-{msg.id}",
-            div { class: "flex h-[40px] w-[40px] flex-none items-center justify-center overflow-hidden border border-solid border-[var(--fg-main)]",
+            div { class: "guestbook__avatar",
                 img {
-                    class: "h-full w-full object-cover",
+                    class: "guestbook__avatar-img",
                     src: "{default_avatar_for(&msg.username)}",
                     alt: "{s.guestbook.avatar_alt(&msg.username)}",
                 }
             }
-            div { class: "flex min-w-0 flex-1 flex-col gap-1.5",
-                header { class: "flex items-baseline justify-between gap-2.5",
+            div { class: "guestbook__entry-body",
+                header { class: "guestbook__entry-head",
                     if let Some(link) = &msg.url {
                         a {
                             id: "guestbook-author-{msg.id}",
@@ -272,19 +272,19 @@ fn Entry(msg: ChatMessage) -> Element {
                             target: "_blank",
                             rel: "noopener noreferrer nofollow ugc",
                             title: "{link}",
-                            class: "min-w-0 truncate text-xs text-[var(--fg-main)] underline decoration-dotted decoration-[var(--fg-secondary)] underline-offset-4 hover:decoration-solid hover:decoration-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                            class: "guestbook__author-link",
                             "{msg.username}"
                         }
                     } else {
                         h3 {
                             id: "guestbook-author-{msg.id}",
-                            class: "m-0 min-w-0 truncate text-xs font-normal text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                            class: "guestbook__author",
                             "{msg.username}"
                         }
                     }
                     time {
                         datetime: "{msg.created_at}",
-                        class: "flex-none text-[10px] text-[var(--fg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                        class: "guestbook__time",
                         "{relative_time(&msg.created_at, s)}"
                     }
                 }
@@ -323,16 +323,16 @@ fn ReportButton(id: u32) -> Element {
         ReportState::Sending | ReportState::Done => {}
     };
     rsx! {
-        div { class: "flex items-center justify-end gap-2",
+        div { class: "guestbook__report",
             match state() {
                 ReportState::Done => rsx! {
-                    span { role: "status", class: "text-[10px] text-[var(--fg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]", "{s.guestbook.reported}" }
+                    span { role: "status", class: "guestbook__report-note", "{s.guestbook.reported}" }
                 },
                 ReportState::Failed(e) => rsx! {
-                    span { role: "alert", class: "text-[10px] text-[var(--red)] [font:'JetBrains_Mono-Regular',Helvetica]", {e.message(s)} }
+                    span { role: "alert", class: "guestbook__report-error", {e.message(s)} }
                     button {
                         r#type: "button",
-                        class: "cursor-pointer border-0 bg-transparent p-0 text-[10px] text-[var(--fg-secondary)] underline hover:text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                        class: "guestbook__link-btn guestbook__link-btn--muted",
                         onclick: send,
                         "{s.guestbook.report}"
                     }
@@ -341,7 +341,7 @@ fn ReportButton(id: u32) -> Element {
                     button {
                         r#type: "button",
                         disabled: other == ReportState::Sending,
-                        class: if other == ReportState::Confirm { "cursor-pointer border-0 bg-transparent p-0 text-[10px] text-[var(--yellow)] underline [font:'JetBrains_Mono-Regular',Helvetica]" } else { "cursor-pointer border-0 bg-transparent p-0 text-[10px] text-[var(--fg-secondary)] underline hover:text-[var(--fg-main)] disabled:cursor-default [font:'JetBrains_Mono-Regular',Helvetica]" },
+                        class: if other == ReportState::Confirm { "guestbook__link-btn guestbook__link-btn--confirm" } else { "guestbook__link-btn guestbook__link-btn--muted guestbook__link-btn--lockable" },
                         onclick: send,
                         match other {
                             ReportState::Confirm => "{s.guestbook.report_confirm}",
@@ -412,31 +412,31 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
 
     let tab_class = |active: bool| {
         if active {
-            "cursor-pointer border-0 border-b border-solid border-[var(--fg-main)] bg-transparent px-2 py-1 text-[10px] text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]"
+            "guestbook__tab guestbook__tab--on"
         } else {
-            "cursor-pointer border-0 border-b border-solid border-transparent bg-transparent px-2 py-1 text-[10px] text-[var(--fg-secondary)] hover:text-[var(--fg-main)] [font:'JetBrains_Mono-Regular',Helvetica]"
+            "guestbook__tab guestbook__tab--off"
         }
     };
 
     rsx! {
         form {
             aria_label: s.guestbook.form_label,
-            class: "flex flex-none flex-col gap-2 bg-[var(--bg-secondary)] p-2.5",
+            class: "guestbook__composer",
             onsubmit: move |evt: FormEvent| {
                 evt.prevent_default();
                 submit();
             },
 
-            div { class: "flex items-center gap-2.5",
-                div { class: "flex h-[40px] w-[40px] flex-none items-center justify-center overflow-hidden border border-solid border-[var(--fg-main)]",
+            div { class: "guestbook__row",
+                div { class: "guestbook__avatar",
                     img {
-                        class: "h-full w-full object-cover",
+                        class: "guestbook__avatar-img",
                         src: "{default_avatar_for(&shown_name)}",
                         alt: s.guestbook.your_avatar_alt,
                     }
                 }
-                div { class: "flex min-w-0 flex-1 gap-2.5",
-                    label { class: "sr-only", r#for: "guestbook-name", "{s.guestbook.username_label}" }
+                div { class: "guestbook__fields",
+                    label { class: "visually-hidden", r#for: "guestbook-name", "{s.guestbook.username_label}" }
                     input {
                         class: FIELD_CLASS,
                         id: "guestbook-name",
@@ -447,7 +447,7 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                         autocomplete: "username",
                         oninput: move |evt: FormEvent| username.set(evt.value()),
                     }
-                    label { class: "sr-only", r#for: "guestbook-url", "{s.guestbook.url_label}" }
+                    label { class: "visually-hidden", r#for: "guestbook-url", "{s.guestbook.url_label}" }
                     input {
                         class: FIELD_CLASS,
                         id: "guestbook-url",
@@ -463,11 +463,11 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
             }
 
             // Write / Preview tabs and the counter
-            div { class: "flex items-end justify-between gap-2.5",
+            div { class: "guestbook__toolbar-row",
                 div {
                     role: "tablist",
                     aria_label: s.guestbook.editor_modes,
-                    class: "flex",
+                    class: "guestbook__tabs",
                     button {
                         r#type: "button",
                         role: "tab",
@@ -487,7 +487,7 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                 }
                 span {
                     aria_live: "polite",
-                    class: if left < 0 { "text-[10px] text-[var(--red)] [font:'JetBrains_Mono-Regular',Helvetica]" } else { "text-[10px] text-[var(--fg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]" },
+                    class: if left < 0 { "guestbook__report-error" } else { "guestbook__report-note" },
                     if left < 0 {
                         "{s.guestbook.chars_over(left.unsigned_abs() as u32)}"
                     } else {
@@ -500,14 +500,14 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                 div {
                     role: "toolbar",
                     aria_label: s.guestbook.toolbar_label,
-                    class: "flex flex-wrap gap-1",
+                    class: "guestbook__format-bar",
                     for format in Format::ALL {
                         button {
                             key: "{format.kind()}",
                             r#type: "button",
                             title: format.label(s),
                             aria_label: format.label(s),
-                            class: "h-6 min-w-6 cursor-pointer border border-solid border-[var(--fg-secondary)] bg-transparent px-1.5 text-[11px] text-[var(--fg-main)] hover:bg-[var(--fg-main)] hover:text-[var(--bg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                            class: "guestbook__format-btn",
                             onclick: move |_| {
                                 eval_js(editor_script(format, s.guestbook.fmt_placeholder));
                             },
@@ -515,9 +515,9 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                         }
                     }
                 }
-                label { class: "sr-only", r#for: EDITOR_ID, "{s.guestbook.message_label}" }
+                label { class: "visually-hidden", r#for: EDITOR_ID, "{s.guestbook.message_label}" }
                 textarea {
-                    class: "{FIELD_CLASS} h-28 resize-none border border-solid p-2 leading-relaxed",
+                    class: "{FIELD_CLASS} guestbook__textarea",
                     id: EDITOR_ID,
                     name: "message",
                     rows: EDITOR_ROWS,
@@ -537,10 +537,10 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                 }
             } else {
                 div {
-                    class: "h-[calc(1.5rem+7rem)] overflow-y-auto border border-solid border-[var(--fg-secondary)] p-2 [scrollbar-width:thin]",
+                    class: "guestbook__preview",
                     aria_label: s.guestbook.tab_preview,
                     if preview.trim().is_empty() {
-                        p { class: "m-0 text-xs text-[var(--fg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                        p { class: "guestbook__preview-empty",
                             "{s.guestbook.preview_empty}"
                         }
                     } else {
@@ -550,7 +550,7 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
             }
 
             if let Some(err) = error() {
-                p { role: "alert", class: "m-0 text-[10px] text-[var(--red)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                p { role: "alert", class: "guestbook__form-error",
                     {
                         match &err {
                             SendError::Invalid(reason) => reject_message(*reason, s),
@@ -559,17 +559,17 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                     }
                 }
             } else if sent() {
-                p { role: "status", class: "m-0 text-[10px] text-[var(--green)] [font:'JetBrains_Mono-Regular',Helvetica]",
+                p { role: "status", class: "guestbook__form-ok",
                     "{s.guestbook.sent}"
                 }
             }
 
-            div { class: "flex items-center justify-between gap-2.5",
-                span { class: "text-[10px] text-[var(--fg-secondary)] [font:'JetBrains_Mono-Regular',Helvetica]", "{s.guestbook.markdown_hint}" }
+            div { class: "guestbook__footer",
+                span { class: "guestbook__report-note", "{s.guestbook.markdown_hint}" }
                 button {
                     r#type: "submit",
                     disabled: sending() || text.trim().is_empty(),
-                    class: "{GHOST_BUTTON} px-3 py-1.5 text-xs",
+                    class: "{GHOST_BUTTON} guestbook__submit",
                     if sending() {
                         "{s.guestbook.sending}"
                     } else {

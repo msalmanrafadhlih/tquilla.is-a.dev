@@ -1,0 +1,26 @@
+/* ==========================================================================
+   remote.css — Remote
+   ========================================================================== */
+
+@layer components {
+  .remote__loading {
+    @apply flex h-full w-full items-center justify-center p-4 text-center text-xs
+      text-fg-secondary font-mono;
+  }
+
+  .remote__failed {
+    @apply flex h-full w-full flex-col items-center justify-center gap-3 p-4 text-center
+      text-xs text-fg-secondary font-mono;
+  }
+
+  .remote__failed-title {
+    @apply text-fg-main;
+  }
+
+  .remote__retry {
+    @apply appearance-none px-3 py-1 border-fg-secondary bg-bg-secondary text-fg-main
+      cursor-pointer hover:bg-fg-main hover:text-bg-secondary;
+    border-width: 1px;
+    border-style: solid;
+  }
+}

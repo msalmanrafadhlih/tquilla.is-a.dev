@@ -324,8 +324,8 @@ pub fn minimize_window(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
     open_windows.set(list);
 }
 
-/// Maximize is purely a CSS-level state (see `WINDOW_FRAME_CSS`'s
-/// `.win-maximized` rule) — it never touches the stored `x/y/w/h`, so
+/// Maximize is purely a CSS-level state (see the
+/// `.win-maximized` rule in `assets/styles/window.css`) — it never touches the stored `x/y/w/h`, so
 /// un-maximizing naturally restores the exact spot and size the window
 /// was left at. No special-case restore logic needed here anymore.
 pub fn toggle_maximize(mut open_windows: Signal<Vec<OpenWindow>>, id: AppId) {
@@ -360,7 +360,7 @@ pub fn update_geometry(
 /// to get right without a local compiler to check against.
 ///
 /// - Position/size are written to the `--win-x/-y/-w/-h` CSS custom
-///   properties, so `WINDOW_FRAME_CSS`'s media query decides whether
+///   properties, so the media query in `assets/styles/window.css` decides whether
 ///   those numbers apply at all (unused below the desktop breakpoint,
 ///   where the window is fullscreen).
 /// - `onEnd(x, y, w, h)` fires once per gesture, reporting the window's
@@ -372,103 +372,9 @@ pub fn update_geometry(
 ///   re-render and would wipe a JS-added class.
 pub const WINDOW_MANAGER_JS: &str = include_str!("../../../../js/window_manager.js");
 
-/// Responsive chrome + animations for every `WindowFrame`.
-///
-/// Mobile-first: below the `md` breakpoint a window is always fullscreen
-/// (there's nothing to drag/resize/position on a phone-sized screen). At
-/// `md` (768px) and up it becomes a positioned, resizable popup driven
-/// entirely by the `--win-x/-y/-w/-h` custom properties `WindowFrame`
-/// sets inline from `OpenWindow`'s state — CSS decides how those numbers
-/// get used, Rust only ever owns the numbers themselves.
-///
-/// Animations:
-/// - open / restore-from-minimize: `win-open` (plays whenever the element
-///   appears or stops being `display: none`)
-/// - minimize: `win-minimizing` → `win-minimize`, then Rust hides it
-/// - close: `win-closing` → `win-close`, then Rust removes it
-/// - maximize / restore: `transition` on left/top/width/height
-/// - drag / resize: no transition (`[data-gesture]`), follows the cursor
-///
-/// Rendered once (in `DesktopMode`), not once per window.
-pub const WINDOW_FRAME_CSS: &str = r#"
-.win-frame {
-  box-sizing: border-box;
-  position: absolute;
-  inset: 0;
-  /* `backwards`, not `both`: once finished, transform goes back to
-     `none`, so no stacking context / blurry text is left behind. */
-  animation: win-open 200ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-
-/* Minimize: shrink toward the bottom-center (where the dock is). */
-.win-frame.win-minimizing {
-  transform-origin: 50% 100%;
-  animation: win-minimize 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  pointer-events: none;
-}
-
-/* Declared after `.win-minimizing` so close wins if both ever apply. */
-.win-frame.win-closing {
-  animation: win-close 160ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  pointer-events: none;
-}
-
-@keyframes win-open {
-  from { opacity: 0; transform: translateY(8px) scale(0.94); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes win-minimize {
-  from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: translateY(80px) scale(0.5); }
-}
-@keyframes win-close {
-  from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: scale(0.92); }
-}
-
-@media (min-width: 768px) {
-  .win-frame {
-    position: absolute;
-    inset: auto;
-    /* Width/height are capped to the parent first, then left/top are
-       clamped against that *capped* size — so a window stays fully
-       reachable even when its saved geometry no longer fits (e.g. the
-       parent got narrower since it was last positioned). */
-    width: min(var(--win-w, 480px), calc(100% - 24px));
-    height: min(var(--win-h, 360px), calc(100% - 24px));
-    left: clamp(12px, var(--win-x, 24px), calc(100% - min(var(--win-w, 480px), calc(100% - 24px)) - 12px));
-    top: clamp(12px, var(--win-y, 24px), calc(100% - min(var(--win-h, 360px), calc(100% - 24px)) - 12px));
-    transition:
-      left 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      top 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      height 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  /* During drag/resize: follow the cursor instantly. */
-  .win-frame[data-gesture] {
-    transition: none;
-  }
-  /* Explicit values instead of `inset` + `auto`: `auto` can't be
-     transitioned. */
-  .win-frame.win-maximized {
-    left: 12px;
-    top: 12px;
-    width: calc(100% - 24px);
-    height: calc(100% - 24px);
-  }
-}
-
-/* 1ms instead of `none`, so `animationend` still fires and the
-   minimize/close phases can complete. */
-@media (prefers-reduced-motion: reduce) {
-  .win-frame,
-  .win-frame.win-minimizing,
-  .win-frame.win-closing {
-    animation-duration: 1ms !important;
-    transition-duration: 1ms !important;
-  }
-}
-"#;
+// Gaya bingkai (fullscreen di mobile vs popup di `md`+, animasi buka/minimize/
+// tutup, maximize) ada di `assets/styles/window.css`; Rust hanya menulis angka
+// `--win-x/-y/-w/-h` dan class keadaan (`win-maximized`, `win-minimizing`, ...).
 
 /// JS run once per opened window (from the header's `onmounted`): wires
 /// its drag handle + resize handles into the shared `window.__wm` helpers
@@ -486,17 +392,17 @@ fn geometry_sync_js(handle_id: &str, win_id: &str) -> String {
 
 /// (direction, position + cursor). Edge handles leave 12px at each end so
 /// they don't overlap the corners; everything sits inside the frame
-/// because of its `overflow-hidden`. Class strings are written literally
-/// so Tailwind's scanner picks them up.
+/// because of its `overflow-hidden`. Position + cursor live in
+/// `assets/styles/window.css` as `.window__resize--<dir>`.
 const RESIZE_HANDLES: [(&str, &str); 8] = [
-    ("n", "top-0 left-3 right-3 h-1.5 cursor-ns-resize"),
-    ("s", "bottom-0 left-3 right-3 h-1.5 cursor-ns-resize"),
-    ("w", "left-0 top-3 bottom-3 w-1.5 cursor-ew-resize"),
-    ("e", "right-0 top-3 bottom-3 w-1.5 cursor-ew-resize"),
-    ("nw", "top-0 left-0 w-3 h-3 cursor-nwse-resize"),
-    ("ne", "top-0 right-0 w-3 h-3 cursor-nesw-resize"),
-    ("sw", "bottom-0 left-0 w-3 h-3 cursor-nesw-resize"),
-    ("se", "bottom-0 right-0 w-3 h-3 cursor-nwse-resize"),
+    ("n", "window__resize--n"),
+    ("s", "window__resize--s"),
+    ("w", "window__resize--w"),
+    ("e", "window__resize--e"),
+    ("nw", "window__resize--nw"),
+    ("ne", "window__resize--ne"),
+    ("sw", "window__resize--sw"),
+    ("se", "window__resize--se"),
 ];
 
 /// Generic chrome around every app window: title bar (icon, drag handle,
@@ -519,7 +425,7 @@ pub fn WindowFrame(
 
     // Rust only ever writes these four numbers + z-index — everything
     // about *how* they translate to layout (fullscreen vs. popup,
-    // clamping) lives in WINDOW_FRAME_CSS.
+    // clamping) lives in assets/styles/window.css.
     let vars = format!(
         "--win-x:{x}px;--win-y:{y}px;--win-w:{w}px;--win-h:{h}px;z-index:{z};",
         x = window.x,
@@ -530,19 +436,36 @@ pub fn WindowFrame(
     );
 
     let frame_class = format!(
-        "parent win-frame md:absolute flex flex-col items-start gap-5 bg-[var(--bg-secondary)] p-5 md:pt-0 overflow-hidden md:border rounded-[10px] border-solid border-[var(--fg-main)]{maximized}{minimizing_cls}{closing_cls}{minimized}",
-        maximized = if window.maximized { " win-maximized" } else { "" },
-        minimizing_cls = if window.minimizing { " win-minimizing" } else { "" },
+        "win-frame{maximized}{minimizing_cls}{closing_cls}{minimized}",
+        maximized = if window.maximized {
+            " win-maximized"
+        } else {
+            ""
+        },
+        minimizing_cls = if window.minimizing {
+            " win-minimizing"
+        } else {
+            ""
+        },
         closing_cls = if window.closing { " win-closing" } else { "" },
-        minimized = if window.minimized { " hidden" } else { "" },
+        minimized = if window.minimized {
+            " win-frame--minimized"
+        } else {
+            ""
+        },
     );
 
     // Resize handles are a desktop-popup affordance only — hidden on
-    // mobile (fullscreen) and force-hidden while maximized (`!hidden`
-    // beats `md:block`'s higher-specificity breakpoint rule).
+    // mobile (fullscreen) and force-hidden while maximized
+    // (`.window__resize--maximized` is `display: none !important`, so it beats
+    // the `md:block` rule of the base class).
     let resize_base = format!(
-        "absolute touch-none hidden md:block{}",
-        if window.maximized { " !hidden" } else { "" },
+        "window__resize{}",
+        if window.maximized {
+            " window__resize--maximized"
+        } else {
+            ""
+        },
     );
 
     // Cloned once, right before `rsx!`: the `onmounted` closure takes
@@ -571,7 +494,7 @@ pub fn WindowFrame(
             // TOP BAR
             header {
                 id: "{handle_id}",
-                class: "flex items-center justify-center md:pt-5 gap-2.5 relative self-stretch w-full flex-[0_0_auto] cursor-move select-none shrink-0",
+                class: "window__titlebar",
                 onmounted: move |_| {
                     let script = geometry_sync_js(&handle_mount_id, &win_mount_id);
                     spawn(async move {
@@ -583,43 +506,43 @@ pub fn WindowFrame(
                 },
 
                 // window
-                div { class: "flex items-center gap-2.5 relative flex-1 grow",
-                    img { class: "relative w-5 h-5 aspect-[1]",
+                div { class: "window__title-group",
+                    img { class: "window__icon",
                         src: "{icon}",
                         alt: "{id.title(s)}",
                         "aria-hidden": "true",
                     }
-                    h1 { class: "relative flex items-center justify-center w-max [font:'JetBrains_Mono-ExtraLight',Helvetica] font-extralight text-fg-main text-[12px] text-start tracking-[0] leading-[normal] whitespace-nowrap",
+                    h1 { class: "window__title",
                         "{id.title(s)}"
                     }
                 }
 
                 div {
                     "data-no-drag": "true",
-                    class: "inline-flex items-center justify-end gap-2.5 relative flex-[0_0_auto] grow",
+                    class: "window__actions",
                     button {
                         r#type: "button",
                         title: s.window.minimize,
-                        class: "relative w-3 h-3 bg-yellow-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
+                        class: "window__dot window__dot--min",
                         onclick: move |_| request_minimize(open_windows, id),
                     }
                     button {
                         r#type: "button",
                         title: s.window.maximize,
-                        class: "hidden md:block relative w-3 h-3 bg-green-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
+                        class: "window__dot window__dot--max",
                         onclick: move |_| toggle_maximize(open_windows, id),
                     }
                     button {
                         r#type: "button",
                         title: s.window.close,
-                        class: "relative w-3 h-3 bg-red-500 rounded-[6.5px] aspect-[1] border-0 p-0 opacity-30 [.parent:hover_&]:opacity-70 [.parent:hover_&]:hover:opacity-100 transition-opacity duration-300",
+                        class: "window__dot window__dot--close",
                         onclick: move |_| request_close(open_windows, id),
                     }
                 }
             }
 
             // MAIN CONTENT
-            div { class: "@container flex-1 min-h-0 w-full overflow-auto", {children} }
+            div { class: "window__body", {children} }
 
             // Always mounted (so the pointer listener bound in JS only
             // ever attaches once) — visibility is handled purely by CSS.

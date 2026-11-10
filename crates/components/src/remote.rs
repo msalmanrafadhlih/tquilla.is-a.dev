@@ -17,7 +17,7 @@ pub fn Loading(#[props(default)] label: Option<&'static str>) -> Element {
     let label = label.unwrap_or(s.remote.loading);
     rsx! {
         div {
-            class: "flex h-full w-full items-center justify-center p-4 text-center text-xs text-[var(--fg-secondary,#808080)] font-mono",
+            class: "remote__loading",
             role: "status",
             "aria-live": "polite",
             "{label}"
@@ -42,14 +42,14 @@ pub fn LoadFailed(
     let can_retry = error.is_retryable();
     rsx! {
         div {
-            class: "flex h-full w-full flex-col items-center justify-center gap-3 p-4 text-center text-xs text-[var(--fg-secondary,#808080)] font-mono",
+            class: "remote__failed",
             role: "alert",
-            p { class: "text-[var(--fg-main,#fff)]", "{headline}" }
+            p { class: "remote__failed-title", "{headline}" }
             p { "{reason}" }
             if can_retry {
                 button {
                     r#type: "button",
-                    class: "appearance-none px-3 py-1 border border-solid border-[var(--fg-secondary,#808080)] bg-[var(--bg-secondary,#000)] text-[var(--fg-main,#fff)] cursor-pointer hover:bg-[var(--fg-main,#fff)] hover:text-[var(--bg-secondary,#000)]",
+                    class: "remote__retry",
                     onclick: move |_| on_retry.call(()),
                     "{s.remote.retry}"
                 }

@@ -1,0 +1,202 @@
+/* ==========================================================================
+   guestbook.css — App Guestbook
+   ========================================================================== */
+
+@layer components {
+  .guestbook__field {
+    @apply w-full min-w-0 appearance-none border-0 border-b border-fg-secondary bg-transparent
+      p-1 text-xs text-fg-main outline-none placeholder:text-fg-secondary
+      focus:border-fg-main;
+  }
+
+  .guestbook__ghost-btn {
+    @apply cursor-pointer border-fg-secondary bg-transparent px-2 py-1 text-3xs text-fg-main
+      hover:bg-fg-main hover:text-bg-secondary disabled:cursor-default disabled:opacity-50
+      disabled:hover:bg-transparent disabled:hover:text-fg-main;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .guestbook {
+    @apply flex h-full w-full flex-col bg-bg-secondary text-sm;
+  }
+
+  .guestbook__bar {
+    @apply flex flex-none items-center justify-between gap-2.5 border-fg-secondary px-2.5 py-2;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .guestbook__heading {
+    @apply m-0 text-xs text-fg-main;
+    font-weight: 400;
+  }
+
+  .guestbook__note {
+    @apply m-0 flex-none px-2.5 pb-1 text-3xs text-fg-secondary;
+  }
+
+  .guestbook__error {
+    @apply m-0 flex-none px-2.5 pb-1 text-3xs text-signal-red;
+  }
+
+  .guestbook__list {
+    @apply flex min-h-0 flex-1 flex-col overflow-y-scroll border-fg-secondary no-scrollbar;
+    border-block-width: 1px;
+    border-block-style: solid;
+  }
+
+  .guestbook__empty {
+    @apply p-5 text-center text-xs text-fg-secondary;
+  }
+
+  .guestbook__more {
+    @apply flex justify-center p-2.5;
+  }
+
+  .guestbook__end {
+    @apply m-0 p-2.5 text-center text-3xs text-fg-secondary;
+  }
+
+  .guestbook__entry {
+    @apply flex items-start gap-3 border-b border-fg-secondary p-2.5 last:border-b-0;
+  }
+
+  .guestbook__avatar {
+    @apply flex h-[40px] w-[40px] flex-none items-center justify-center overflow-hidden
+      border-fg-main;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .guestbook__avatar-img {
+    @apply h-full w-full object-cover;
+  }
+
+  .guestbook__entry-body {
+    @apply flex min-w-0 flex-1 flex-col gap-1.5;
+  }
+
+  .guestbook__entry-head {
+    @apply flex items-baseline justify-between gap-2.5;
+  }
+
+  .guestbook__author-link {
+    @apply min-w-0 truncate text-xs text-fg-main underline decoration-dotted
+      decoration-fg-secondary underline-offset-4 hover:decoration-solid
+      hover:decoration-fg-main;
+  }
+
+  .guestbook__author {
+    @apply m-0 min-w-0 truncate text-xs text-fg-main;
+    font-weight: 400;
+  }
+
+  .guestbook__time {
+    @apply flex-none text-3xs text-fg-secondary;
+  }
+
+  .guestbook__report {
+    @apply flex items-center justify-end gap-2;
+  }
+
+  .guestbook__report-note {
+    @apply text-3xs text-fg-secondary;
+  }
+
+  .guestbook__report-error {
+    @apply text-3xs text-signal-red;
+  }
+
+  .guestbook__link-btn {
+    @apply cursor-pointer bg-transparent p-0 text-3xs underline;
+    border-width: 0px;
+  }
+
+  .guestbook__tab {
+    @apply cursor-pointer border-0 border-b bg-transparent px-2 py-1 text-3xs;
+  }
+
+  .guestbook__composer {
+    @apply flex flex-none flex-col gap-2 bg-bg-secondary p-2.5;
+  }
+
+  .guestbook__row {
+    @apply flex items-center gap-2.5;
+  }
+
+  .guestbook__fields {
+    @apply flex min-w-0 flex-1 gap-2.5;
+  }
+
+  .guestbook__toolbar-row {
+    @apply flex items-end justify-between gap-2.5;
+  }
+
+  .guestbook__tabs {
+    @apply flex;
+  }
+
+  .guestbook__format-bar {
+    @apply flex flex-wrap gap-1;
+  }
+
+  .guestbook__format-btn {
+    @apply h-6 min-w-6 cursor-pointer border-fg-secondary bg-transparent px-1.5 text-2xs
+      text-fg-main hover:bg-fg-main hover:text-bg-secondary;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .guestbook__textarea {
+    @apply h-28 resize-none p-2 leading-relaxed;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .guestbook__preview {
+    @apply h-[calc(1.5rem+7rem)] overflow-y-auto border-fg-secondary p-2 [scrollbar-width:thin];
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .guestbook__preview-empty {
+    @apply m-0 text-xs text-fg-secondary;
+  }
+
+  .guestbook__form-error {
+    @apply m-0 text-3xs text-signal-red;
+  }
+
+  .guestbook__form-ok {
+    @apply m-0 text-3xs text-signal-green;
+  }
+
+  .guestbook__footer {
+    @apply flex items-center justify-between gap-2.5;
+  }
+
+  .guestbook__submit {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .guestbook__link-btn--muted {
+    @apply text-fg-secondary hover:text-fg-main;
+  }
+
+  .guestbook__link-btn--confirm {
+    @apply text-signal-yellow;
+  }
+
+  .guestbook__tab--on {
+    @apply border-fg-main text-fg-main;
+  }
+
+  .guestbook__tab--off {
+    @apply border-transparent text-fg-secondary hover:text-fg-main;
+  }
+
+  .guestbook__link-btn--lockable {
+    @apply disabled:cursor-default;
+  }
+}

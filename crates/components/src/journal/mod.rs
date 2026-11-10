@@ -48,15 +48,15 @@ pub fn JournalPage() -> Element {
         if let Some(snapshot) = data() {
             Page { snapshot }
         } else if let Some(err) = load_error() {
-            div { class: "min-h-screen flex items-center justify-center bg-paper text-primary font-mono text-sm",
+            div { class: "journal__loading",
                 "{s.journal.load_failed(&err)}"
             }
         } else {
-            div { class: "min-h-screen bg-paper text-primary",
-                SkeletonGroup { label: s.journal.loading, class: "mx-auto max-w-3xl p-8",
-                    Skeleton { class: "h-10 w-2/3" }
+            div { class: "journal__loading-page",
+                SkeletonGroup { label: s.journal.loading, class: "journal__loading-group",
+                    Skeleton { class: "journal__loading-title" }
                     SkeletonText { lines: 3 }
-                    Skeleton { class: "h-40 w-full" }
+                    Skeleton { class: "journal__loading-block" }
                     SkeletonText { lines: 4 }
                 }
             }
@@ -88,11 +88,11 @@ fn Page(snapshot: Snapshot) -> Element {
             description: s.meta.journal_description,
             path: "/profile",
         }
-        div { class: "bg-paper text-primary font-sans antialiased flex flex-col selection:bg-accent selection:text-paper overflow-x-hidden",
+        div { class: "journal",
             if snapshot.source == Source::Seed {
                 div {
                     role: "status",
-                    class: "w-full bg-accent text-paper font-mono text-xs text-center px-4 py-2",
+                    class: "journal__banner",
                     "{s.journal.sample_data}"
                 }
             }

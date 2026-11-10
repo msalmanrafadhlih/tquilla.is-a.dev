@@ -1,0 +1,217 @@
+/* ==========================================================================
+   window.css — bingkai jendela aplikasi desktop (WindowFrame)
+   --------------------------------------------------------------------------
+   Mobile-first: di bawah `md` (768px) jendela selalu layar penuh. Mulai `md`
+   jendela menjadi popup yang bisa digeser/diubah ukurannya, digerakkan oleh
+   custom property --win-x/-y/-w/-h yang ditulis Rust (inline) dan JS
+   (window_manager.js). CSS yang memutuskan angka itu dipakai atau tidak.
+
+   Animasi:
+   - buka / pulih dari minimize : win-open (jalan setiap elemen muncul)
+   - minimize                   : .win-minimizing -> win-minimize, lalu Rust menyembunyikan
+   - tutup                      : .win-closing    -> win-close, lalu Rust menghapus
+   - maksimalkan / pulihkan     : transition left/top/width/height
+   - geser / resize             : tanpa transition ([data-gesture]) agar mengikuti kursor
+   ========================================================================== */
+:root {
+  --ease-window: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes win-open {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes win-minimize {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(80px) scale(0.5);
+  }
+}
+@keyframes win-close {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* ---- komponen generik (@apply) ---- */
+
+@layer components {
+  .window__resize--n {
+    @apply top-0 left-3 right-3 h-1.5 cursor-ns-resize;
+  }
+
+  .window__resize--s {
+    @apply bottom-0 left-3 right-3 h-1.5 cursor-ns-resize;
+  }
+
+  .window__resize--w {
+    @apply left-0 top-3 bottom-3 w-1.5 cursor-ew-resize;
+  }
+
+  .window__resize--e {
+    @apply right-0 top-3 bottom-3 w-1.5 cursor-ew-resize;
+  }
+
+  .window__resize--nw {
+    @apply top-0 left-0 w-3 h-3 cursor-nwse-resize;
+  }
+
+  .window__resize--ne {
+    @apply top-0 right-0 w-3 h-3 cursor-nesw-resize;
+  }
+
+  .window__resize--sw {
+    @apply bottom-0 left-0 w-3 h-3 cursor-nesw-resize;
+  }
+
+  .window__resize--se {
+    @apply bottom-0 right-0 w-3 h-3 cursor-nwse-resize;
+  }
+
+  .window__titlebar {
+    @apply flex items-center justify-center md:pt-5 gap-2.5 relative self-stretch w-full
+      flex-none cursor-move select-none;
+  }
+
+  .window__title-group {
+    @apply flex items-center gap-2.5 relative flex-1;
+  }
+
+  .window__icon {
+    @apply relative w-5 h-5 aspect-square;
+  }
+
+  .window__title {
+    @apply relative flex items-center justify-center w-max text-[12px] text-start
+      tracking-normal leading-[normal] whitespace-nowrap;
+    font-weight: 200;
+  }
+
+  .window__actions {
+    @apply inline-flex items-center justify-end gap-2.5 relative flex-none grow;
+  }
+
+  .window__dot {
+    @apply relative w-3 h-3 rounded-[6.5px] aspect-square p-0 opacity-30
+      [.win-frame:hover_&]:opacity-70 [.win-frame:hover_&]:hover:opacity-100;
+    transition: opacity 300ms var(--ease-in-out);
+    border-width: 0px;
+  }
+
+  .window__body {
+    @apply @container flex-1 min-h-0 w-full overflow-auto;
+  }
+
+  .window__dot--min {
+    @apply bg-yellow-500;
+  }
+
+  .window__dot--max {
+    @apply hidden md:block bg-green-500;
+  }
+
+  .window__dot--close {
+    @apply bg-red-500;
+  }
+
+  .win-frame {
+    @apply flex flex-col items-start gap-5 overflow-hidden p-5 md:pt-0 md:border rounded-[10px]
+      border-fg-main bg-bg-secondary;
+    position: absolute;
+    inset: 0;
+    /* `backwards`, bukan `both`: setelah selesai transform kembali `none`, jadi tidak ada stacking context / teks blur. */
+    animation: win-open 200ms var(--ease-out-expo) backwards;
+  }
+
+  .win-frame--minimized {
+    @apply hidden;
+  }
+
+  .window__resize {
+    @apply absolute touch-none hidden md:block;
+  }
+
+  .window__resize--maximized {
+    @apply hidden!;
+  }
+}
+
+/* ---- keadaan bingkai (harus SETELAH .win-frame di atas) ---- */
+@layer components {
+  /* Minimize: menciut ke tengah-bawah (posisi dock). */
+  .win-frame.win-minimizing {
+    transform-origin: 50% 100%;
+    animation: win-minimize 200ms var(--ease-in-quad) forwards;
+    pointer-events: none;
+  }
+
+  /* Dideklarasikan setelah .win-minimizing agar "tutup" menang bila keduanya aktif. */
+  .win-frame.win-closing {
+    animation: win-close 160ms var(--ease-in-quad) forwards;
+    pointer-events: none;
+  }
+
+  /* >= md (768px): popup dengan posisi/ukuran dari --win-*. */
+  @media (min-width: 768px) {
+    .win-frame {
+      inset: auto;
+      /* Lebar/tinggi dibatasi parent dulu, baru left/top di-clamp terhadap ukuran
+         yang SUDAH dibatasi itu — jendela tetap terjangkau walau geometri tersimpan
+         tidak muat lagi (mis. parent mengecil). */
+      width: min(var(--win-w, 480px), calc(100% - 24px));
+      height: min(var(--win-h, 360px), calc(100% - 24px));
+      left: clamp(
+        12px,
+        var(--win-x, 24px),
+        calc(100% - min(var(--win-w, 480px), calc(100% - 24px)) - 12px)
+      );
+      top: clamp(
+        12px,
+        var(--win-y, 24px),
+        calc(100% - min(var(--win-h, 360px), calc(100% - 24px)) - 12px)
+      );
+      transition-property: left, top, width, height;
+      transition-duration: 220ms;
+      transition-timing-function: var(--ease-window);
+    }
+
+    /* Saat geser/resize: ikuti kursor seketika. */
+    .win-frame[data-gesture] {
+      transition: none;
+    }
+
+    /* Nilai eksplisit, bukan `inset` + `auto`: `auto` tidak bisa di-transition. */
+    .win-frame.win-maximized {
+      left: 12px;
+      top: 12px;
+      width: calc(100% - 24px);
+      height: calc(100% - 24px);
+    }
+  }
+}
+
+/* 1ms (bukan `none`) supaya animationend tetap terpicu dan fase
+   minimize/close selesai. */
+@media (prefers-reduced-motion: reduce) {
+  .win-frame,
+  .win-frame.win-minimizing,
+  .win-frame.win-closing {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

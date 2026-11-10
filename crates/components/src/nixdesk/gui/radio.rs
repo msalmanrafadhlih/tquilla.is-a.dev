@@ -44,7 +44,7 @@ pub fn RadioWindowContent() -> Element {
     let state = resource.read_unchecked();
     match &*state {
         None => rsx! {
-            SkeletonGroup { class: "p-3",
+            SkeletonGroup { class: "app-window__loading",
                 SkeletonRows { rows: 5 }
             }
         },
@@ -95,7 +95,7 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
 
     rsx! {
         // MAIN CONTENTS : RADIO
-        div { class: "flex h-full w-full flex-col @min-[643px]:flex-row items-center justify-center gap-2.5 relative overflow-hidden",
+        div { class: "radio",
             audio {
                 id: AUDIO_ID,
                 onmounted: move |_| prime_station(AUDIO_ID, &initial_url),
@@ -103,7 +103,7 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
 
             // SIDE PANEL
             nav {
-                class: "flex items-center @min-[643px]:flex-col justify-start @min-[643px]:p-0 p-2 relative self-stretch w-full h-max @min-[643px]:max-w-max max-w-full @min-[643px]:h-full overflow-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-b-[0.5px] @min-[643px]:border-0 @min-[643px]:border-r-[0.5px] border-solid border-white/30",
+                class: "radio__list",
                 "aria-label": s.radio.stations_label,
                 for (idx , station) in station_list.iter().enumerate() {
                     {
@@ -114,17 +114,17 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
                             button {
                                 key: "{idx}",
                                 r#type: "button",
-                                class: "w-full max-w-[300px] flex flex-col @min-[643px]:flex-row items-center gap-2 px-3 py-2 text-left border-0",
-                                class: if is_selected { "bg-white text-black" } else { "bg-[var(--bg-secondary)] text-white/30 hover:text-white hover:bg-conic-gradient" },
+                                class: "radio__station",
+                                class: if is_selected { "radio__station--on" } else { "radio__station--off" },
                                 onclick: move |_| play_station(idx),
                                 if let Some(src) = image.as_deref() {
                                     img {
                                         src: "{src}",
                                         alt: "",
-                                        class: "@min-[643px]:w-6 @min-[643px]:h-6 w-[70px] h-[70px] object-cover shrink-0",
+                                        class: "radio__station-img",
                                     }
                                 }
-                                span { class: "w-[70px] @min-[643px]:w-full text-center @min-[643px]:text-left truncate", "{label}" }
+                                span { class: "radio__station-name", "{label}" }
                             }
                         }
                     }
@@ -132,27 +132,27 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
             }
 
             // CONTROL PLAYER
-            div { class: "@container flex-1 w-full h-full min-w-0 flex flex-col items-center justify-start @min-[643px]:justify-center gap-4 px-6 py-6 text-center overflow-scroll [-webkit-touch-callout:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            div { class: "radio__stage",
                 if let Some(src) = current.image_url.as_deref() {
                     img {
                         src: "{src}",
                         alt: "{current.label}",
-                        class: "w-28 h-28 object-cover border border-white/30",
+                        class: "radio__cover",
                     }
                 }
 
                 div {
-                    p { class: "text-sm text-white font-semibold", "{current.label}" }
-                    p { class: "text-white/30 text-[10px] mt-1",
+                    p { class: "radio__title", "{current.label}" }
+                    p { class: "radio__subtitle",
                         "{s.radio.slogan_line(&current.slogan)}"
                     }
                 }
 
-                main { class: "flex flex-col items-center justify-center gap-[15px] relative",
-                    header { class: "flex-col flex items-center justify-center gap-5 relative self-stretch w-full flex-[0_0_auto]",
-                        div { class: "relative max-w-[200px] w-full max-h-[83.4px] aspect-[2.4]",
+                main { class: "radio__player",
+                    header { class: "radio__brand",
+                        div { class: "radio__logo-box",
                             img {
-                                class: "absolute w-[95.09%] h-[82.80%] top-[17.20%] left-[4.91%]",
+                                class: "radio__logo",
                                 src: WAVE_ICON,
                                 alt: "",
                                 "aria-hidden": "true",
@@ -160,16 +160,16 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
                         }
 
                         section {
-                            class: "flex flex-col @min-[643px]:flex-row w-[284px] items-center justify-center gap-5 relative flex-[0_0_auto]",
+                            class: "radio__controls",
                             "aria-label": s.radio.controls_label,
 
                             // PLAYBACK CONTROLS
                             nav {
-                                class: "flex items-center justify-center gap-5 relative w-max flex-[0_0_auto]",
+                                class: "radio__buttons",
                                 "aria-label": s.radio.playback_controls,
                                 button {
                                     r#type: "button",
-                                    class: "w-7 h-7 flex items-center bg-[var(--bg-secondary)] border-0 justify-center relative appearance-none p-0",
+                                    class: "radio__btn",
                                     title: s.radio.previous_station,
                                     "aria-label": s.radio.previous_station,
                                     onclick: move |_| {
@@ -178,7 +178,7 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
                                         }
                                     },
                                     img {
-                                        class: "relative w-4 h-4",
+                                        class: "radio__btn-icon",
                                         src: SKIP_BACK_ICON,
                                         alt: "",
                                         "aria-hidden": "true",
@@ -186,7 +186,7 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
                                 }
                                 button {
                                     r#type: "button",
-                                    class: "group w-10 h-10 bg-[var(--bg-secondary)] hover:bg-white aspect-[1] flex items-center justify-center relative appearance-none border-0 p-0",
+                                    class: "group radio__play",
                                     title: "{play_title}",
                                     "aria-label": "{play_title}",
                                     onclick: move |_| {
@@ -199,7 +199,7 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
                                         }
                                     },
                                     img {
-                                        class: "group-hover:invert relative w-[18px] h-[18px] aspect-[1]",
+                                        class: "radio__play-icon",
                                         src: if playing() { PAUSE_ICON } else { PLAY_ICON },
                                         alt: "",
                                         "aria-hidden": "true",
@@ -207,7 +207,7 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
                                 }
                                 button {
                                     r#type: "button",
-                                    class: "w-7 h-7 flex items-center bg-[var(--bg-secondary)] border-0 justify-center relative appearance-none p-0",
+                                    class: "radio__btn",
                                     title: s.radio.next_station,
                                     "aria-label": s.radio.next_station,
                                     onclick: move |_| {
@@ -216,7 +216,7 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
                                         }
                                     },
                                     img {
-                                        class: "relative w-4 h-4",
+                                        class: "radio__btn-icon",
                                         src: SKIP_FORWARD_ICON,
                                         alt: "",
                                         "aria-hidden": "true",
@@ -225,23 +225,23 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
                             }
 
                             // VOLUME
-                            div { class: "flex w-32 h-10 items-center justify-center gap-3 relative",
-                                div { class: "flex flex-col w-4 items-start gap-8 relative",
+                            div { class: "radio__volume",
+                                div { class: "radio__volume-icon-box",
                                     img {
-                                        class: "relative w-4 h-4 aspect-[1]",
+                                        class: "radio__volume-icon",
                                         src: VOLUME_ICON,
                                         alt: "",
                                         "aria-hidden": "true",
                                     }
                                 }
-                                div { class: "flex w-[100px] h-1 items-start relative bg-white/30",
+                                div { class: "radio__volume-track",
                                     div {
-                                        class: "relative self-stretch bg-white",
+                                        class: "radio__volume-fill",
                                         style: "width: {volume_pct}%;",
                                         "aria-hidden": "true",
                                     }
                                     input {
-                                        class: "absolute inset-0 w-full h-full opacity-0 cursor-pointer",
+                                        class: "radio__volume-input",
                                         r#type: "range",
                                         min: "0",
                                         max: "1",
@@ -261,19 +261,19 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
 
                     // STATUS (radio = live stream, jadi tidak ada seek/durasi)
                     section {
-                        class: "flex flex-col h-10 items-center justify-end gap-2 w-full relative self-stretch",
+                        class: "radio__progress",
                         "aria-label": s.radio.playback_status,
-                        div { class: "flex h-1 items-start w-full bg-white/30 relative self-stretch",
+                        div { class: "radio__progress-track",
                             div {
-                                class: if playing() { "w-full bg-white relative self-stretch animate-pulse" } else { "w-0 bg-white relative self-stretch" },
+                                class: if playing() { "radio__progress-bar radio__progress-bar--on" } else { "radio__progress-bar radio__progress-bar--off" },
                                 "aria-hidden": "true",
                             }
                         }
-                        div { class: "flex items-end justify-between relative self-stretch w-full flex-[0_0_auto]",
-                            span { class: "relative w-fit mt-[-1.00px] [font-family:'JetBrains_Mono-Regular',Helvetica] font-normal text-white text-[10px] tracking-[0] leading-[normal]",
+                        div { class: "radio__meta",
+                            span { class: "radio__meta-text",
                                 "{s.radio.live}"
                             }
-                            span { class: "relative w-fit mt-[-1.00px] [font-family:'JetBrains_Mono-Regular',Helvetica] font-normal text-white text-[10px] tracking-[0] leading-[normal]",
+                            span { class: "radio__meta-text",
                                 if playing() {
                                     "{s.radio.on_air}"
                                 } else {
@@ -286,7 +286,7 @@ fn RadioPlayer(initial: Vec<RadioStation>) -> Element {
 
                 if let Some(href) = current.official_link.as_deref() {
                     a {
-                        class: "text-white/30 hover:text-white transition-colors duration-150 text-[10px]",
+                        class: "radio__link",
                         target: "_blank",
                         rel: "noopener noreferrer",
                         href: "{href}",

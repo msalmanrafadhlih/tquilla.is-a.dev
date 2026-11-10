@@ -1,0 +1,141 @@
+/* ==========================================================================
+   dock.css — Dock aplikasi
+   ========================================================================== */
+
+@layer components {
+  .dock__label {
+    @apply relative flex items-center justify-center group-hover:block md:hidden w-auto
+      max-w-max whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] text-white text-sm
+      text-center tracking-normal leading-[normal] group-hover:text-black;
+    font-weight: 400;
+  }
+
+  .dock__icon {
+    @apply relative w-5 h-5 aspect-square group-hover:invert group-hover:scale-110;
+    transition-property: transform, translate, scale, rotate;
+    transition-duration: 300ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .dock {
+    @apply relative flex w-full flex-none items-center justify-center gap-2.5 px-2.5 pb-2.5
+      md:pb-0 z-[999] rounded-3xl border-b-[0.5px] border-white backdrop-blur-sm
+      bg-[image:var(--linear-b)];
+  }
+
+  .dock__group {
+    @apply flex flex-col md:flex-row w-10 md:w-full h-10 justify-end gap-5 relative;
+  }
+
+  .dock__fold {
+    @apply grid overflow-hidden shrink-0 md:flex md:overflow-visible;
+    transition: grid-template-rows 300ms var(--ease-out);
+  }
+
+  .dock__links {
+    @apply flex flex-col gap-5 w-max md:flex-row md:gap-0 overflow-hidden md:overflow-visible;
+  }
+
+  .dock__chip {
+    @apply inline-flex w-max items-center gap-2.5 relative flex-none z-[3] px-2 py-1 rounded-xl
+      hover:bg-white duration-300 ease-out;
+  }
+
+  .dock__reveal {
+    @apply grid grid-cols-[0fr] group-hover:grid-cols-[1fr] overflow-hidden;
+    transition: grid-template-columns 300ms var(--ease-out);
+  }
+
+  .dock__reveal-text {
+    @apply overflow-hidden whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] text-white
+      text-sm text-center tracking-normal leading-[normal] group-hover:text-black;
+    font-weight: 400;
+  }
+
+  .dock__toggle {
+    @apply inline-flex items-center md:hidden gap-2.5 relative flex-none z-0 p-0;
+    border-width: 0px;
+  }
+
+  .dock__chevron {
+    @apply relative w-10 h-10 aspect-square;
+    transition-property: transform, translate, scale, rotate;
+    transition-duration: 300ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .dock__apps {
+    @apply flex w-full min-w-0 flex-1 items-center justify-center gap-2 sm:gap-5 self-stretch
+      px-2.5 md:pb-2.5 md:w-fit md:flex-none;
+  }
+
+  .dock__avatar-btn {
+    @apply relative h-[30px] w-[30px] flex-none p-0;
+    border-width: 0px;
+  }
+
+  .dock__avatar {
+    @apply h-full w-full;
+  }
+
+  .dock__divider {
+    @apply h-[31.5px] w-px flex-none bg-[#555];
+  }
+
+  .dock__scroller {
+    @apply flex min-w-0 flex-1 items-center gap-5 overflow-x-scroll overflow-y-hidden border-x
+      border-[#555] px-2 md:px-0 py-1 md:w-fit md:flex-none md:border-0 no-scrollbar;
+  }
+
+  .dock__app {
+    @apply flex w-10 flex-none flex-col items-start gap-2.5 px-0 pb-[5px] pt-0;
+    border-width: 0px;
+  }
+
+  .dock__app-icon {
+    @apply h-10 w-10;
+  }
+
+  .dock__chat-list {
+    @apply w-max overflow-hidden md:overflow-visible;
+  }
+
+  .dock__group--social {
+    @apply md:justify-start md:gap-0 items-start md:items-center;
+  }
+
+  .dock__group--chat {
+    @apply md:gap-1 items-end md:aspect-[1] md:items-center;
+  }
+
+  .dock__fold--open {
+    @apply grid-rows-[1fr];
+  }
+
+  .dock__fold--closed {
+    @apply grid-rows-[0fr];
+  }
+
+  .dock__chip--action {
+    @apply transition-colors;
+  }
+
+  .dock__toggle--end {
+    @apply justify-end;
+  }
+
+  .dock__chevron--up {
+    @apply rotate-180;
+  }
+
+  .dock__app--open {
+    @apply border-b-[0.5px] border-white;
+  }
+
+  .dock__app--idle {
+    @apply hover:scale-125 active:scale-90;
+    transition-property: transform, translate, scale, rotate;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+}

@@ -1,0 +1,638 @@
+/* ==========================================================================
+   journal.css — halaman /profile (editorial)
+   ========================================================================== */
+
+/* Peran font. Sengaja di luar @layer: menang atas font-* lain, seperti dulu. */
+.editorial-text {
+  font-family: var(--font-serif);
+}
+.mono-text {
+  font-family: var(--font-mono);
+}
+
+/* Reveal saat scroll: scroll_reveal.js menambah `.is-visible` (lihat
+   `data-reveal` di components.rs). */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s var(--ease-out-expo),
+    transform 0.7s var(--ease-out-expo);
+  will-change: opacity, transform;
+}
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ---- komponen generik (@apply) ---- */
+
+@layer components {
+  .chart__svg {
+    @apply w-full h-full overflow-visible;
+  }
+
+  .chart__point {
+    @apply cursor-pointer;
+  }
+
+  .chart__tip {
+    @apply bg-primary text-paper p-4 shadow-2xl border-white/10;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .chart__tip-title {
+    @apply font-serif italic text-lg opacity-80 mb-1;
+  }
+
+  .chart__tip-value {
+    @apply font-mono text-xl tracking-tight;
+    font-weight: 700;
+  }
+
+  .hero {
+    @apply w-full border-line bg-paper;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .hero__inner {
+    @apply max-w-[1400px] mx-auto flex flex-col lg:flex-row border-l border-r border-line;
+  }
+
+  .hero__left {
+    @apply w-full lg:w-2/5 flex flex-col items-center justify-center border-line bg-paper p-12
+      lg:p-0;
+    border-right-width: 1px;
+    border-right-style: solid;
+  }
+
+  .hero__portrait-col {
+    @apply flex flex-col items-center gap-12;
+  }
+
+  .hero__portrait {
+    @apply size-72 overflow-hidden bg-primary filter grayscale contrast-125 mix-blend-darken;
+  }
+
+  .hero__portrait-img {
+    @apply w-full h-full object-cover;
+  }
+
+  .hero__stats {
+    @apply w-72 flex justify-between items-center border-t border-b border-line py-3 font-mono
+      tracking-wider text-muted uppercase;
+  }
+
+  .hero__stat {
+    @apply flex flex-col items-center;
+  }
+
+  .hero__stat-value {
+    @apply text-primary;
+    font-weight: 700;
+  }
+
+  .hero__stat-divider {
+    @apply w-px h-6 bg-line;
+  }
+
+  .hero__right {
+    @apply w-full lg:w-3/5 flex flex-col justify-center px-8 py-16 lg:px-24 lg:py-32 bg-paper
+      relative;
+  }
+
+  .hero__corner {
+    @apply absolute top-6 right-6 lg:top-10 lg:right-10 flex flex-col items-end gap-1
+      text-muted font-mono;
+  }
+
+  .hero__corner-row {
+    @apply flex items-center gap-2;
+  }
+
+  .hero__corner-line {
+    @apply w-8 h-px bg-line;
+  }
+
+  .hero__corner-text {
+    @apply text-xs;
+  }
+
+  .hero__content {
+    @apply max-w-2xl;
+  }
+
+  .hero__eyebrow {
+    @apply font-mono text-accent text-sm tracking-widest mb-6 uppercase;
+  }
+
+  .hero__title {
+    @apply font-serif text-5xl sm:text-9xl leading-[0.85] text-primary mb-10 tracking-tighter;
+  }
+
+  .hero__title-em {
+    @apply italic;
+    font-weight: 300;
+  }
+
+  .hero__cols {
+    @apply flex flex-col sm:flex-row gap-8 sm:gap-12 pt-8 border-line text-sm;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .hero__col {
+    @apply flex-1 max-w-[280px];
+  }
+
+  .hero__col-title {
+    @apply font-sans leading-relaxed mb-1;
+    font-weight: 500;
+  }
+
+  .hero__links {
+    @apply flex gap-4 mt-4;
+  }
+
+  .hero__link {
+    @apply tracking-wider border-transparent pb-0.5;
+    font-weight: 700;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .hero__col--wide {
+    @apply flex-1;
+  }
+
+  .hero__lede {
+    @apply font-serif text-xl leading-relaxed text-primary/80 italic;
+  }
+
+  .card__head {
+    @apply flex justify-between items-start mb-4;
+  }
+
+  .card__label {
+    @apply font-sans uppercase text-sm tracking-[0.15em] text-ink/40;
+    font-weight: 700;
+  }
+
+  .card__meta {
+    @apply flex items-center gap-1 text-ink/40;
+  }
+
+  .card__body {
+    @apply relative z-10 mt-auto;
+  }
+
+  .card__title {
+    @apply text-3xl sm:text-4xl mb-2;
+    font-weight: 400;
+  }
+
+  .card__text {
+    @apply font-sans text-ink/60 mb-4 line-clamp-2;
+  }
+
+  .card__date {
+    @apply text-ink/40;
+  }
+
+  .pinned {
+    @apply max-w-[1400px] mx-auto flex flex-col md:flex-row border-l border-r border-line;
+  }
+
+  .pinned__rail {
+    @apply w-full md:w-24 md:border-r border-b md:border-b-0 border-line p-6 bg-paper z-40;
+  }
+
+  .pinned__rail-text {
+    @apply text-4xl md:text-2xl italic text-ink/40;
+    font-weight: 700;
+  }
+
+  .pinned__main {
+    @apply flex-1 w-full h-full flex flex-col;
+  }
+
+  .pinned__top {
+    @apply grid grid-cols-1 lg:grid-cols-12 h-2/3 border-line;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .pinned__feature {
+    @apply lg:col-span-8 border-b lg:border-b-0 lg:border-r border-line p-8 md:p-12 lg:p-16
+      flex flex-col justify-between relative;
+  }
+
+  .pinned__feature-head {
+    @apply flex justify-between items-start mb-8;
+  }
+
+  .pinned__feature-label {
+    @apply font-sans uppercase tracking-[0.15em] text-ink/60;
+    font-weight: 700;
+  }
+
+  .pinned__feature-meta {
+    @apply flex items-center gap-1 text-ink/60;
+  }
+
+  .pinned__feature-body {
+    @apply max-w-2xl z-10;
+  }
+
+  .pinned__feature-title {
+    @apply text-4xl sm:text-8xl leading-none mb-6;
+    font-weight: 400;
+  }
+
+  .pinned__feature-text {
+    @apply font-sans text-xl leading-relaxed text-ink/80 mb-8 border-accent pl-6;
+    border-left-width: 2px;
+    border-left-style: solid;
+  }
+
+  .pinned__tags {
+    @apply flex flex-wrap gap-2 mb-8;
+  }
+
+  .pinned__side {
+    @apply lg:col-span-4 flex flex-col h-full;
+  }
+
+  .pinned__side-card {
+    @apply flex-1 border-line p-8 md:p-10 relative overflow-hidden flex flex-col
+      justify-between;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .pinned__bottom {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 h-1/3;
+  }
+
+  .pinned__tile {
+    @apply border-b md:border-b-0 border-line p-8 flex flex-col justify-between h-full;
+  }
+
+  .chronicle {
+    @apply w-full bg-paper border-line;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .chronicle__inner {
+    @apply max-w-[1400px] mx-auto border-l border-r border-line py-24 px-6 md:px-16 flex
+      flex-col items-center;
+  }
+
+  .chronicle__wrap {
+    @apply flex flex-col w-full;
+  }
+
+  .chronicle__head {
+    @apply flex flex-col md:flex-row md:items-end justify-between border-line pb-8 mb-12;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .chronicle__eyebrow {
+    @apply block text-accent font-mono text-sm mb-4;
+  }
+
+  .chronicle__title {
+    @apply text-primary font-serif text-5xl md:text-8xl italic leading-tight mb-4;
+    font-weight: 700;
+  }
+
+  .chronicle__lede {
+    @apply text-primary/70 font-serif text-2xl md:text-3xl leading-relaxed max-w-lg;
+  }
+
+  .chronicle__counter {
+    @apply flex flex-col gap-2 mt-8 md:mt-0 text-right;
+  }
+
+  .chronicle__counter-label {
+    @apply text-sm uppercase tracking-widest text-primary/40;
+    font-weight: 700;
+  }
+
+  .chronicle__counter-value {
+    @apply text-5xl md:text-6xl font-mono text-primary;
+  }
+
+  .chronicle__counter-delta {
+    @apply text-sm text-accent flex justify-end items-center gap-1;
+    font-weight: 500;
+  }
+
+  .chronicle__grid {
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-0 lg:divide-x divide-line min-h-[600px]
+      border-line;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .chronicle__col {
+    @apply p-0 lg:pr-12 pb-12 lg:pb-0;
+  }
+
+  .chronicle__col-head {
+    @apply flex items-center gap-3 mb-10;
+  }
+
+  .chronicle__col-icon {
+    @apply text-accent text-xl;
+  }
+
+  .chronicle__col-title {
+    @apply font-serif text-3xl text-primary italic;
+  }
+
+  .chronicle__langs {
+    @apply space-y-10;
+  }
+
+  .chronicle__lang {
+    @apply cursor-default;
+  }
+
+  .chronicle__lang-head {
+    @apply flex justify-between items-baseline mb-3;
+  }
+
+  .chronicle__lang-name {
+    @apply text-lg text-primary;
+    font-weight: 700;
+  }
+
+  .chronicle__lang-pct {
+    @apply font-mono text-sm text-primary/60;
+  }
+
+  .chronicle__bar {
+    @apply h-[2px] w-full bg-line;
+  }
+
+  .chronicle__bar-fill {
+    @apply h-[2px];
+    transition: all 1000ms var(--ease-out);
+  }
+
+  .chronicle__stack {
+    @apply mt-16 pt-8 border-line;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .chronicle__stack-title {
+    @apply font-mono text-sm uppercase tracking-widest text-primary/40 mb-4;
+  }
+
+  .chronicle__stack-tags {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .chronicle__stack-tag {
+    @apply px-2 py-1 border-line text-sm text-primary/70;
+    font-weight: 500;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .chronicle__col--wide {
+    @apply col-span-1 lg:col-span-2 lg:pl-12 pt-12 lg:pt-0 flex flex-col;
+  }
+
+  .chronicle__chart-head {
+    @apply flex items-center justify-between mb-10;
+  }
+
+  .chronicle__chart-label {
+    @apply flex items-center gap-3;
+  }
+
+  .chronicle__chart-stats {
+    @apply flex gap-6;
+  }
+
+  .chronicle__chart-stat {
+    @apply text-right;
+  }
+
+  .chronicle__chart-stat-label {
+    @apply block text-sm uppercase tracking-widest text-primary/40;
+    font-weight: 700;
+  }
+
+  .chronicle__chart-stat-value {
+    @apply font-mono text-xl text-primary;
+    font-weight: 700;
+  }
+
+  .chronicle__chart {
+    @apply relative flex-1 min-h-[300px] w-full mt-4;
+  }
+
+  .chronicle__chart-grid {
+    @apply absolute inset-0 flex flex-col justify-between pointer-events-none;
+  }
+
+  .chronicle__chart-line {
+    @apply w-full border-t border-dashed border-line/50;
+  }
+
+  .chronicle__chart-baseline {
+    @apply w-full border-line;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .chronicle__chart-axis {
+    @apply flex justify-between w-full mt-4 pt-4 border-line text-sm uppercase tracking-widest
+      text-primary/50 font-sans;
+    font-weight: 700;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .chronicle__notes {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-8 mt-12;
+  }
+
+  .chronicle__card {
+    @apply p-6 bg-white border-line;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .chronicle__note-title {
+    @apply font-serif italic text-2xl mb-2 text-primary;
+  }
+
+  .chronicle__note-text {
+    @apply text-sm leading-relaxed text-primary/70;
+  }
+
+  .chronicle__note-em {
+    @apply text-accent;
+    font-weight: 500;
+  }
+
+  .chronicle__stat-title {
+    @apply font-serif italic text-2xl text-primary;
+  }
+
+  .chronicle__stat-icon {
+    @apply text-accent;
+  }
+
+  .chronicle__stat-value {
+    @apply text-4xl font-serif italic text-primary;
+    font-weight: 700;
+  }
+
+  .chronicle__stat-label {
+    @apply text-sm uppercase tracking-widest text-primary/50 mt-1;
+  }
+
+  .journal-footer {
+    @apply w-full relative border-line mt-auto bg-paper;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .journal-footer__diamond {
+    @apply absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-primary
+      rotate-45;
+  }
+
+  .journal-footer__inner {
+    @apply max-w-[1400px] mx-auto py-16 px-4 md:px-12 border-l border-r border-line;
+  }
+
+  .journal-footer__stack {
+    @apply flex flex-col items-center justify-center text-center space-y-12;
+  }
+
+  .journal-footer__block {
+    @apply space-y-4;
+  }
+
+  .journal-footer__icon {
+    @apply text-primary text-3xl mb-2;
+  }
+
+  .journal-footer__heading {
+    @apply text-sm md:text-sm tracking-[0.2em] uppercase text-muted;
+    font-weight: 700;
+  }
+
+  .journal-footer__quote-box {
+    @apply max-w-lg;
+  }
+
+  .journal-footer__quote {
+    @apply font-serif text-4xl italic text-ink leading-relaxed;
+  }
+
+  .journal-footer__bottom {
+    @apply pt-12 mt-4 w-full flex flex-col md:flex-row justify-between items-center
+      border-line/30 gap-6;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .journal-footer__meta {
+    @apply font-mono text-muted uppercase tracking-tight;
+  }
+
+  .journal-footer__line {
+    @apply h-px w-8 bg-line;
+  }
+
+  .journal-footer__center {
+    @apply text-center;
+  }
+
+  .journal-footer__tagline {
+    @apply text-muted tracking-wide;
+  }
+
+  .journal-footer__bar {
+    @apply h-2 w-full bg-ink dark:bg-white/10;
+  }
+
+  .end-of-stream {
+    @apply flex-grow flex items-center justify-center py-10 opacity-20 pointer-events-none
+      select-none;
+  }
+
+  .end-of-stream__inner {
+    @apply text-center space-y-4;
+  }
+
+  .end-of-stream__line {
+    @apply h-24 w-px bg-line mx-auto;
+  }
+
+  .end-of-stream__text {
+    @apply font-serif italic text-3xl text-primary;
+  }
+
+  .journal__loading {
+    @apply min-h-screen flex items-center justify-center bg-paper text-primary font-mono
+      text-sm;
+  }
+
+  .journal__loading-page {
+    @apply min-h-screen bg-paper text-primary;
+  }
+
+  .journal__loading-group {
+    @apply mx-auto max-w-3xl p-8;
+  }
+
+  .journal__loading-title {
+    @apply h-10 w-2/3;
+  }
+
+  .journal__loading-block {
+    @apply h-40 w-full;
+  }
+
+  .journal {
+    @apply bg-paper text-primary font-sans antialiased flex flex-col selection:bg-accent
+      selection:text-paper overflow-x-hidden;
+  }
+
+  .journal__banner {
+    @apply w-full bg-accent text-paper font-mono text-xs text-center px-4 py-2;
+  }
+
+  .pinned__side-card--last {
+    @apply lg:border-b-0;
+  }
+
+  .pinned__tile--divided {
+    border-right-width: 1px;
+    border-right-style: solid;
+  }
+
+  .chronicle__card--stat {
+    @apply flex flex-col justify-between;
+  }
+}

@@ -13,13 +13,9 @@ use crate::nixdesk::DesktopPage;
 const FONTS_URL: &str =
     "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap";
 
-// Plain CSS owned by this crate. Tailwind is *not* here: its output is
-// generated per platform crate (each one scans this crate's sources).
-const BASE_CSS: Asset = asset!("/assets/base.css");
-const GLOBALS_CSS: Asset = asset!("/assets/globals.css");
-const STYLEGUIDE_CSS: Asset = asset!("/assets/styleguide.css");
-const BOOTING_CSS: Asset = asset!("/assets/booting.css");
-const LOGIN_CSS: Asset = asset!("/assets/login.css");
+// Semua CSS komponen (assets/styles/*.css) dikompilasi Tailwind bersama
+// utility-nya lewat `platform/<pkg>/tailwind.css` -> `assets/tailwind.css`,
+// yang dimuat oleh crate platform. Jadi tidak ada stylesheet lain di sini.
 
 #[derive(Routable, Clone, PartialEq)]
 pub enum Route {
@@ -40,11 +36,6 @@ pub fn App() -> Element {
         document::Link { rel: "preconnect", href: "https://fonts.googleapis.com" }
         document::Link { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }
         document::Stylesheet { href: FONTS_URL }
-        document::Stylesheet { href: BASE_CSS }
-        document::Stylesheet { href: GLOBALS_CSS }
-        document::Stylesheet { href: STYLEGUIDE_CSS }
-        document::Stylesheet { href: BOOTING_CSS }
-        document::Stylesheet { href: LOGIN_CSS }
 
         Router::<Route> {}
     }

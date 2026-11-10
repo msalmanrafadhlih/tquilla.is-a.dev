@@ -19,8 +19,8 @@ const NIXOS_ICON: Asset = asset!("/assets/Icon-nixos.svg");
 const GUESTBOOK_ICON: Asset = asset!("/assets/logo-guestbook.svg");
 
 #[allow(dead_code)]
-const LABEL_CLASS: &str = "relative flex items-center justify-center group-hover:block md:hidden w-auto max-w-max whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] font-normal text-white text-sm text-center tracking-[0] leading-[normal] group-hover:text-black";
-const IMG_CLASS: &str = "relative w-5 h-5 aspect-[1] group-hover:invert transition-transform duration-300 ease-out group-hover:scale-110";
+const LABEL_CLASS: &str = "dock__label";
+const IMG_CLASS: &str = "dock__icon";
 
 #[component]
 pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Element {
@@ -48,19 +48,19 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
         move |app_id: AppId| open_windows().iter().any(|w| w.id == app_id && !w.closing);
 
     rsx! {
-        footer { class: "relative flex w-full flex-none items-center justify-center gap-2.5 px-2.5 pb-2.5 md:pb-0 z-[999] rounded-3xl border-b-[0.5px] border-white backdrop-blur-sm bg-[image:var(--linear-b)]",
+        footer { class: "dock",
 
             // LEFT DOCK — social links. jika button `Open social menu` di klick, maka akan memunculkan tag list anchor diatasnya
             section {
-                class: "flex flex-col md:flex-row w-10 md:w-full md:justify-start md:items-center md:gap-0 h-10 items-start justify-end gap-5 relative",
+                class: "dock__group dock__group--social",
                 "aria-label": s.dock.social_links,
                 div {
                     class: if social_menu_open() {
-                        "grid grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 md:flex md:overflow-visible"
+                        "dock__fold dock__fold--open"
                     } else {
-                        "grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 md:flex md:overflow-visible"
+                        "dock__fold dock__fold--closed"
                     },
-                    div { class: "flex flex-col gap-5 w-max md:flex-row md:gap-0 overflow-hidden md:overflow-visible",
+                    div { class: "dock__links",
                         for (icon , label , href) in socials {
                             a {
                                 key: "{label}",
@@ -68,10 +68,10 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                                 target: "_blank",
                                 rel: "noopener noreferrer",
                                 "aria-label": "{label}",
-                                class: "group inline-flex w-max items-center gap-2.5 relative flex-[0_0_auto] z-[3] px-2 py-1 rounded-xl hover:bg-white transition-color duration-300 ease-out",
+                                class: "group dock__chip",
                                 img { src: icon, alt: "", class: IMG_CLASS }
-                                span { class: "grid grid-cols-[0fr] group-hover:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out overflow-hidden",
-                                    span { class: "overflow-hidden whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] font-normal text-white text-sm text-center tracking-[0] leading-[normal] group-hover:text-black",
+                                span { class: "dock__reveal",
+                                    span { class: "dock__reveal-text",
                                         "{label}"
                                     }
                                 }
@@ -83,15 +83,15 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                     r#type: "button",
                     "aria-label": s.dock.open_social_menu,
                     "aria-expanded": if social_menu_open() { "true" } else { "false" },
-                    class: "inline-flex items-center md:hidden gap-2.5 relative flex-[0_0_auto] z-0 border-0 p-0 shrink-0",
+                    class: "dock__toggle",
                     onclick: move |_| social_menu_open.set(!social_menu_open()),
                     img {
                         src: MENU_ICON,
                         alt: "",
                         class: if social_menu_open() {
-                            "relative w-10 h-10 aspect-[1] rotate-180 transition-transform duration-300 ease-out"
+                            "dock__chevron dock__chevron--up"
                         } else {
-                            "relative w-10 h-10 aspect-[1] transition-transform duration-300 ease-out"
+                            "dock__chevron"
                         }
                     }
                 }
@@ -100,60 +100,60 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
             // MIDDLE DOCK — app launcher. Always a single row; the icon
             // strip scrolls horizontally instead of wrapping.
             nav {
-                class: "flex w-full min-w-0 flex-1 items-center justify-center gap-2 sm:gap-5 self-stretch px-2.5 md:pb-2.5 md:w-fit md:flex-none",
+                class: "dock__apps",
                 "aria-label": s.dock.app_dock,
 
                 button {
                     r#type: "button",
                     "aria-label": s.dock.open_settings,
-                    class: "relative h-[30px] w-[30px] flex-none border-0 p-0",
+                    class: "dock__avatar-btn",
                     onclick: move |_| toggle_window(open_windows, next_z, AppId::Settings),
-                    img { src: SETTINGS_ICON, alt: "", class: "h-full w-full" }
+                    img { src: SETTINGS_ICON, alt: "", class: "dock__avatar" }
                 }
 
-                div { class: "h-[31.5px] w-px flex-none bg-[#555]" }
+                div { class: "dock__divider" }
 
-                div { class: "scrollbar-hide flex min-w-0 flex-1 items-center gap-5 overflow-x-scroll overflow-y-hidden border-x border-[#555] px-2 md:px-0 py-1 md:w-fit md:flex-none md:border-0",
+                div { class: "dock__scroller",
                     for (icon , app_id) in apps {
                         button {
                             key: "{app_id.key()}",
                             r#type: "button",
                             title: "{app_id.title(s)}",
-                            class: if has_window(app_id) { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 border-b-[0.5px] border-white bg-[var(--linear-b)] px-0 pb-[5px] pt-0" } else { "flex w-10 flex-none flex-col items-start gap-2.5 border-0 px-0 pb-[5px] pt-0 transition-transform duration-150 ease-out hover:scale-125 active:scale-90" },
+                            class: if has_window(app_id) { "dock__app dock__app--open" } else { "dock__app dock__app--idle" },
                             onclick: move |_| toggle_window(open_windows, next_z, app_id),
-                            img { src: icon, alt: "{app_id.title(s)}", class: "h-10 w-10" }
+                            img { src: icon, alt: "{app_id.title(s)}", class: "dock__app-icon" }
                         }
                     }
                 }
 
-                div { class: "h-[31.5px] w-px flex-none bg-[#555]" }
+                div { class: "dock__divider" }
 
                 button {
                     r#type: "button",
                     "aria-label": s.dock.about_nixdesktop,
-                    class: "relative h-[30px] w-[30px] flex-none border-0 p-0",
+                    class: "dock__avatar-btn",
                     onclick: move |_| toggle_window(open_windows, next_z, AppId::About),
-                    img { src: NIXOS_ICON, alt: "", class: "h-full w-full" }
+                    img { src: NIXOS_ICON, alt: "", class: "dock__avatar" }
                 }
             }
 
             // RIGHT DOCK — guestbook. jika button `Open guestbook menu` di klick, maka akan memunculkan tag list button atasnya
             section {
-                class: "flex flex-col md:flex-row md:gap-1 w-10 md:w-full h-10 items-end justify-end md:items-center gap-5 relative md:aspect-[1]",
+                class: "dock__group dock__group--chat",
                 "aria-label": s.dock.guestbook_group,
                 div {
                     class: if chat_menu_open() {
-                        "grid grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out shrink-0 md:flex overflow-hidden md:overflow-visible"
+                        "dock__fold dock__fold--open"
                     } else {
-                        "grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out shrink-0 md:flex overflow-hidden md:overflow-visible"
+                        "dock__fold dock__fold--closed"
                     },
-                    div { class: "w-max overflow-hidden md:overflow-visible",
+                    div { class: "dock__chat-list",
                         button {
                             r#type: "button",
-                            class: "group inline-flex w-max items-center gap-2.5 relative flex-[0_0_auto] z-[3] px-2 py-1 rounded-xl hover:bg-white transition-colors duration-300 ease-out",
+                            class: "group dock__chip dock__chip--action",
                             onclick: move |_| toggle_window(open_windows, next_z, AppId::Guestbook),
-                            span { class: "grid grid-cols-[0fr] group-hover:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out overflow-hidden",
-                                span { class: "overflow-hidden whitespace-nowrap mt-[-0.50px] font-['JetBrains_Mono'] font-normal text-white text-sm text-center tracking-[0] leading-[normal] group-hover:text-black",
+                            span { class: "dock__reveal",
+                                span { class: "dock__reveal-text",
                                     "{s.dock.guestbook}"
                                 }
                             }
@@ -165,15 +165,15 @@ pub fn Dock(open_windows: Signal<Vec<OpenWindow>>, next_z: Signal<i32>) -> Eleme
                     r#type: "button",
                     "aria-label": s.dock.open_guestbook_menu,
                     "aria-expanded": if chat_menu_open() { "true" } else { "false" },
-                    class: "inline-flex md:hidden items-center justify-end gap-2.5 relative flex-[0_0_auto] z-0 border-0 p-0 shrink-0",
+                    class: "dock__toggle dock__toggle--end",
                     onclick: move |_| chat_menu_open.set(!chat_menu_open()),
                     img {
                         src: MENU_ICON,
                         alt: "",
                         class: if chat_menu_open() {
-                            "relative w-10 h-10 aspect-[1] rotate-180 transition-transform duration-300 ease-out"
+                            "dock__chevron dock__chevron--up"
                         } else {
-                            "relative w-10 h-10 aspect-[1] transition-transform duration-300 ease-out"
+                            "dock__chevron"
                         }
                     }
                 }

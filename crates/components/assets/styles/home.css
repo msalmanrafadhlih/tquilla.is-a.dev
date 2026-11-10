@@ -1,0 +1,51 @@
+/* ==========================================================================
+   home.css — Halaman Home (menu boot)
+   ========================================================================== */
+
+@layer components {
+  .home__nav {
+    @apply flex flex-col gap-1 text-fg-main underline;
+  }
+
+  .home__screen {
+    @apply min-h-screen w-full bg-bg-main text-neutral-200 font-mono flex items-center
+      justify-center px-3 py-10;
+  }
+
+  .boot-menu__body {
+    @apply w-full max-w-3xl;
+  }
+
+  .boot-menu__list {
+    @apply flex flex-col outline-none;
+  }
+
+  .boot-menu__item {
+    @apply px-3 py-1.5 cursor-pointer text-2xs xs:text-xs sm:text-sm break-words text-center;
+    transition-property: var(--transition-colors);
+    transition-duration: 75ms;
+    transition-timing-function: var(--ease-in-out);
+  }
+
+  .boot-menu__status {
+    @apply text-center text-2xs sm:text-sm py-2 border-neutral-700 text-neutral-500;
+    border-top-width: 1px;
+    border-top-style: solid;
+  }
+
+  .boot-menu__hint {
+    @apply mt-6 text-center text-3xs sm:text-xs text-neutral-600 max-w-md;
+  }
+
+  .home__screen--menu {
+    @apply flex-col outline-none select-none;
+  }
+
+  .boot-menu__item--selected {
+    @apply bg-neutral-200 text-black;
+  }
+
+  .boot-menu__item--idle {
+    @apply bg-bg-main text-neutral-200 hover:bg-neutral-800;
+  }
+}

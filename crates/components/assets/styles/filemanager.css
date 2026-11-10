@@ -1,0 +1,81 @@
+/* ==========================================================================
+   filemanager.css — App File Manager
+   ========================================================================== */
+
+@layer components {
+  .files__nav-btn {
+    @apply relative flex items-end justify-center w-fit mt-[-1.00px] appearance-none
+      bg-bg-secondary p-0 cursor-pointer text-xs text-center tracking-normal
+      leading-[normal];
+    font-weight: 400;
+    border-width: 0px;
+  }
+
+  .files {
+    @apply flex flex-row w-full h-full items-start justify-start flex relative overflow-hidden;
+  }
+
+  .files__sidebar {
+    @apply inline-flex flex-col w-[30%] h-full min-w-max max-w-[150px] items-center relative
+      border-fg-secondary;
+    border-right-width: 1px;
+    border-right-style: solid;
+  }
+
+  .files__main {
+    @apply flex-col items-start gap-2.5 flex-1 self-stretch flex relative;
+  }
+
+  .files__header {
+    @apply flex items-start gap-2.5 px-2.5 pb-2.5 relative self-stretch w-full flex-none
+      border-fg-secondary;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .files__path {
+    @apply items-center gap-2.5 flex-1 self-stretch flex relative;
+  }
+
+  .files__path-text {
+    @apply items-end justify-center w-fit text-fg-secondary text-xs text-center tracking-normal
+      leading-[normal] flex relative whitespace-nowrap;
+    font-weight: 400;
+  }
+
+  .files__grid {
+    @apply flex flex-col min-[400px]:grid
+      min-[400px]:grid-cols-[repeat(auto-fill,minmax(90px,max-content))] justify-start
+      content-start items-start gap-[25px] p-5 w-full h-full max-h-full overflow-y-auto
+      min-h-[200px] relative;
+  }
+
+  .files__item {
+    @apply flex flex-col shrink-0 items-center gap-1.5 p-0 cursor-pointer hover:opacity-50
+      bg-bg-secondary w-[90px] opacity-70;
+    border-width: 0px;
+  }
+
+  .files__item-icon {
+    @apply hidden min-[400px]:block w-full;
+  }
+
+  .files__item-name {
+    @apply text-fg-main text-left min-[400px]:text-center text-xs w-full break-words;
+  }
+
+  .files__nav-item {
+    @apply w-full p-2 cursor-pointer text-xs text-left tracking-normal leading-[normal] flex
+      relative;
+    font-weight: 400;
+    border-width: 0px;
+  }
+
+  .files__nav-item--active {
+    @apply text-bg-secondary bg-fg-main;
+  }
+
+  .files__nav-item--idle {
+    @apply bg-bg-secondary text-fg-secondary hover:text-fg-main;
+  }
+}

@@ -76,19 +76,19 @@ pub fn ChatPreviewPanel(feed: ChatFeed) -> Element {
     let current = pick(&list, (feed.index)());
 
     rsx! {
-        div { class: "flex flex-col h-full justify-center gap-2 border border-white/15 px-5 py-6 overflow-hidden",
+        div { class: "terminal__chat",
             if let Some(m) = current {
-                div { key: "{m.id}", class: "chat-cycle-in flex flex-col gap-1.5",
-                    div { class: "flex items-baseline justify-between gap-3",
-                        span { class: "text-sm font-semibold text-white truncate", "{m.username}" }
-                        span { class: "text-[11px] text-white/40 whitespace-nowrap",
+                div { key: "{m.id}", class: "terminal__chat-body",
+                    div { class: "terminal__chat-head",
+                        span { class: "terminal__chat-name", "{m.username}" }
+                        span { class: "terminal__chat-time",
                             "{relative_time(&m.created_at, s)}"
                         }
                     }
-                    p { class: "text-sm text-white/70 leading-snug line-clamp-3", "{plain_text(&m.message, PREVIEW_CHARS)}" }
+                    p { class: "terminal__chat-text", "{plain_text(&m.message, PREVIEW_CHARS)}" }
                 }
             } else {
-                p { class: "text-white/30 text-sm", "{s.terminal.no_entries}" }
+                p { class: "terminal__chat-empty", "{s.terminal.no_entries}" }
             }
         }
     }

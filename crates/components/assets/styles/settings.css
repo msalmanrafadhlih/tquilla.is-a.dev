@@ -1,0 +1,33 @@
+/* ==========================================================================
+   settings.css — App Settings
+   ========================================================================== */
+
+@layer components {
+  .settings__layout {
+    @apply flex items-start w-full h-full justify-center gap-5 relative;
+  }
+
+  .settings__nav {
+    @apply inline-flex flex-col h-full min-w-[100px] items-center relative self-stretch
+      flex-none border-fg-secondary;
+    border-right-width: 1px;
+    border-right-style: solid;
+  }
+
+  .settings__nav-item {
+    @apply flex items-center p-2 relative self-stretch w-full flex-none text-xs;
+    border-width: 0px;
+  }
+
+  .settings__nav-item--on {
+    @apply bg-fg-main text-bg-secondary;
+  }
+
+  .settings__nav-item--off {
+    @apply text-fg-secondary hover:text-fg-main;
+  }
+
+  .settings__note {
+    @apply text-white/40 text-2xs;
+  }
+}

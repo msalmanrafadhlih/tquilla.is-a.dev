@@ -1,0 +1,66 @@
+/* ==========================================================================
+   skeleton.css — Skeleton loader
+   ========================================================================== */
+
+@layer components {
+  .skeleton {
+    @apply block shrink-0 animate-pulse motion-reduce:animate-none
+      bg-[color-mix(in_srgb,currentColor_14%,transparent)];
+  }
+
+  .skeleton__line--full {
+    @apply w-full;
+  }
+
+  .skeleton__line--w11 {
+    @apply w-11/12;
+  }
+
+  .skeleton__line--w10 {
+    @apply w-10/12;
+  }
+
+  .skeleton__line--last {
+    @apply w-2/3;
+  }
+
+  .skeleton__circle {
+    @apply rounded-full;
+  }
+
+  .skeleton__text {
+    @apply flex w-full flex-col gap-1.5;
+  }
+
+  .skeleton__text-line {
+    @apply h-3;
+  }
+
+  .skeleton__rows {
+    @apply flex w-full flex-col gap-2;
+  }
+
+  .skeleton__row {
+    @apply h-8 w-full;
+  }
+
+  .skeleton__entries {
+    @apply flex w-full flex-col gap-4;
+  }
+
+  .skeleton__entry {
+    @apply flex w-full items-start gap-3;
+  }
+
+  .skeleton__entry-body {
+    @apply flex min-w-0 flex-1 flex-col gap-2;
+  }
+
+  .skeleton__entry-title {
+    @apply h-3 w-24;
+  }
+
+  .skeleton__group {
+    @apply flex w-full flex-col gap-3;
+  }
+}

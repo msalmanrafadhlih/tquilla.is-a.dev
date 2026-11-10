@@ -1,0 +1,100 @@
+/* ==========================================================================
+   calculator.css — App Kalkulator
+   ========================================================================== */
+
+@layer components {
+  .calc-key--square {
+    @apply rounded-[5px];
+  }
+
+  .calc-key--round {
+    @apply rounded-full;
+  }
+
+  .calc-key--soft {
+    @apply bg-white/10;
+  }
+
+  .calc-key__label--italic {
+    @apply italic font-serif;
+  }
+
+  .calc-key {
+    @apply relative w-full h-max py-2 border-[0.5px] border-fg-secondary appearance-none
+      bg-bg-secondary text-inherit;
+  }
+
+  .calc-key__press {
+    @apply active:scale-95 hover:opacity-60;
+    transition: all 150ms var(--ease-in-out);
+  }
+
+  .calc-key__icon {
+    @apply h-6 flex items-center justify-center text-lg leading-[normal];
+  }
+
+  .calc-key__label {
+    @apply h-6 flex items-center justify-center text-lg text-center tracking-normal
+      leading-[normal];
+    font-weight: 400;
+  }
+
+  .calc__keys {
+    @apply w-full grid gap-2 bg-bg-secondary text-xs self-stretch overflow-scroll;
+  }
+
+  .calc__keys-scroll {
+    @apply [-webkit-touch-callout:none] no-scrollbar;
+  }
+
+  .calc__keys--3col {
+    @apply grid-cols-3;
+  }
+
+  .calc__keys--4col {
+    @apply grid-cols-4;
+  }
+
+  .calc__mode {
+    @apply w-full p-1 appearance-none text-xs;
+  }
+
+  .calc {
+    @apply flex flex-col items-center h-full w-full gap-2.5 relative;
+  }
+
+  .calc__display {
+    @apply flex flex-col px-2.5 py-3 relative self-stretch w-full flex-none rounded-[5px]
+      border-[0.5px] border-fg-secondary bg-[image:var(--linear-lr)];
+  }
+
+  .calc__history-btn {
+    @apply self-start appearance-none bg-bg-secondary text-xs opacity-50 hover:opacity-100;
+  }
+
+  .calc__result {
+    @apply relative w-full min-h-8 text-2xl flex items-center justify-end overflow-x-auto
+      text-center tracking-normal leading-[normal];
+    font-weight: 400;
+  }
+
+  .calc__expr {
+    @apply relative flex items-center justify-end w-full min-h-5 opacity-50 text-sm text-center
+      tracking-normal leading-[normal];
+    font-weight: 400;
+  }
+
+  .calc__modes {
+    @apply flex flex-row w-full h-max py-2 gap-2 border-fg-secondary;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .calc__mode--on {
+    @apply text-bg-secondary bg-fg-main;
+  }
+
+  .calc__mode--off {
+    @apply hover:opacity-100 opacity-50;
+  }
+}

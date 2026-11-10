@@ -23,6 +23,7 @@ Rust 1.97.0 (dikunci di `rust-toolchain.toml`), Dioxus 0.7, Tailwind CSS v4, dan
 | Bagian | Isi |
 | --- | --- |
 | `crates/components` | Semua UI bersama: routing, halaman, window manager, aplikasi, klien API, dan JS kecil di `js/` |
+| `crates/components/assets/styles` | Semua CSS: `global.css` (token, reset) + satu file per UI; class di `rsx!` berupa nama semantik BEM yang diisi Tailwind lewat `@apply` (lihat `styles/README.md`) |
 | `crates/markdown` | Mesin Markdown untuk Guestbook (Rust murni, tanpa Dioxus) |
 | `platform/web` | Entry point web (yang dideploy ke GitHub Pages) |
 | `platform/desktop`, `platform/mobile` | Entry point desktop dan Android (web adalah platform yang paling teruji) |

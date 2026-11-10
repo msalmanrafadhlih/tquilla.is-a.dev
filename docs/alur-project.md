@@ -13,6 +13,7 @@ Live: <https://tquilla.is-a.dev>
 | `crates/components` | Semua UI bersama (routing, halaman, window manager, aplikasi dock, data JSON), termasuk `markdown_view.rs` yang menggambar pohon Markdown jadi komponen Dioxus |
 | `crates/markdown` | Mesin Markdown ("readme engine"): Rust murni, **tanpa Dioxus dan tanpa teks UI**. `lib.rs` (parser + daftar putih + pohon `Block`/`Inline`) dan `html.rs` (tokenizer tag). Dites native tanpa mengompilasi Dioxus |
 | `crates/components/js/` | JS yang dijalankan lewat `document::eval` (window manager, audio/hls, scroll reveal, context menu, penyimpanan riwayat chat, unduh berkas, textarea otomatis) + test node di `js/tests/` |
+| `crates/components/assets/styles/` | **Semua CSS** (jalur utama): `global.css` (token `:root`, `@theme`, reset) + satu file per UI (`login.css`, `calculator.css`, `window.css`, ...), digabung lewat `index.css`. Class di `rsx!` berupa nama semantik BEM yang diisi Tailwind lewat `@apply`; aturan lengkap di `styles/README.md` |
 | `platform/web` | Entry point web (launch, Tailwind, `PlatformServices` browser) |
 | `platform/desktop` | Entry point desktop (compile, clippy, dan jalan di Linux/WebKitGTK menurut uji sandbox; belum dicoba Moch di mesin sungguhan, lihat "Platform desktop dan mobile") |
 | `platform/mobile` | Entry point Android (compile dan clippy lolos di host; build Android gagal di percobaan 1 karena SDK, perbaikan belum diuji) |
@@ -56,7 +57,7 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
   - [x] ~~Masukkan source Cloudflare Worker (`worker/`) ke repo~~ Tidak berlaku lagi: Worker JavaScript lama diganti port Rust di repo backend (D5a, `v0.5.0`), dan `STATS_API_URL` sudah dihapus
 - [x] **#3** API key Gemini dikirim lewat header `x-goog-api-key`, bukan query string (`ai.rs`, `platform::http::post_json_with_headers`)
   - [x] Cek ulang nama model (2026-10-26, dari dokumentasi Google): `gemini-3.5-flash` / `gemini-3.7-flash` tercatat di halaman deprecations tanpa tanggal penghentian, dialihkan otomatis ke penerusnya. **Sudah dinaikkan** (2026-10-26) ke `gemini-3.6-flash` (bawaan) dan `gemini-3.8-flash` (keduanya Stable menurut dokumentasi). Belum diuji dengan panggilan nyata: kirim satu pesan di AI chat dengan key sendiri, di kedua model
-- [x] **#4** Breakpoint `xs` didefinisikan di `theme.css` (`--breakpoint-xs: 30rem`), supaya `xs:text-xs` di `home.rs` benar-benar bekerja
+- [x] **#4** Breakpoint `xs` didefinisikan di `assets/styles/global.css` (`@theme`) (`--breakpoint-xs: 30rem`), supaya `xs:text-xs` di `home.rs` benar-benar bekerja
 
 > P1 sudah diuji manual dan berjalan baik (2026-10-09).
 
@@ -87,7 +88,7 @@ Centang `[x]` jika sudah selesai. Nomor mengacu pada hasil audit 2026-10-09.
 - [x] **#12** Aksesibilitas
   - [x] `alt=""` untuk 2 ikon dekoratif di Live Chat (kini Guestbook) (hasil audit ulang: hanya 2 `img` yang belum punya `alt`, bukan 5)
   - [x] Daftar generasi memakai pola listbox ARIA (`role="listbox"`/`option`, `aria-activedescendant`); fokus keyboard pindah dari `<section>` ke `<ul>`, `tabindex: "{total}"` diganti `0`
-  - [x] `prefers-reduced-motion` berlaku global (`base.css`); animasi boot dan login sudah punya aturan sendiri
+  - [x] `prefers-reduced-motion` berlaku global (`assets/styles/global.css`); animasi boot dan login sudah punya aturan sendiri
   - [ ] Uji dengan screen reader (NVDA/VoiceOver) dan navigasi keyboard penuh
 - [x] **#13** Auto-boot di Home dibatalkan oleh interaksi apa pun (tombol, hover, klik, sentuh); teks berubah jadi "Auto boot cancelled"
 - [x] **#14** `LINKEDIN_URL` memakai profilmu dari `generations.json` (`linkedin.com/in/msalmanrafadhlih`). `DISCORD_URL` **sengaja** tetap invite komunitas "Motion IME" (keputusan 2026-10-09, jangan diganti)
@@ -215,6 +216,16 @@ Lalu pindahkan pemanggilan Inter/Playfair ke komponen yang memakainya (seperti s
 3. Self-host font penuh tidak disarankan: file variabelnya besar dan kamu juga perlu menulis sendiri CSS kelas `.material-symbols-outlined` (ligature).
 
 ---
+
+## 🎨 Rapikan CSS (2026-11-10)
+
+- [x] **CSS pindah ke `crates/components/assets/styles/`** (jalur utama): `global.css` (token `:root`, `@theme`, reset, font) + satu file per UI (`login.css`, `calculator.css`, `browser.css`, `window.css`, ...), digabung lewat `index.css`. `assets/*.css`, `theme.css`, dan string `WINDOW_FRAME_CSS` di `window.rs` dihapus. Entry Tailwind tiap platform tinggal `@import "tailwindcss" source(none);` + `index.css`. Aturan penulisan: `assets/styles/README.md`.
+- [x] **Class di `rsx!` = nama semantik BEM** (`login__hint`, `dock__app--idle`); utility Tailwind ada di CSS lewat `@apply` (644 class, sekitar 3.500 token). Tailwind tidak lagi memindai berkas Rust, jadi `scripts/test_css_classes.py` memastikan tiap class di `rsx!` punya definisi dan tiap class di CSS dipakai.
+- [x] **Nilai berulang jadi token**: warna palet desktop (`bg-bg-main`, `text-fg-main`, `border-fg-secondary`, `text-signal-green`), ukuran font `text-3xs`/`text-2xs`, easing (`--ease-out-expo`, `--ease-window`), `--transition-colors`, `--z-top`, utility `no-scrollbar`. Dibuang: 22 variabel Figma di `styleguide.css` yang tidak dipakai, `#eclipse`, `.window-pop-in`, `.dvd-bounce`, blok `[data-color-mode]`, `--spacing-128`.
+- [x] **Keadaan dinamis jadi class modifier**, bukan `style:` (`mode-switch--busy`, `login__identity--out`, `win-frame--minimized`, ...). `style:` yang tersisa hanya untuk nilai dari data (lebar bar, `--win-x`, `animation-delay`, warna dari API) dan MathML hasil mesin kalkulator.
+- [x] **Ukuran CSS** (Tailwind v4.1.11, `--minify`): 71,0 KB / 13,6 KB gzip sebelumnya, 146,1 KB / 20,5 KB gzip sesudahnya. Naik karena tiap class semantik mengulang deklarasinya (utility lama dipakai bersama); itulah harga `@apply`.
+- [x] **Diverifikasi**: perbandingan *computed style* seluruh kombinasi class lama vs baru di Chromium (677 kasus x 34 kondisi: lebar viewport, container query, hover/focus/active/group-hover/peer/disabled/dark/reduced-motion, pseudo-element); `cargo fmt/clippy/test`, tes node, dan tes Python hijau.
+- **Temuan (class mati/typo; perilaku sengaja tidak diubah)**: `item-center` (`login.rs`), `transition-color` (`dock.rs`), `text-fg-main`/`text-fg-secondary` (warna itu tidak ada di tema lama), `font-display`, token Figma di blok kode `ai.rs` (`font-body-code`, `bg-color-*`, variabel `--size-space-400`/`--body-code-*` yang tidak pernah didefinisikan), `hover:bg-conic-gradient`, `bg-[var(--linear-b)]` (gradasi dipasang ke `background-color`), 33 deklarasi `font:'JetBrains_Mono-Regular',Helvetica` (shorthand `font` tanpa ukuran = tidak valid, diabaikan browser), penanda mati `group/point`, `group/graph`, `dialect-bar`, `boot-tag--empty`. Kursor boot juga tidak pernah berkedip (`boot-blink` bernilai 1 di 50%). Semuanya dibuang atau dicatat di sini, bukan "diperbaiki".
 
 ## 🖥️ Platform desktop dan mobile
 

@@ -50,72 +50,72 @@ pub fn Navbar(
     };
 
     let about_class = if show_about() {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 xl:opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "navbar__tip navbar__tip--about navbar__tip--on-xl"
     } else {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 w-max max-w-[220px] border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[11px] text-white/70 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "navbar__tip navbar__tip--about"
     };
 
     let menu_hint_class = if active_menu().is_some() {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 whitespace-nowrap border border-white/30 bg-[var(--bg-main)] px-2.5 py-1.5 text-[11px] text-white/60 opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "navbar__tip navbar__tip--hint navbar__tip--on"
     } else {
-        "pointer-events-none absolute left-0 top-full z-20 mt-1 whitespace-nowrap border border-white/30 bg-[var(--bg-main)] px-2.5 py-1.5 text-[11px] text-white/60 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "navbar__tip navbar__tip--hint navbar__tip--off"
     };
 
     let battery_tip_class = if show_battery_tip() {
-        "pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[10px] text-white/70 opacity-100 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "navbar__tip navbar__tip--battery navbar__tip--on"
     } else {
-        "pointer-events-none absolute right-0 top-full z-20 mt-1 whitespace-nowrap border border-white/30 bg-[var(--bg-main)] px-2 py-1 text-[10px] text-white/70 opacity-0 transition-opacity duration-150 font-['JetBrains_Mono']"
+        "navbar__tip navbar__tip--battery navbar__tip--off"
     };
 
     let menu_item_class = |active: bool| -> &'static str {
         if active {
-            "w-full px-2 py-2 text-left text-xs text-[var(--bg-main)] xl:text-[var(--fg-main)] transition-colors duration-150 font-['JetBrains_Mono'] lg:w-auto lg:rounded-sm lg:px-2 lg:py-1 bg-[var(--fg-main)] xl:bg-transparent"
+            "navbar__menu-item navbar__menu-item--active"
         } else {
-            "w-full px-2 py-2 text-left text-xs text-[var(--fg-main)] transition-colors duration-150 ease-out opacity-50 hover:opacity-100 hover:bg-[var(--fg-secondary)] font-['JetBrains_Mono'] xl:w-auto xl:rounded-sm xl:px-2 xl:py-1"
+            "navbar__menu-item navbar__menu-item--idle"
         }
     };
 
     rsx! {
-        header { class: "relative z-[999] flex w-full shrink-0 items-center justify-center gap-2.5 px-[15px] py-2 text-xs rounded-3xl border-t-[0.5px] border-white backdrop-blur-sm bg-[image:var(--linear-t)]",
+        header { class: "navbar",
 
             // Centered clock — always visible; only the date line drops below `sm`.
             // It is a button: click toggles 24-hour <-> 12-hour.
             button {
                 r#type: "button",
-                class: "absolute left-1/2 top-1/2 z-[4] flex -translate-x-1/2 -translate-y-1/2 select-none flex-col items-center gap-1 rounded-md px-3 py-0.5 transition-colors duration-150 ease-out hover:bg-white/5 active:scale-95 cursor-pointer",
+                class: "navbar__clock",
                 title: clock_format().switch_label(s),
                 "aria-label": "{time}. {clock_format().switch_label(s)}",
                 onclick: move |_| clock_format.set(clock_format().toggled()),
-                span { class: "text-center text-sm font-light", "{time}" }
-                span { class: "hidden text-[12px] text-white/40 min-[500px]:block", "{date}" }
+                span { class: "navbar__clock-time", "{time}" }
+                span { class: "navbar__clock-date", "{date}" }
             }
 
             // LEFT — logo + title + menu bar. jika button `NIXOS_ICON` di klik, maka akan memunculkan tag nav/list button di bawahnya!
-            div { class: "flex min-w-0 flex-col items-start gap-3 h-[35px] xl:flex-row lg:items-center",
+            div { class: "navbar__left",
                 button {
                     r#type: "button",
-                    class: "group relative flex shrink-0 items-center gap-2 rounded-md px-1 py-1 transition-colors duration-150 ease-out hover:bg-white/5 active:scale-95",
+                    class: "group navbar__menu-btn",
                     "aria-label": s.navbar.open_main_menu,
                     "aria-expanded": if nav_menu_open() { "true" } else { "false" },
                     onclick: move |_| {
                         show_about.set(!show_about());
                         nav_menu_open.set(!nav_menu_open());
                     },
-                    img { src: NIXOS_ICON, alt: s.navbar.logo_alt, class: "h-[26px] w-[26px]" }
-                    span { class: "hidden text-sm font-normal lg:inline", "{s.navbar.brand_desktop}" }
-                    span { class: "max-[370px]:hidden text-sm font-normal lg:hidden", "{s.navbar.brand_mobile}" }
+                    img { src: NIXOS_ICON, alt: s.navbar.logo_alt, class: "navbar__logo" }
+                    span { class: "navbar__name--wide", "{s.navbar.brand_desktop}" }
+                    span { class: "navbar__name--narrow", "{s.navbar.brand_mobile}" }
                     div { class: about_class, "{s.navbar.about_tip}" }
                 }
 
                 div {
                     class: if nav_menu_open() {
-                        "grid grid-rows-[1fr] p-1 bg-[var(--bg-main)] xl:bg-transparent border xl:border-0 border-[var(--fg-secondary)] transition-[grid-template-rows] w-full duration-300 ease-out overflow-hidden shrink-0 xl:flex xl:overflow-visible"
+                        "navbar__menu navbar__menu--open"
                     } else {
-                        "grid grid-rows-[0fr] p-1 bg-transparent transition-all w-full duration-300 ease-out overflow-hidden shrink-0 xl:flex xl:overflow-visible"
+                        "navbar__menu navbar__menu--closed"
                     },
-                    div { class: "overflow-hidden xl:overflow-visible",
+                    div { class: "navbar__menu-inner",
                         nav {
-                            class: "relative flex w-full flex-col items-stretch gap-0.5 xl:w-auto xl:flex-row",
+                            class: "navbar__menu-list",
                             "aria-label": s.navbar.main_navigation,
                             for (i , label) in menu_items.into_iter().enumerate() {
                                 button {
@@ -135,96 +135,96 @@ pub fn Navbar(
                 }
             }
 
-            div { class: "h-[30px] flex-1", "aria-hidden": "true" }
+            div { class: "navbar__spacer", "aria-hidden": "true" }
 
             // RIGHT — system-status icons. jika button `TOGGLE ICON` di klik, maka akan memunculkan tag div/list button di bawahnya!
-            div { class: "flex flex-none flex-col h-[20px] items-center gap-[25px] md:flex-row",
+            div { class: "navbar__right",
                 button {
                     r#type: "button",
                     "aria-label": s.navbar.open_status_menu,
                     "aria-expanded": if status_menu_open() { "true" } else { "false" },
-                    class: "border-0 pt-1 sm:hidden",
+                    class: "navbar__status-toggle",
                     onclick: move |_| status_menu_open.set(!status_menu_open()),
                     img {
                         src: if status_menu_open() { ICON_CLOSE } else { TOGGLE_ICON },
                         alt: s.navbar.toggle_alt,
                         class: if status_menu_open() {
-                            "w-[10px] pt-0.5 cursor-pointer transition-transform duration-300 ease-out"
+                            "navbar__chevron--open"
                         } else {
-                            "w-[15px] cursor-pointer rotate-180 transition-transform duration-300 ease-out"
+                            "navbar__chevron--closed"
                         }
                     }
                 }
 
                 div {
                     class: if status_menu_open() {
-                        "grid grid-rows-[1fr] p-1 border sm:border-0 border-[var(--fg-secondary)] bg-[var(--bg-main)] sm:bg-transparent transition-[grid-template-rows] duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
+                        "navbar__status navbar__status--open"
                     } else {
-                        "grid grid-rows-[0fr] p-1 bg-transparent transition-all duration-300 ease-out overflow-hidden shrink-0 sm:flex sm:overflow-visible"
+                        "navbar__status navbar__status--closed"
                     },
-                    div { class: "overflow-hidden sm:overflow-visible",
-                        div { class: "flex flex-col items-center gap-3 sm:flex-row", "aria-label": s.navbar.system_status,
+                    div { class: "navbar__status-inner",
+                        div { class: "navbar__status-list", "aria-label": s.navbar.system_status,
                             button {
                                 r#type: "button",
-                                class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
+                                class: "navbar__btn navbar__btn--relative",
                                 title: if wifi_on() { s.navbar.wifi_on } else { s.navbar.wifi_off },
                                 onclick: move |_| wifi_on.set(!wifi_on()),
                                 img {
                                     src: WIFI_ICON, alt: s.navbar.wifi_alt,
-                                    class: if wifi_on() { "h-4 w-4 opacity-100 transition-opacity duration-150" } else { "h-4 w-4 opacity-30 transition-opacity duration-150" },
+                                    class: if wifi_on() { "navbar__icon navbar__icon--on" } else { "navbar__icon navbar__icon--off" },
                                 }
                                 span {
-                                    class: if !wifi_on() { "pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45 bg-white" } else { "pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45 bg-transparent" },
+                                    class: if !wifi_on() { "navbar__slash navbar__slash--on" } else { "navbar__slash navbar__slash--off" },
                                 }
                             }
 
                             button {
                                 r#type: "button",
-                                class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
+                                class: "navbar__btn navbar__btn--relative",
                                 title: if muted() { s.navbar.sound_muted } else { s.navbar.sound_on },
                                 onclick: move |_| muted.set(!muted()),
                                 img {
                                     src: VOLUME_ICON, alt: s.navbar.volume_alt,
-                                    class: if muted() { "h-4 w-4 opacity-30 transition-opacity duration-150" } else { "h-4 w-4 opacity-100 transition-opacity duration-150" },
+                                    class: if muted() { "navbar__icon navbar__icon--off" } else { "navbar__icon navbar__icon--on" },
                                 }
                                 span {
-                                    class: if muted() { "pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45 bg-white" } else { "pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45 bg-transparent" },
+                                    class: if muted() { "navbar__slash navbar__slash--on" } else { "navbar__slash navbar__slash--off" },
                                 }
                             }
 
                             button {
                                 r#type: "button",
-                                class: "transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
+                                class: "navbar__btn",
                                 title: s.navbar.brightness_title,
                                 onclick: move |_| brightness.set((brightness() + 1) % 3),
                                 img {
                                     src: BRIGHTNESS_ICON, alt: s.navbar.brightness_alt,
-                                    class: if brightness() == 0 { "h-4 w-4 opacity-100 transition-opacity duration-150" } else if brightness() == 1 { "h-4 w-4 opacity-70 transition-opacity duration-150" } else { "h-4 w-4 opacity-40 transition-opacity duration-150" },
+                                    class: if brightness() == 0 { "navbar__icon navbar__icon--on" } else if brightness() == 1 { "navbar__icon navbar__icon--dim" } else { "navbar__icon navbar__icon--dimmer" },
                                 }
                             }
 
                             button {
                                 r#type: "button",
-                                class: "relative transition-transform duration-150 ease-out hover:scale-125 active:scale-90",
+                                class: "navbar__btn navbar__btn--relative",
                                 title: if notif_muted() { s.navbar.notifications_muted } else { s.navbar.notifications_on },
                                 onclick: move |_| notif_muted.set(!notif_muted()),
                                 img {
                                     src: NOTIFICATION_ICON, alt: s.navbar.notification_alt,
-                                    class: if notif_muted() { "h-4 w-4 opacity-30 transition-opacity duration-150" } else { "h-4 w-4 opacity-100 transition-opacity duration-150" },
+                                    class: if notif_muted() { "navbar__icon navbar__icon--off" } else { "navbar__icon navbar__icon--on" },
                                 }
                                 span {
-                                    class: if notif_muted() { "pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45 bg-white" } else { "pointer-events-none absolute left-[-1px] top-1/2 h-px w-5 -translate-y-1/2 rotate-45 bg-transparent" },
+                                    class: if notif_muted() { "navbar__slash navbar__slash--on" } else { "navbar__slash navbar__slash--off" },
                                 }
                             }
 
-                            div { class: "relative",
+                            div { class: "navbar__item",
                                 button {
                                     r#type: "button",
-                                    class: "flex flex-col items-center gap-0.5 transition-transform duration-150 ease-out hover:scale-110 active:scale-90",
+                                    class: "navbar__lang-btn",
                                     title: s.navbar.battery_title,
                                     onclick: move |_| show_battery_tip.set(!show_battery_tip()),
-                                    img { src: BATTERY_ICON, alt: s.navbar.battery_alt, class: "h-2 w-4.5 object-contain" }
-                                    span { class: "text-[8px] font-normal font-['JetBrains_Mono']", "100%" }
+                                    img { src: BATTERY_ICON, alt: s.navbar.battery_alt, class: "navbar__lang-flag" }
+                                    span { class: "navbar__lang-code", "100%" }
                                 }
                                 div { class: battery_tip_class, "{s.navbar.battery_tip}" }
                             }
@@ -236,17 +236,17 @@ pub fn Navbar(
             // Terminal-mode switch — icon-only on mobile, label from `sm` up.
             button {
                 r#type: "button",
-                class: "group flex flex-none items-center gap-1",
+                class: "group navbar__battery-btn",
                 onclick: move |_| on_toggle.call(()),
                 svg {
-                    class: "sm:hidden transition-transform duration-150 ease-out hover:scale-125 active:scale-90 opacity-70 hover:opacity-100",
+                    class: "navbar__btn navbar__battery-icon",
                     width: "20", height: "20", view_box: "0 0 100 100", fill: "none", xmlns: "http://www.w3.org/2000/svg",
                     path {
                         d: "M61.375 73.1875H38.4583M17.7083 17.5C15.4982 17.5 13.3786 18.378 11.8158 19.9408C10.253 21.5036 9.375 23.6232 9.375 25.8333V74.1667C9.375 76.3768 10.253 78.4964 11.8158 80.0592C13.3786 81.622 15.4982 82.5 17.7083 82.5H82.2917C84.5018 82.5 86.6214 81.622 88.1842 80.0592C89.747 78.4964 90.625 76.3768 90.625 74.1667V25.8333C90.625 23.6232 89.747 21.5036 88.1842 19.9408C86.6214 18.378 84.5018 17.5 82.2917 17.5H17.7083ZM18.75 48.25L34.8333 60.75L18.75 73.1875V48.1875V48.25Z",
                         stroke: "white", stroke_width: "5", stroke_linecap: "round", stroke_linejoin: "round",
                     }
                 }
-                span { class: "hidden text-[10px] text-center sm:block opacity-70 hover:opacity-100 transition-transform duration-150 ease-out hover:scale-110 active:scale-90 sm:h-full sm:px-2",
+                span { class: "navbar__battery-text",
                     "{s.navbar.switch}"
                     p { "{s.navbar.tty}" }
                 }

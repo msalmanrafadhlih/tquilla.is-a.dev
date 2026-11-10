@@ -46,8 +46,8 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
 
     rsx! {
         main {
-            class: "relative h-screen w-full overflow-hidden bg-[var(--bg-main)] text-white font-mono transition-opacity duration-500 ease-in",
-            class: if loaded() { "opacity-100" } else { "opacity-0" },
+            class: "terminal",
+            class: if loaded() { "terminal__fade--in" } else { "terminal__fade--out" },
             onmounted: move |_| {
                 spawn(async move {
                     document::eval(
@@ -60,8 +60,8 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
             },
 
             // ---------------- Desktop layout (lg and up) ----------------
-            div { class: "hidden lg:flex h-full w-full gap-2.5 p-2.5",
-                div { class: "flex-1 min-w-0 border border-white/15",
+            div { class: "terminal__desktop",
+                div { class: "terminal__col-main",
                     ShellPanel {
                         history,
                         cwd,
@@ -70,18 +70,18 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                         compact: false,
                     }
                 }
-                div { class: "w-[300px] xl:w-[340px] shrink-0 flex flex-col gap-2.5",
-                    div { class: "flex-1 min-h-0", ClockPanel { time, date } }
-                    div { class: "flex-1 min-h-0", ChatPreviewPanel { feed: chat_feed } }
-                    div { class: "flex-1 min-h-0", ComingSoonPanel { label: s.terminal.panel(5) } }
-                    div { class: "flex-1 min-h-0", ComingSoonPanel { label: s.terminal.panel(6) } }
+                div { class: "terminal__col-side",
+                    div { class: "terminal__slot", ClockPanel { time, date } }
+                    div { class: "terminal__slot", ChatPreviewPanel { feed: chat_feed } }
+                    div { class: "terminal__slot", ComingSoonPanel { label: s.terminal.panel(5) } }
+                    div { class: "terminal__slot", ComingSoonPanel { label: s.terminal.panel(6) } }
                 }
                 NavRail { on_toggle, vertical: true }
             }
 
             // ---------------- Mobile layout (below lg) ----------------
-            div { class: "flex lg:hidden gap-2 px-2 py-2 flex-col h-full w-full",
-                div { class: "flex-1 min-h-0 border border-white/15",
+            div { class: "terminal__mobile",
+                div { class: "terminal__mobile-main",
                     ShellPanel {
                         history,
                         cwd,
@@ -90,7 +90,7 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                         compact: true,
                     }
                 }
-                div { class: "h-[150px] shrink-0 border-b border-white/15",
+                div { class: "terminal__mobile-top",
                     if mobile_tab() == MobileTab::Shell2 {
                         ShellHistoryPeek { history }
                     } else if mobile_tab() == MobileTab::Shell3 {
@@ -101,7 +101,7 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                         ComingSoonPanel { label: s.terminal.panel(5) }
                     }
                 }
-                div { class: "flex shrink-0 border border-white/15",
+                div { class: "terminal__tabs",
                     for (label , tab) in [
                         (s.terminal.panel(2), MobileTab::Shell2),
                         (s.terminal.panel(3), MobileTab::Shell3),
@@ -112,8 +112,8 @@ pub fn TerminalMode(on_toggle: EventHandler<()>) -> Element {
                         button {
                             key: "{label}",
                             r#type: "button",
-                            class: "flex-1 py-2.5 text-[10px] tracking-wide transition-colors duration-150",
-                            class: if mobile_tab() == tab { "bg-white text-black" } else { "text-white/60 hover:text-white" },
+                            class: "terminal__tab",
+                            class: if mobile_tab() == tab { "terminal__tab--on" } else { "terminal__tab--off" },
                             onclick: move |_| mobile_tab.set(tab),
                             "{label}"
                         }

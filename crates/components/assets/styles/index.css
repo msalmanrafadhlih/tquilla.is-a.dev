@@ -1,0 +1,27 @@
+/* Satu pintu masuk untuk semua CSS komponen.
+   Dipakai oleh platform/<pkg>/tailwind.css:
+     @import "tailwindcss" source(none);
+     @import "../../crates/components/assets/styles/index.css";
+   `global.css` harus pertama (token, @theme, reset); sisanya urut abjad. */
+@import "./global.css";
+@import "./about.css";
+@import "./ai.css";
+@import "./booting.css";
+@import "./browser.css";
+@import "./calculator.css";
+@import "./desktop.css";
+@import "./dock.css";
+@import "./embience.css";
+@import "./filemanager.css";
+@import "./guestbook.css";
+@import "./home.css";
+@import "./journal.css";
+@import "./login.css";
+@import "./markdown.css";
+@import "./navbar.css";
+@import "./radio.css";
+@import "./remote.css";
+@import "./settings.css";
+@import "./skeleton.css";
+@import "./terminal.css";
+@import "./window.css";

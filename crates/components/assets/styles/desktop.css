@@ -1,0 +1,59 @@
+/* ==========================================================================
+   desktop.css — Layout desktop (stage, dim, mode switch)
+   ========================================================================== */
+
+@layer components {
+  .desktop__dim {
+    @apply pointer-events-none absolute inset-0 z-30 bg-bg-main;
+    transition: opacity 300ms var(--ease-in-out);
+  }
+
+  .desktop__root {
+    @apply relative h-screen w-full items-start overflow-hidden bg-bg-main text-white font-mono
+      flex flex-col gap-2.5 p-2.5;
+    transition: opacity 500ms var(--ease-in);
+  }
+
+  .desktop__fade--in {
+    @apply opacity-100;
+  }
+
+  .desktop__fade--out {
+    @apply opacity-0;
+  }
+
+  .desktop__stage {
+    @apply relative overflow-hidden flex flex-col items-center gap-2.5 relative flex-1
+      self-stretch w-full h-full;
+  }
+
+  .mode-switch {
+    @apply select-none [-webkit-touch-callout:none] opacity-100 pointer-events-auto
+      no-scrollbar;
+    transition: opacity 250ms var(--ease-out);
+  }
+
+  .desktop__dim--off {
+    @apply opacity-0;
+  }
+
+  .desktop__dim--soft {
+    @apply opacity-30;
+  }
+
+  .desktop__dim--dark {
+    @apply opacity-60;
+  }
+
+  .mode-switch--busy {
+    @apply opacity-0 pointer-events-none;
+  }
+
+  .mode-pane {
+    @apply block;
+  }
+
+  .mode-pane--hidden {
+    @apply hidden;
+  }
+}

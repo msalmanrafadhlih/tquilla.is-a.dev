@@ -122,7 +122,7 @@ pub fn EmbienceWindowContent() -> Element {
             }
         }
         _ => rsx! {
-            SkeletonGroup { class: "p-3",
+            SkeletonGroup { class: "app-window__loading",
                 SkeletonRows { rows: 5 }
             }
         },
@@ -148,7 +148,7 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
 
     rsx! {
         main {
-            class: "relative flex flex-col w-full h-full items-start gap-5 bg-[var(--bg-secondary)] text-[var(--fg-main,#fff)]",
+            class: "embience",
             "aria-label": s.embience.label,
 
             for sound in sounds.iter() {
@@ -157,7 +157,7 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
 
             // MAIN CONTENTS : AVAILABLE AUDIOS
             section {
-                class: "grid w-full h-full min-h-0 content-start grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2.5 border-b border-solid border-[var(--fg-secondary,#808080)] justify-center overflow-y-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+                class: "embience__grid",
                 "aria-label": s.embience.themes_label,
 
                 for (idx , sound) in sounds.iter().enumerate() {
@@ -172,13 +172,13 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
                         rsx! {
                             div {
                                 key: "{sound_id}",
-                                class: "relative w-full min-w-0 h-max flex flex-col items-center justify-center gap-5 p-2.5 text-inherit",
-                                class: if is_active { "bg-[image:var(--conic-gradient)]" } else { "bg-[var(--bg-secondary)]" },
+                                class: "embience__card",
+                                class: if is_active { "embience__card--on" } else { "embience__card--off" },
 
                                 // toggle on/off: logo + title
                                 button {
                                     r#type: "button",
-                                    class: "w-full flex flex-col items-center justify-center gap-5 appearance-none border-0 p-0 bg-transparent text-inherit cursor-pointer",
+                                    class: "embience__card-btn",
                                     "aria-label": "{s.embience.select_ambience(&name)}",
                                     "aria-pressed": "{is_active}",
                                     onclick: move |_| {
@@ -191,11 +191,11 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
 
                                     // logo audio
                                     span {
-                                        class: "flex flex-col w-[100px] h-[100px] items-center justify-center gap-2.5 p-2.5 relative aspect-[1]",
-                                        class: if is_active { "bg-[var(--fg-main,#fff)]" } else { "bg-[var(--bg-secondary,#000)]" },
+                                        class: "embience__thumb-box",
+                                        class: if is_active { "embience__thumb--on" } else { "embience__thumb--off" },
                                         img {
-                                            class: "relative self-stretch w-full aspect-[1]",
-                                            class: if is_active { "invert" } else { "" },
+                                            class: "embience__thumb",
+                                            class: if is_active { "embience__thumb-img--invert" } else { "" },
                                             src: "{icon}",
                                             alt: if is_active { String::new() } else { name.clone() },
                                         }
@@ -203,17 +203,17 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
 
                                     // title audio
                                     span {
-                                        class: "relative flex items-center justify-center w-fit [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-[var(--fg-main,#fff)] text-xs text-center tracking-[0] leading-[normal]",
+                                        class: "embience__name",
                                         "{name}"
                                     }
                                 }
 
                                 // volume bar (aktif: sesuai volume, nonaktif: 0% dengan lebar minimum 3%)
                                 span {
-                                    class: "relative self-stretch w-full h-[5px] bg-[var(--fg-secondary,#808080)]",
-                                    class: if is_active { "" } else { "opacity-50" },
+                                    class: "embience__volume",
+                                    class: if is_active { "" } else { "embience__dim" },
                                     span {
-                                        class: "block h-full min-w-[3%] bg-[var(--fg-main,#fff)]",
+                                        class: "embience__volume-fill",
                                         style: "width: {bar_width}%;",
                                     }
                                     if is_active {
@@ -225,7 +225,7 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
                                             step: "0.01",
                                             value: "{vol}",
                                             "aria-label": "{s.embience.volume_of(&name)}",
-                                            class: "absolute left-0 -top-2 m-0 w-full h-[21px] opacity-0 cursor-pointer",
+                                            class: "embience__volume-input",
                                             oninput: move |evt: FormEvent| {
                                                 let v: f64 = evt.value().parse().unwrap_or(0.6);
                                                 let mut arr = volumes();
@@ -246,7 +246,7 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
 
             // PLAYLISTS (preset), tampil saat tombol playlist ditekan
             if show_presets() && !presets.is_empty() {
-                div { class: "flex flex-wrap items-center justify-center gap-2.5 w-full",
+                div { class: "embience__presets",
                     for preset in presets.iter() {
                         {
                             let preset_ids = preset.embience_ids.clone();
@@ -266,9 +266,9 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
                                     r#type: "button",
                                     "aria-pressed": "{is_preset_active}",
                                     class: if is_preset_active {
-                                        "appearance-none px-2.5 py-1 border border-solid border-[var(--fg-main,#fff)] bg-[var(--fg-main,#fff)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--bg-secondary,#000)] cursor-pointer"
+                                        "embience__chip embience__chip--on"
                                     } else {
-                                        "appearance-none bg-[var(--bg-secondary)] px-2.5 py-1 border border-solid border-[var(--fg-secondary,#808080)] [font:'JetBrains_Mono-Regular',Helvetica] font-normal text-xs text-[var(--fg-main,#fff)] cursor-pointer"
+                                        "embience__chip embience__chip--off"
                                     },
                                     onclick: move |_| {
                                         let currently_active = active();
@@ -304,13 +304,13 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
 
             // FOOTER: AUDIO PLAYBACK
             footer {
-                class: "flex items-center justify-center gap-[25px] relative self-stretch w-full flex-[0_0_auto]",
+                class: "embience__footer",
                 "aria-label": s.embience.playback_controls,
 
                 // MUTE/UNMUTE BUTTON
                 button {
                     r#type: "button",
-                    class: "relative w-6 h-6 aspect-[1] border-0 p-0 bg-[var(--bg-secondary)] cursor-pointer",
+                    class: "embience__btn",
                     "aria-label": s.embience.toggle_volume,
                     "aria-pressed": "{muted()}",
                     onclick: move |_| {
@@ -326,8 +326,8 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
                         }
                     },
                     img {
-                        class: "w-[100%] h-[100%] aspect-[1]",
-                        class: if muted() { "opacity-50" } else { "" },
+                        class: "embience__btn-icon",
+                        class: if muted() { "embience__dim" } else { "" },
                         src: ICON_VOLUME,
                         alt: "",
                     }
@@ -336,7 +336,7 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
                 // PLAYER BUTTON
                 button {
                     r#type: "button",
-                    class: "group flex w-[50px] h-[50px] items-center justify-center relative bg-[var(--bg-secondary)] aspect-[1] border-0 p-0 cursor-pointer hover:bg-[var(--fg-main)] disabled:opacity-40 disabled:cursor-default",
+                    class: "group embience__play",
                     "aria-label": if is_playing { s.embience.pause_ambience } else { s.embience.play_ambience },
                     disabled: !any_active,
                     onclick: move |_| {
@@ -355,7 +355,7 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
                         }
                     },
                     img {
-                        class: "group-hover:invert relative w-[18px] h-[18px] aspect-[1]",
+                        class: "embience__play-icon",
                         src: if is_playing { ICON_PAUSE } else { ICON_PLAY },
                         alt: "",
                     }
@@ -364,12 +364,12 @@ fn EmbienceBoard(sounds: Vec<Embience>, presets: Vec<Preset>) -> Element {
                 // PLAYLISTS
                 button {
                     r#type: "button",
-                    class: "relative w-6 h-6 aspect-[1] border-0 p-0 bg-[var(--bg-secondary)] cursor-pointer",
+                    class: "embience__btn",
                     "aria-label": s.embience.open_playlist,
                     "aria-expanded": "{show_presets()}",
                     onclick: move |_| show_presets.set(!show_presets()),
                     img {
-                        class: "w-[100%] h-[100%] aspect-[1]",
+                        class: "embience__btn-icon",
                         src: ICON_PLAYLIST,
                         alt: "",
                     }

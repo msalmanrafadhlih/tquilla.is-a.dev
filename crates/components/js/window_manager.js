@@ -1,6 +1,6 @@
 (function () {
   if (window.__wm) return;
-  // Must match WINDOW_FRAME_CSS's `@media (min-width: 768px)` — update
+  // Must match `assets/styles/window.css`'s `@media (min-width: 768px)` — update
   // both together if the project's Tailwind `md:` breakpoint changes.
   var DESKTOP_BREAKPOINT = 768;
 
@@ -80,7 +80,7 @@
     var win = document.getElementById(windowId);
     if (!win) return;
     var MIN_W = 260, MIN_H = 180;
-    var MARGIN = 12; // harus sama dengan margin 12px di WINDOW_FRAME_CSS
+    var MARGIN = 12; // harus sama dengan margin 12px di assets/styles/window.css
 
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(v, hi)); }
 

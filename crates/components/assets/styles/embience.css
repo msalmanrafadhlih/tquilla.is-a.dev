@@ -1,0 +1,122 @@
+/* ==========================================================================
+   embience.css — App Embience (pemutar ambient)
+   ========================================================================== */
+
+@layer components {
+  .embience {
+    @apply relative flex flex-col w-full h-full items-start gap-5 bg-bg-secondary text-fg-main;
+  }
+
+  .embience__grid {
+    @apply grid w-full h-full min-h-0 content-start
+      grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2.5 border-fg-secondary
+      justify-center overflow-y-scroll no-scrollbar;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
+  .embience__card {
+    @apply relative w-full min-w-0 h-max flex flex-col items-center justify-center gap-5 p-2.5
+      text-inherit;
+  }
+
+  .embience__card--on {
+    @apply bg-[image:var(--conic-gradient)];
+  }
+
+  .embience__card--off {
+    @apply bg-bg-secondary;
+  }
+
+  .embience__card-btn {
+    @apply w-full flex flex-col items-center justify-center gap-5 appearance-none p-0
+      bg-transparent text-inherit cursor-pointer;
+    border-width: 0px;
+  }
+
+  .embience__thumb-box {
+    @apply flex flex-col w-[100px] h-[100px] items-center justify-center gap-2.5 p-2.5 relative
+      aspect-square;
+  }
+
+  .embience__thumb--on {
+    @apply bg-fg-main;
+  }
+
+  .embience__thumb--off {
+    @apply bg-bg-secondary;
+  }
+
+  .embience__thumb {
+    @apply relative self-stretch w-full aspect-square;
+  }
+
+  .embience__thumb-img--invert {
+    @apply invert;
+  }
+
+  .embience__name {
+    @apply relative flex items-center justify-center w-fit text-fg-main text-xs text-center
+      tracking-normal leading-[normal];
+    font-weight: 400;
+  }
+
+  .embience__volume {
+    @apply relative self-stretch w-full h-[5px] bg-fg-secondary;
+  }
+
+  .embience__dim {
+    @apply opacity-50;
+  }
+
+  .embience__volume-fill {
+    @apply block h-full min-w-[3%] bg-fg-main;
+  }
+
+  .embience__volume-input {
+    @apply absolute left-0 -top-2 m-0 w-full h-[21px] opacity-0 cursor-pointer;
+  }
+
+  .embience__presets {
+    @apply flex flex-wrap items-center justify-center gap-2.5 w-full;
+  }
+
+  .embience__chip {
+    @apply appearance-none px-2.5 py-1 text-xs cursor-pointer;
+    font-weight: 400;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .embience__footer {
+    @apply flex items-center justify-center gap-[25px] relative self-stretch w-full flex-none;
+  }
+
+  .embience__btn {
+    @apply relative w-6 h-6 aspect-square p-0 bg-bg-secondary cursor-pointer;
+    border-width: 0px;
+  }
+
+  .embience__btn-icon {
+    @apply w-[100%] h-[100%] aspect-square;
+  }
+
+  .embience__play {
+    @apply flex w-[50px] h-[50px] items-center justify-center relative bg-bg-secondary
+      aspect-square p-0 cursor-pointer hover:bg-fg-main disabled:opacity-40
+      disabled:cursor-default;
+    border-width: 0px;
+  }
+
+  .embience__play-icon {
+    @apply group-hover:invert relative w-[18px] h-[18px] aspect-square;
+  }
+
+  .embience__chip--on {
+    @apply border-fg-main bg-fg-main text-bg-secondary;
+  }
+
+  .embience__chip--off {
+    @apply bg-bg-secondary border-fg-secondary text-fg-main;
+  }
+}

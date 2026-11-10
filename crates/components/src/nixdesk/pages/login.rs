@@ -45,8 +45,8 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
 
     rsx! {
         main {
-            class: "relative min-h-screen w-full bg-[var(--bg-main)] text-white font-mono antialiased overflow-hidden selection:bg-green-500/30 transition-opacity duration-500 ease-in",
-            class: if loaded() { "opacity-100" } else { "opacity-0" },
+            class: "login__root",
+            class: if loaded() { "login__fade--in" } else { "login__fade--out" },
             onmounted: move |_| {
                 spawn(async move {
                     // beri browser 1 frame untuk render state awal (opacity-0)
@@ -58,26 +58,25 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                 });
             },
 
-            section { class: "relative min-h-screen w-full flex flex-col items-center justify-center gap-6 sm:gap-7 px-6 py-16",
+            section { class: "login__screen",
 
                 // Login view
                 div {
-                    class: "flex flex-col items-center gap-6 sm:gap-7 transition-opacity duration-500 ease-out",
-                    style: if unlocking() { "opacity: 0; pointer-events: none;" } else { "opacity: 1;" },
+                    class: if unlocking() { "login__identity login__identity--out" } else { "login__identity" },
 
                     img {
                         src: AVATAR,
                         alt: s.login.avatar_alt,
-                        class: "w-20 h-20 sm:w-24 sm:h-24 outline outline-2 outline-white/90",
+                        class: "login__avatar",
                     }
 
-                    div { class: "flex flex-col items-center gap-1.5 sm:gap-2",
-                        p { class: "text-zinc-300 text-base sm:text-lg tracking-[0.2em]", "{USER_NAME}" }
-                        p { class: "text-white/40 text-xs sm:text-sm font-extralight", "{s.login.keyboard}" }
+                    div { class: "login__names",
+                        p { class: "login__name", "{USER_NAME}" }
+                        p { class: "login__hint", "{s.login.keyboard}" }
                     }
 
                     form {
-                        class: "flex flex-col items-center gap-2",
+                        class: "login__form",
                         onsubmit: move |evt: FormEvent| {
                             evt.prevent_default();
                             if unlocking() {
@@ -94,32 +93,32 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
 
                         div {
                             class: if shake() {
-                                "flex flex-col sm:flex-row items-center gap-2 sm:gap-5 login-shake"
+                                "login__row login__row--shake"
                             } else {
-                                "flex flex-col sm:flex-row items-center gap-2 sm:gap-5"
+                                "login__row"
                             },
 
                             if shake() {
                                 button {
                                     r#type: "submit",
-                                    class: "text-red-500 text-base sm:text-lg font-medium tracking-widest whitespace-nowrap rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+                                    class: "login__btn login__btn--cancel",
                                     "{s.login.wrong}"
                                 }
                             } else {
                                 button {
                                     r#type: "submit",
-                                    class: "text-[var(--green)] text-base sm:text-lg font-medium tracking-widest whitespace-nowrap rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+                                    class: "login__btn login__btn--ok",
                                     "{s.login.unlock}"
                                 }
                             }
 
-                            div { class: "relative w-[100px] sm:w-[110px] h-10",
-                                label { class: "sr-only", r#for: "password-input", "{s.login.password_label}" }
+                            div { class: "login__field",
+                                label { class: "visually-hidden", r#for: "password-input", "{s.login.password_label}" }
                                 input {
                                     id: "password-input",
                                     r#type: "password",
                                     autocomplete: "current-password",
-                                    class: "peer absolute inset-0 z-10 w-full h-full opacity-0 text-base text-center cursor-text",
+                                    class: "peer login__input",
                                     disabled: unlocking(),
                                     onfocus: move |_| {
                                         focused.set(true);
@@ -140,19 +139,18 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                                     },
                                 }
                                 div {
-                                    class: "absolute inset-0 flex items-center overflow-hidden rounded-sm transition-shadow duration-150 peer-focus-visible:ring-2 peer-focus-visible:ring-green-500/60 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-black",
-                                    style: "mask-image:linear-gradient(to right, transparent, black, transparent); -webkit-mask-image:linear-gradient(to right, transparent, black, transparent);",
+                                    class: "login__mask",
 
-                                    div { class: "flex items-center justify-center w-full overflow-x-hidden whitespace-nowrap",
+                                    div { class: "login__chars",
                                         for (i , _ch) in value().chars().enumerate() {
                                             span {
                                                 key: "{i}",
-                                                class: "login-char item-center inline-block text-white text-lg tracking-[3px]",
+                                                class: "login__char",
                                                 "*"
                                             }
                                         }
                                         span {
-                                            class: if focused() && value().is_empty() { "login-caret inline-block w-[2px] h-5 bg-green-500 align-middle" } else { "login-caret invisible inline-block w-[2px] h-5 bg-green-500 align-middle" },
+                                            class: if focused() && value().is_empty() { "login__caret" } else { "login__caret login__caret--hidden" },
                                         }
                                     }
                                 }
@@ -160,7 +158,7 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                         }
 
                         p {
-                            class: "text-white/30 text-[11px] text-center sm:text-xs h-4 transition-opacity duration-200",
+                            class: "login__error",
                             if mode() == TypingMode::Auto {
                                 "{s.login.auto_login}"
                             } else {
@@ -169,17 +167,16 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                         }
                     }
 
-                    div { class: "flex flex-col items-center gap-1 mt-1",
-                        p { class: "text-white text-center text-[14px] sm:text-lg font-extralight", "{s.login.lock_date}" }
-                        p { class: "text-white text-[11px] sm:text-sm font-extralight", "[ 19:35 ]" }
+                    div { class: "login__welcome",
+                        p { class: "login__welcome-title", "{s.login.lock_date}" }
+                        p { class: "login__welcome-sub", "[ 19:35 ]" }
                     }
                 }
 
                 div {
-                    class: "absolute inset-0 flex flex-col items-center justify-center gap-4 transition-opacity duration-500 ease-out",
-                    style: if unlocking() { "opacity: 1;" } else { "opacity: 0; pointer-events: none;" },
+                    class: if unlocking() { "login__unlock login__unlock--on" } else { "login__unlock" },
 
-                    div { class: "w-16 h-16 rounded-full border-2 border-green-500 flex items-center justify-center",
+                    div { class: "login__unlock-ring",
                         svg {
                             width: "28",
                             height: "28",
@@ -189,18 +186,18 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                             stroke_width: "2.5",
                             stroke_linecap: "round",
                             stroke_linejoin: "round",
-                            class: "text-green-500",
+                            class: "login__unlock-icon",
                             polyline { points: "20 6 9 17 4 12" }
                         }
                     }
 
-                    p { class: "text-white text-base text-center sm:text-lg tracking-wide", "{s.login.welcome_back(USER_NAME)}" }
-                    p { class: "text-white/40 text-xs text-center sm:text-sm font-extralight", "{s.login.access_granted}" }
+                    p { class: "login__unlock-title", "{s.login.welcome_back(USER_NAME)}" }
+                    p { class: "login__unlock-sub", "{s.login.access_granted}" }
                 }
             }
 
             // status bar
-            div { class: "fixed bottom-4 left-4 sm:bottom-6 sm:left-6 flex items-center gap-2 opacity-50",
+            div { class: "login__footer",
                 svg {
                     width: "22",
                     height: "14",
@@ -211,7 +208,7 @@ pub fn Login(on_unlocked: EventHandler<()>) -> Element {
                     rect { x: "20.5", y: "4.5", width: "1.5", height: "5", rx: "0.75", fill: "white" }
                     rect { x: "2.5", y: "2.5", width: "15", height: "8.5", rx: "1", fill: "white" }
                 }
-                span { class: "text-white text-sm font-normal", "100%" }
+                span { class: "login__footer-text", "100%" }
             }
         }
     }
