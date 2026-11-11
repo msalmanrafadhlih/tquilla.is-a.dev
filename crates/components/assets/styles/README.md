@@ -5,9 +5,9 @@ mengimpor `index.css`, yang mengimpor `global.css` lebih dulu lalu satu file per
 
 | File | Isi |
 | --- | --- |
-| `global.css` | `@theme`, `:root` (palet, gradasi, easing, z-index), reset, font, blok bangunan bersama (`app-window__*`, `visually-hidden`) |
+| `global.css` | `@theme`, `:root` (palet, gradasi, easing, durasi panel, z-index), reset, font, blok bangunan bersama (`app-window__*`, `visually-hidden`, `side-panel*`) |
 | `booting.css`, `login.css`, `home.css`, `journal.css`, ... | satu file per layar/aplikasi |
-| `window.css` | bingkai jendela (animasi buka/minimize/tutup, popup di `md`+) |
+| `window.css` | bingkai jendela (animasi buka/minimize/tutup, popup di `md`+, `@property --win-*`) |
 
 ## Aturan
 
@@ -34,5 +34,17 @@ mengimpor `index.css`, yang mengimpor `global.css` lebih dulu lalu satu file per
    `group-hover:` / `peer-focus-visible:`), `material-symbols-outlined` (font ikon eksternal),
    `win-frame` / `win-maximized` / `win-minimizing` / `win-closing` (dibaca `window_manager.js` dan
    `animationend`), `is-visible` (ditambah `scroll_reveal.js`).
-7. Tambah file UI baru: buat `styles/<nama>.css`, lalu daftarkan di `index.css` (tes `test_tailwind_paths.py`
+7. **Animasi: hanya `transform` dan `opacity`.** Dua properti itu jalan di compositor, jadi tetap mulus
+   walau main thread sedang sibuk (render ulang Dioxus, WASM). Jangan menganimasikan `left/top/width/height`,
+   `margin`, `padding`, atau `grid-template-*` pada elemen yang isinya besar: setiap frame memaksa layout
+   ulang. Jangan `transition: all` (animasi properti yang tak disengaja saat breakpoint berganti); sebut
+   properti yang berubah. FPS tidak bisa diatur lewat CSS; browser menggambar sesuai refresh rate layar.
+   Gerak yang butuh perubahan ukuran memakai FLIP (lihat maximize di `js/window_manager.js`).
+8. **Panel samping** (`side-panel`, `side-panel--left|right`, `side-panel--open`, `side-panel__scrim`) dipakai
+   AI Assistant (riwayat chat) dan Guestbook (tanda tangan) lewat komponen `nixdesk/gui/side_panel.rs`.
+   Panel selalu ada di DOM; `--open` yang menggesernya, jadi buka DAN tutup beranimasi. Lebar lewat
+   `--side-panel-w` di class UI pemakai; durasi lewat `--dur-panel-in` / `--dur-panel-out`.
+9. **`--win-x/-y/-w/-h` terdaftar lewat `@property ... inherits: false`** (`window.css`). Custom property
+   biasa diwariskan: menulisnya membuat browser menghitung ulang style semua elemen di dalam jendela.
+10. Tambah file UI baru: buat `styles/<nama>.css`, lalu daftarkan di `index.css` (tes `test_tailwind_paths.py`
    mengingatkan kalau lupa).

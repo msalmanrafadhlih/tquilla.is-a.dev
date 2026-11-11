@@ -444,6 +444,7 @@ strings! {
         // --- form
         form_label: "Sign the guestbook",
         form_title: "Sign the guestbook",
+        form_close: "Close the form",
         username_label: "Name",
         username_placeholder: "Your name",
         url_label: "Website",

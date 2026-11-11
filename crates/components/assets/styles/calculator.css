@@ -26,7 +26,10 @@
 
   .calc-key__press {
     @apply active:scale-95 hover:opacity-60;
-    transition: all 150ms var(--ease-in-out);
+    /* Hanya yang memang berubah (`scale` dan `opacity`), bukan `all`. */
+    transition-property: transform, scale, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-in-out);
   }
 
   .calc-key__icon {

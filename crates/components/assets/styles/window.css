@@ -10,11 +10,37 @@
    - buka / pulih dari minimize : win-open (jalan setiap elemen muncul)
    - minimize                   : .win-minimizing -> win-minimize, lalu Rust menyembunyikan
    - tutup                      : .win-closing    -> win-close, lalu Rust menghapus
-   - maksimalkan / pulihkan     : transition left/top/width/height
-   - geser / resize             : tanpa transition ([data-gesture]) agar mengikuti kursor
+   - maksimalkan / pulihkan     : FLIP lewat `transform` (window_manager.js), BUKAN transition
+                                  left/top/width/height: itu memaksa layout isi jendela tiap frame
+   - geser                      : `transform` saja selama drag; --win-x/-y ditulis sekali di akhir
+   - resize                     : --win-* ditulis sekali per frame (layout isi memang berubah)
    ========================================================================== */
-:root {
-  --ease-window: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+/* Posisi/ukuran jendela terdaftar sebagai <length> dan `inherits: false`.
+   Custom property biasa diwariskan, jadi tiap kali JS menulis --win-x/-y/-w/-h
+   browser menghitung ulang style SEMUA elemen di dalam jendela; terukur ~6x lebih
+   mahal daripada versi terdaftar ini. Hanya `.win-frame` yang memakainya.
+   `initial-value` = nilai cadangan di `var(--win-*, ...)` di bawah. Browser tanpa
+   dukungan @property mengabaikan blok ini dan tetap jalan seperti biasa. */
+@property --win-x {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 24px;
+}
+@property --win-y {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 24px;
+}
+@property --win-w {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 480px;
+}
+@property --win-h {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 360px;
 }
 
 @keyframes win-open {
@@ -185,17 +211,10 @@
         var(--win-y, 24px),
         calc(100% - min(var(--win-h, 360px), calc(100% - 24px)) - 12px)
       );
-      transition-property: left, top, width, height;
-      transition-duration: 220ms;
-      transition-timing-function: var(--ease-window);
     }
 
-    /* Saat geser/resize: ikuti kursor seketika. */
-    .win-frame[data-gesture] {
-      transition: none;
-    }
-
-    /* Nilai eksplisit, bukan `inset` + `auto`: `auto` tidak bisa di-transition. */
+    /* Perpindahan ke/dari maximize langsung ke kotak akhir; animasinya (FLIP)
+       dimainkan window_manager.js dengan `transform`. */
     .win-frame.win-maximized {
       left: 12px;
       top: 12px;

@@ -387,9 +387,11 @@
     @apply h-[2px] w-full bg-line;
   }
 
+  /* Panjang bar = `transform: scaleX(0..1)` (di-set Rust lewat `style`), bukan
+     `width`: `transform` tidak memicu layout di setiap frame animasi 1 detik. */
   .chronicle__bar-fill {
-    @apply h-[2px];
-    transition: all 1000ms var(--ease-out);
+    @apply h-[2px] w-full origin-left;
+    transition: transform 1000ms var(--ease-out);
   }
 
   .chronicle__stack {

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::ai_history::{
     self, export_filename, export_json, fresh_id, ChatTurn, Conversation, Role, Summary,
 };
+use super::side_panel::{Side, SidePanel};
 use crate::languages::{use_strings, Strings};
 use crate::nixdesk::js_util::{eval_js, set_field};
 use crate::platform::Date;
@@ -26,8 +27,12 @@ const AUTOSIZE_JS: &str = include_str!("../../../js/autosize.js");
 /// Pembungkus jendela: tempat panel riwayat menempel (di dalam area jendela,
 /// bukan viewport; `overflow-hidden` memotong panel di tepi jendela).
 const OUTER_CLASS: &str = "ai";
-const SCRIM_CLASS: &str = "ai__scrim";
+/// Panel riwayat = `SidePanel` (scrim, geser buka/tutup) + gaya isi milik AI.
+const HISTORY_PANEL_ID: &str = "ai-history-panel";
 const PANEL_CLASS: &str = "ai__history";
+/// Tombol buka/tutup riwayat: ikon `ai__icon-btn` yang diposisikan absolute di
+/// pojok kiri atas `ai__root` (bukan lagi di footer form).
+const HISTORY_TOGGLE_CLASS: &str = "ai__icon-btn ai__history-toggle";
 const PANEL_HEADER_CLASS: &str = "ai__history-head";
 const PANEL_TITLE_CLASS: &str = "ai__history-title";
 const NEW_CHAT_CLASS: &str = "ai__new-chat";
@@ -533,6 +538,24 @@ pub fn AiAssistantWindowContent() -> Element {
     rsx! {
         div { class: OUTER_CLASS,
         div { class: ROOT_CLASS,
+            // Tombol riwayat chat: pojok kiri atas jendela (absolute di `ai__root`).
+            button {
+                r#type: "button",
+                "aria-label": history_toggle_aria,
+                "aria-expanded": "{history_expanded}",
+                "aria-controls": HISTORY_PANEL_ID,
+                title: s.ai.history_toggle_title,
+                class: HISTORY_TOGGLE_CLASS,
+                onclick: move |_| {
+                    let open = !show_history();
+                    show_history.set(open);
+                    confirm_delete.set(None);
+                    if open {
+                        reload_list(state);
+                    }
+                },
+                img { src: ICON_SIDEBAR, alt: "", "aria-hidden": "true" }
+            }
 
             // conversation — flex-col-reverse, so the DOM runs bottom to top:
             // the status indicators come first, then turns from newest to oldest
@@ -631,25 +654,6 @@ pub fn AiAssistantWindowContent() -> Element {
                         evt.prevent_default();
                         send_prompt(state, api_key(), model().to_string(), s);
                     },
-
-                    // Membuka dan menutup panel riwayat chat.
-                    button {
-                        r#type: "button",
-                        "aria-label": history_toggle_aria,
-                        "aria-expanded": "{history_expanded}",
-                        "aria-controls": "ai-history-panel",
-                        title: s.ai.history_toggle_title,
-                        class: ICON_BUTTON_CLASS,
-                        onclick: move |_| {
-                            let open = !show_history();
-                            show_history.set(open);
-                            confirm_delete.set(None);
-                            if open {
-                                reload_list(state);
-                            }
-                        },
-                        img { src: ICON_SIDEBAR, alt: "", "aria-hidden": "true" }
-                    }
 
                     label {
                         r#for: QUESTION_ID,
@@ -781,134 +785,131 @@ pub fn AiAssistantWindowContent() -> Element {
         }
 
         // Panel riwayat: menempel di dalam jendela (absolute di `OUTER_CLASS`),
-        // bukan di viewport. Klik di luar panel menutupnya.
-        if history_open {
+        // bukan di viewport. Selalu dirender supaya buka DAN tutupnya beranimasi
+        // (`side_panel.rs`); klik di luar panel atau Esc menutupnya.
+        SidePanel {
+            id: HISTORY_PANEL_ID,
+            label: s.ai.history_panel_label,
+            side: Side::Left,
+            open: history_open,
+            class: PANEL_CLASS,
+            on_close: move |_| {
+                show_history.set(false);
+                confirm_delete.set(None);
+            },
             div {
-                class: SCRIM_CLASS,
-                onclick: move |_| {
-                    show_history.set(false);
-                    confirm_delete.set(None);
-                },
-            }
-            aside {
-                id: "ai-history-panel",
-                "aria-label": s.ai.history_panel_label,
-                class: PANEL_CLASS,
-
-                div {
-                    class: PANEL_HEADER_CLASS,
-                    h2 { class: PANEL_TITLE_CLASS, "{s.ai.history_title}" }
-                    button {
-                        r#type: "button",
-                        "aria-label": s.ai.history_close_aria,
-                        class: ICON_BUTTON_CLASS,
-                        onclick: move |_| {
-                            show_history.set(false);
-                            confirm_delete.set(None);
-                        },
-                        img { src: ICON_CLOSE, alt: "", "aria-hidden": "true", class: "ai__img-xs" }
-                    }
-                }
-
+                class: PANEL_HEADER_CLASS,
+                h2 { class: PANEL_TITLE_CLASS, "{s.ai.history_title}" }
                 button {
                     r#type: "button",
-                    class: NEW_CHAT_CLASS,
-                    disabled: sending,
+                    "aria-label": s.ai.history_close_aria,
+                    class: ICON_BUTTON_CLASS,
                     onclick: move |_| {
-                        start_new_chat(state);
                         show_history.set(false);
                         confirm_delete.set(None);
                     },
-                    img { src: ICON_ADD, alt: "", "aria-hidden": "true", class: "ai__img-sm" }
-                    span { "{s.ai.new_chat}" }
+                    img { src: ICON_CLOSE, alt: "", "aria-hidden": "true", class: "ai__img-xs" }
                 }
+            }
 
-                if !store_ok {
-                    p { class: NOTE_CLASS, role: "alert", "{s.ai.history_unavailable}" }
+            button {
+                r#type: "button",
+                class: NEW_CHAT_CLASS,
+                disabled: sending,
+                onclick: move |_| {
+                    start_new_chat(state);
+                    show_history.set(false);
+                    confirm_delete.set(None);
+                },
+                img { src: ICON_ADD, alt: "", "aria-hidden": "true", class: "ai__img-sm" }
+                span { "{s.ai.new_chat}" }
+            }
+
+            if !store_ok {
+                p { class: NOTE_CLASS, role: "alert", "{s.ai.history_unavailable}" }
+            }
+
+            ul {
+                class: LIST_CLASS,
+                if chats.is_empty() && store_ok {
+                    li { class: NOTE_CLASS, "{s.ai.history_empty}" }
                 }
-
-                ul {
-                    class: LIST_CLASS,
-                    if chats.is_empty() && store_ok {
-                        li { class: NOTE_CLASS, "{s.ai.history_empty}" }
-                    }
-                    for chat in chats.iter() {
-                        {
-                            let is_active = chat.id == active_id;
-                            let title = if chat.title.is_empty() {
-                                s.ai.untitled_chat.to_string()
-                            } else {
-                                chat.title.clone()
-                            };
-                            let date = day_label(chat.updated_at);
-                            let asking = confirming.as_deref() == Some(chat.id.as_str());
-                            let open_id = chat.id.clone();
-                            let download_id = chat.id.clone();
-                            let delete_id = chat.id.clone();
-                            let download_aria = s.ai.download_chat_aria(&title);
-                            let delete_aria = s.ai.delete_chat_aria(&title);
-                            let delete_label = if asking {
-                                s.ai.delete_chat_confirm
-                            } else {
-                                s.ai.delete_chat
-                            };
-                            rsx! {
-                                li {
-                                    key: "{chat.id}",
-                                    class: if is_active { ROW_ACTIVE_CLASS } else { ROW_CLASS },
+                for chat in chats.iter() {
+                    {
+                        let is_active = chat.id == active_id;
+                        let title = if chat.title.is_empty() {
+                            s.ai.untitled_chat.to_string()
+                        } else {
+                            chat.title.clone()
+                        };
+                        let date = day_label(chat.updated_at);
+                        let asking = confirming.as_deref() == Some(chat.id.as_str());
+                        let open_id = chat.id.clone();
+                        let download_id = chat.id.clone();
+                        let delete_id = chat.id.clone();
+                        let download_aria = s.ai.download_chat_aria(&title);
+                        let delete_aria = s.ai.delete_chat_aria(&title);
+                        let delete_label = if asking {
+                            s.ai.delete_chat_confirm
+                        } else {
+                            s.ai.delete_chat
+                        };
+                        rsx! {
+                            li {
+                                key: "{chat.id}",
+                                class: if is_active { ROW_ACTIVE_CLASS } else { ROW_CLASS },
+                                button {
+                                    r#type: "button",
+                                    class: ROW_OPEN_CLASS,
+                                    disabled: sending,
+                                    "aria-current": if is_active { "true" } else { "false" },
+                                    onclick: move |_| {
+                                        confirm_delete.set(None);
+                                        open_chat(state, open_id.clone(), model, show_history);
+                                    },
+                                    span { class: ROW_TITLE_CLASS, "{title}" }
+                                    span { class: ROW_DATE_CLASS, "{date}" }
+                                }
+                                div {
+                                    class: ROW_ACTIONS_CLASS,
                                     button {
                                         r#type: "button",
-                                        class: ROW_OPEN_CLASS,
-                                        disabled: sending,
-                                        "aria-current": if is_active { "true" } else { "false" },
-                                        onclick: move |_| {
-                                            confirm_delete.set(None);
-                                            open_chat(state, open_id.clone(), model, show_history);
-                                        },
-                                        span { class: ROW_TITLE_CLASS, "{title}" }
-                                        span { class: ROW_DATE_CLASS, "{date}" }
+                                        class: TEXT_BUTTON_CLASS,
+                                        "aria-label": download_aria,
+                                        onclick: move |_| download_chats(state, Some(download_id.clone())),
+                                        "{s.ai.download_chat}"
                                     }
-                                    div {
-                                        class: ROW_ACTIONS_CLASS,
-                                        button {
-                                            r#type: "button",
-                                            class: TEXT_BUTTON_CLASS,
-                                            "aria-label": download_aria,
-                                            onclick: move |_| download_chats(state, Some(download_id.clone())),
-                                            "{s.ai.download_chat}"
-                                        }
-                                        button {
-                                            r#type: "button",
-                                            class: TEXT_BUTTON_CLASS,
-                                            "aria-label": delete_aria,
-                                            // Chat yang sedang menunggu jawaban tidak boleh dihapus.
-                                            disabled: sending && is_active,
-                                            onclick: move |_| {
-                                                if confirm_delete().as_deref() == Some(delete_id.as_str()) {
-                                                    confirm_delete.set(None);
-                                                    remove_chat(state, delete_id.clone());
-                                                } else {
-                                                    confirm_delete.set(Some(delete_id.clone()));
-                                                }
-                                            },
-                                            "{delete_label}"
-                                        }
+                                    button {
+                                        r#type: "button",
+                                        class: TEXT_BUTTON_CLASS,
+                                        "aria-label": delete_aria,
+                                        // Chat yang sedang menunggu jawaban tidak boleh dihapus.
+                                        disabled: sending && is_active,
+                                        onclick: move |_| {
+                                            if confirm_delete().as_deref() == Some(delete_id.as_str()) {
+                                                confirm_delete.set(None);
+                                                remove_chat(state, delete_id.clone());
+                                            } else {
+                                                confirm_delete.set(Some(delete_id.clone()));
+                                            }
+                                        },
+                                        "{delete_label}"
                                     }
                                 }
                             }
                         }
                     }
                 }
-
-                button {
-                    r#type: "button",
-                    class: NEW_CHAT_CLASS,
-                    disabled: chats.is_empty(),
-                    onclick: move |_| download_chats(state, None),
-                    "{s.ai.download_all}"
-                }
-                p { class: NOTE_CLASS, "{s.ai.history_note}" }
             }
+
+            button {
+                r#type: "button",
+                class: NEW_CHAT_CLASS,
+                disabled: chats.is_empty(),
+                onclick: move |_| download_chats(state, None),
+                "{s.ai.download_all}"
+            }
+            p { class: NOTE_CLASS, "{s.ai.history_note}" }
         }
         }
     }

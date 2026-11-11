@@ -9,6 +9,7 @@ mod filemanager;
 mod guestbook;
 mod radio;
 mod settings;
+mod side_panel;
 
 pub use ai::AiAssistantWindowContent;
 pub use audio::AUDIO_JS;

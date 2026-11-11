@@ -286,7 +286,7 @@ pub fn ChronicleSection(chronicle: Chronicle, fetched_at: String) -> Element {
                             div { class: "chronicle__langs",
                                 for lang in chronicle.languages.iter() {
                                     {
-                                        let bar_width = if bars_visible() { lang.percent } else { 0.0 };
+                                        let bar_scale = if bars_visible() { lang.percent / 100.0 } else { 0.0 };
                                         rsx! {
                                             div { class: "group chronicle__lang", key: "{lang.name}",
                                                 div { class: "chronicle__lang-head",
@@ -296,7 +296,7 @@ pub fn ChronicleSection(chronicle: Chronicle, fetched_at: String) -> Element {
                                                 div { class: "chronicle__bar",
                                                     div {
                                                         class: "chronicle__bar-fill",
-                                                        style: "width: {bar_width}%; background-color: {lang.color.as_deref().unwrap_or(FALLBACK_LANGUAGE_COLOR)};",
+                                                        style: "transform: scaleX({bar_scale}); background-color: {lang.color.as_deref().unwrap_or(FALLBACK_LANGUAGE_COLOR)};",
                                                     }
                                                 }
                                             }

@@ -101,8 +101,17 @@ pub fn use_live_clock() -> (Signal<String>, Signal<String>) {
                 TimeoutFuture::new(1000).await;
                 let now = Date::new_0();
                 let s = language.peek().strings();
-                time.set(format_time(&now, *format.peek(), s));
-                date.set(format_date(&now, s));
+                // Teks jam hanya berubah sekali semenit, tanggal sekali sehari. `set`
+                // dengan nilai sama tetap membangunkan Navbar tiap detik; tulis hanya
+                // bila berubah supaya tidak ada render ulang yang sia-sia.
+                let next_time = format_time(&now, *format.peek(), s);
+                if *time.peek() != next_time {
+                    time.set(next_time);
+                }
+                let next_date = format_date(&now, s);
+                if *date.peek() != next_date {
+                    date.set(next_date);
+                }
             }
         });
     });

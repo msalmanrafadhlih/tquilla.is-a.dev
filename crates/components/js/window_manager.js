@@ -3,6 +3,23 @@
   // Must match `assets/styles/window.css`'s `@media (min-width: 768px)` — update
   // both together if the project's Tailwind `md:` breakpoint changes.
   var DESKTOP_BREAKPOINT = 768;
+  // Jarak minimum jendela ke tepi `.desktop__stage`; harus sama dengan 12px di
+  // `clamp()` pada `assets/styles/window.css`.
+  var MARGIN = 12;
+  // Durasi animasi maximize/restore (ms); samakan dengan nuansa `--dur-panel-in`.
+  var FLIP_MS = 240;
+
+  // Satu frame = satu pembaruan. Pointer bisa mengirim jauh lebih banyak event
+  // daripada frame yang digambar (mouse 500-1000 Hz), jadi event hanya mencatat
+  // posisi terakhir dan kerja yang menyentuh DOM dijalankan sekali per frame.
+  // Tanpa `requestAnimationFrame` (tes DOM tiruan) dijalankan langsung.
+  function raf(fn) {
+    return window.requestAnimationFrame ? window.requestAnimationFrame(fn) : (fn(), 0);
+  }
+  function caf(id) {
+    if (id && window.cancelAnimationFrame) window.cancelAnimationFrame(id);
+  }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(v, hi)); }
 
   // Listener `document` dipasang SEKALI di sini (blok ini dijaga oleh
   // `if (window.__wm) return` di atas), bukan per window. Sebelumnya tiap
@@ -31,11 +48,61 @@
     if (activeDrag) activeDrag.stop();
   });
 
+  // ---- Maximize / restore: animasi FLIP (First, Last, Invert, Play) ----
+  // Menganimasikan `left/top/width/height` memaksa layout ulang seluruh isi
+  // jendela di setiap frame. Di sini layout berubah SEKALI ke ukuran akhir, lalu
+  // jendela "ditarik balik" ke kotak awalnya dengan `transform` dan dilepas
+  // menuju kotak akhir; `transform` berjalan di compositor, bukan di main thread.
+  //
+  // Kotak awal diambil saat tombol maximize diklik (fase capture, sebelum handler
+  // Rust mengubah state); `MutationObserver` menunggu class `win-maximized`
+  // berubah, lalu memutar animasinya sebelum frame berikutnya digambar.
+  var flip = null; // { win, rect, maxed, at } milik klik tombol maximize yang menunggu
+  var flipObserver = null;
+  function playFlip(win, first) {
+    if (!win.animate) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var last = win.getBoundingClientRect();
+    if (!last.width || !last.height) return;
+    var dx = first.left - last.left, dy = first.top - last.top;
+    var sx = first.width / last.width, sy = first.height / last.height;
+    if (!dx && !dy && sx === 1 && sy === 1) return; // mis. di bawah breakpoint: selalu fullscreen
+    win.animate([
+      { transformOrigin: '0 0', transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ')' },
+      { transformOrigin: '0 0', transform: 'translate(0px,0px) scale(1,1)' }
+    ], { duration: FLIP_MS, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+  }
+  function settleFlip() {
+    var f = flip;
+    if (!f) return;
+    if (!f.win.isConnected) { flip = null; flipObserver.disconnect(); return; }
+    if (f.win.classList.contains('win-maximized') === f.maxed) return; // class lain yang berubah
+    flip = null;
+    flipObserver.disconnect();
+    playFlip(f.win, f.rect);
+  }
+  document.addEventListener('click', function (e) {
+    var dot = e.target && e.target.closest && e.target.closest('.window__dot--max');
+    var win = dot && dot.closest('.win-frame');
+    if (!win || !window.MutationObserver) return;
+    if (!flipObserver) flipObserver = new window.MutationObserver(settleFlip);
+    var f = { win: win, rect: win.getBoundingClientRect(), maxed: win.classList.contains('win-maximized') };
+    flip = f;
+    flipObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'], subtree: true });
+    // Tidak ada perubahan class (mis. klik diabaikan): lepas pengamat, jangan menggantung.
+    window.setTimeout(function () {
+      if (flip === f) { flip = null; flipObserver.disconnect(); }
+    }, 1000);
+  }, true);
+
   function makeDraggable(handleId, windowId, onEnd) {
     var handle = document.getElementById(handleId);
     var win = document.getElementById(windowId);
     if (!handle || !win) return;
-    var sx = 0, sy = 0, sl = 0, st = 0, dragging = false;
+    // sl/st = posisi awal; maxL/maxT = batas kanan/bawah (sama dengan `clamp()` di
+    // window.css); nl/nt = posisi terakhir yang sudah dihitung.
+    var sx = 0, sy = 0, sl = 0, st = 0, maxL = Infinity, maxT = Infinity;
+    var nl = 0, nt = 0, px = 0, py = 0, frame = 0, dragging = false;
     var gesture = { move: move, stop: stop };
     function start(x, y, target) {
       if (window.innerWidth < DESKTOP_BREAKPOINT) return;
@@ -44,23 +111,40 @@
       dragging = true;
       activeDrag = gesture;
       win.setAttribute('data-gesture', '');
-      sx = x; sy = y;
+      sx = x; sy = y; px = x; py = y;
       var rect = win.getBoundingClientRect();
-      var parent = win.offsetParent ? win.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
-      sl = rect.left - parent.left;
-      st = rect.top - parent.top;
+      var parent = win.offsetParent;
+      var pr = parent ? parent.getBoundingClientRect() : { left: 0, top: 0 };
+      sl = rect.left - pr.left - (parent ? parent.clientLeft : 0);
+      st = rect.top - pr.top - (parent ? parent.clientTop : 0);
+      nl = sl; nt = st;
+      maxL = parent ? parent.clientWidth - win.offsetWidth - MARGIN : Infinity;
+      maxT = parent ? parent.clientHeight - win.offsetHeight - MARGIN : Infinity;
+    }
+    // Selama drag HANYA `transform` yang berubah (compositor; tanpa layout dan tanpa
+    // style recalc untuk isi jendela). `--win-x/-y` ditulis sekali di `stop`.
+    function paint() {
+      frame = 0;
+      nl = clamp(sl + (px - sx), MARGIN, maxL);
+      nt = clamp(st + (py - sy), MARGIN, maxT);
+      win.style.transform = 'translate3d(' + (nl - sl) + 'px,' + (nt - st) + 'px,0)';
     }
     function move(x, y) {
       if (!dragging) return;
-      var nl = sl + (x - sx);
-      var nt = Math.max(0, st + (y - sy));
-      win.style.setProperty('--win-x', nl + 'px');
-      win.style.setProperty('--win-y', nt + 'px');
+      px = x; py = y;
+      if (!frame) frame = raf(paint);
     }
     function stop() {
       if (!dragging) return;
       dragging = false;
       if (activeDrag === gesture) activeDrag = null;
+      caf(frame);
+      paint();
+      // Serahkan posisi akhir ke CSS (`--win-x/-y`) dan lepas transform dalam satu
+      // langkah, supaya tidak ada frame yang menampilkan keduanya sekaligus.
+      win.style.setProperty('--win-x', nl + 'px');
+      win.style.setProperty('--win-y', nt + 'px');
+      win.style.transform = '';
       if (onEnd) onEnd(win.offsetLeft, win.offsetTop, win.offsetWidth, win.offsetHeight);
       win.removeAttribute('data-gesture');
     }
@@ -80,9 +164,6 @@
     var win = document.getElementById(windowId);
     if (!win) return;
     var MIN_W = 260, MIN_H = 180;
-    var MARGIN = 12; // harus sama dengan margin 12px di assets/styles/window.css
-
-    function clamp(v, lo, hi) { return Math.max(lo, Math.min(v, hi)); }
 
     win.addEventListener('pointerdown', function (e) {
       var handle = e.target.closest && e.target.closest('[data-resize]');
@@ -104,14 +185,17 @@
       var R = L + rc.width;
       var B = T + rc.height;
       var sx = e.clientX, sy = e.clientY, moved = false;
+      var px = sx, py = sy, frame = 0;
 
       handle.setPointerCapture(e.pointerId);
       win.setAttribute('data-gesture', '');
       document.documentElement.style.userSelect = 'none';
 
-      function move(ev) {
-        moved = true;
-        var dx = ev.clientX - sx, dy = ev.clientY - sy;
+      // Ukuran berubah, jadi layout isi memang harus dihitung ulang; setidaknya
+      // sekali per frame saja, tidak sekali per event pointer.
+      function paint() {
+        frame = 0;
+        var dx = px - sx, dy = py - sy;
         var l = L, t = T, r = R, b = B;
 
         // Hanya tepi yang ditarik yang bergerak; tepi lawannya tetap.
@@ -126,11 +210,18 @@
         win.style.setProperty('--win-h', (b - t) + 'px');
       }
 
+      function move(ev) {
+        moved = true;
+        px = ev.clientX; py = ev.clientY;
+        if (!frame) frame = raf(paint);
+      }
+
       function stop() {
         handle.removeEventListener('pointermove', move);
         handle.removeEventListener('pointerup', stop);
         handle.removeEventListener('pointercancel', stop);
         document.documentElement.style.userSelect = '';
+        if (moved) { caf(frame); paint(); }
         if (moved && onEnd) onEnd(win.offsetLeft, win.offsetTop, win.offsetWidth, win.offsetHeight);
         win.removeAttribute('data-gesture');
       }

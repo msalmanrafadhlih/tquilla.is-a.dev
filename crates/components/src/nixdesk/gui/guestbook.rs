@@ -7,6 +7,7 @@
 use api_types::chat::{clean_link, clean_message, clean_username, Reject};
 use dioxus::prelude::*;
 
+use super::side_panel::{Side, SidePanel};
 use crate::api::{self, ApiError, ChatMessage, NewMessage, Page};
 use crate::guestbook::{
     chars_left, editor_script, may_have_older, merge, newest_id, oldest_id, preview_source,
@@ -31,6 +32,12 @@ const LIST_ID: &str = "guestbook-scroll";
 const MAX_REFRESH_ROUNDS: usize = 5;
 /// Rows of the message box.
 const EDITOR_ROWS: &str = "5";
+
+const ICON_ADD: Asset = asset!("/assets/icon-add.svg");
+const ICON_CLOSE: Asset = asset!("/assets/icon-close.svg");
+
+/// Panel "Sign the guestbook" (`SidePanel`, kanan); id dipakai tombol pembukanya.
+const SIGN_PANEL_ID: &str = "guestbook-sign-panel";
 
 const FIELD_CLASS: &str = "guestbook__field";
 const GHOST_BUTTON: &str = "guestbook__ghost-btn";
@@ -74,6 +81,8 @@ fn build_message(username: &str, url: &str, text: &str) -> Result<NewMessage, Re
 #[derive(Debug, Clone, PartialEq)]
 enum Notice {
     UpToDate,
+    /// The entry was sent; the form panel closed itself, so the thanks shows here.
+    Signed,
     Failed(ApiError),
 }
 
@@ -117,6 +126,8 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
     let mut refreshing = use_signal(|| false);
     let mut loading_older = use_signal(|| false);
     let mut notice = use_signal(|| None::<Notice>);
+    // Panel "Sign the guestbook". Tertutup dulu: daftar entri yang jadi isi utama.
+    let mut sign_open = use_signal(|| false);
 
     // Entries newer than the newest one on screen. A full page may mean more
     // are waiting, so ask again (a few times at most).
@@ -175,6 +186,7 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
 
     let list = entries();
     let count = list.len();
+    let sign_expanded = if sign_open() { "true" } else { "false" };
 
     rsx! {
         div { class: "guestbook",
@@ -198,6 +210,11 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
                 Some(Notice::UpToDate) => rsx! {
                     p { role: "status", class: "guestbook__note",
                         "{s.guestbook.up_to_date}"
+                    }
+                },
+                Some(Notice::Signed) => rsx! {
+                    p { role: "status", class: "guestbook__note",
+                        "{s.guestbook.sent}"
                     }
                 },
                 Some(Notice::Failed(e)) => rsx! {
@@ -242,7 +259,55 @@ fn Book(initial: Vec<ChatMessage>) -> Element {
                 }
             }
 
-            Composer { entries }
+            // Tombol buka panel tanda tangan: pojok kanan bawah (absolute di `.guestbook`).
+            button {
+                r#type: "button",
+                class: "guestbook__sign-toggle",
+                "aria-expanded": "{sign_expanded}",
+                "aria-controls": SIGN_PANEL_ID,
+                onclick: move |_| sign_open.set(!sign_open()),
+                img {
+                    src: ICON_ADD,
+                    alt: "",
+                    "aria-hidden": "true",
+                    class: "guestbook__sign-icon",
+                }
+                span { "{s.guestbook.form_title}" }
+            }
+
+            // Selalu dirender (lihat `side_panel.rs`): form dan draf-nya tetap ada
+            // saat panel tertutup, dan buka DAN tutupnya beranimasi.
+            SidePanel {
+                id: SIGN_PANEL_ID,
+                label: s.guestbook.form_title,
+                side: Side::Right,
+                open: sign_open(),
+                class: "guestbook__panel",
+                on_close: move |_| sign_open.set(false),
+                div { class: "guestbook__panel-head",
+                    h2 { class: "guestbook__heading", "{s.guestbook.form_title}" }
+                    button {
+                        r#type: "button",
+                        "aria-label": s.guestbook.form_close,
+                        title: s.guestbook.form_close,
+                        class: "guestbook__close-btn",
+                        onclick: move |_| sign_open.set(false),
+                        img {
+                            src: ICON_CLOSE,
+                            alt: "",
+                            "aria-hidden": "true",
+                            class: "guestbook__close-icon",
+                        }
+                    }
+                }
+                Composer {
+                    entries,
+                    on_signed: move |_| {
+                        sign_open.set(false);
+                        notice.set(Some(Notice::Signed));
+                    },
+                }
+            }
         }
     }
 }
@@ -356,8 +421,9 @@ fn ReportButton(id: u32) -> Element {
 }
 
 /// The form: name, website, the Write/Preview editor and the Sign button.
+/// `on_signed` fires once the server accepted the entry (the parent closes the panel).
 #[component]
-fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
+fn Composer(entries: Signal<Vec<ChatMessage>>, on_signed: EventHandler<()>) -> Element {
     let s = use_strings();
     let mut username = use_signal(String::new);
     let mut url = use_signal(String::new);
@@ -365,7 +431,6 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
     let mut tab = use_signal(|| Tab::Write);
     let mut sending = use_signal(|| false);
     let mut error = use_signal(|| None::<SendError>);
-    let mut sent = use_signal(|| false);
 
     let mut submit = move || {
         if *sending.peek() || draft.peek().trim().is_empty() {
@@ -374,7 +439,6 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
         let new = match build_message(&username.peek(), &url.peek(), &draft.peek()) {
             Ok(new) => new,
             Err(reason) => {
-                sent.set(false);
                 error.set(Some(SendError::Invalid(reason)));
                 return;
             }
@@ -382,7 +446,6 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
         let sent_text = draft.peek().clone();
         sending.set(true);
         error.set(None);
-        sent.set(false);
         spawn(async move {
             match api::post_message(&new).await {
                 Ok(entry) => {
@@ -392,11 +455,11 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                     // (Bila tab Preview aktif, editor dibuat ulang kosong.)
                     set_field(EDITOR_ID, "", Some(&sent_text));
                     tab.set(Tab::Write);
-                    sent.set(true);
                     // Newest first: the new entry is at the top.
                     eval_js(format!(
                         "const list = document.getElementById('{LIST_ID}'); if (list) list.scrollTop = 0;"
                     ));
+                    on_signed.call(());
                 }
                 Err(e) => error.set(Some(SendError::Failed(e))),
             }
@@ -557,10 +620,6 @@ fn Composer(entries: Signal<Vec<ChatMessage>>) -> Element {
                             SendError::Failed(e) => e.message(s),
                         }
                     }
-                }
-            } else if sent() {
-                p { role: "status", class: "guestbook__form-ok",
-                    "{s.guestbook.sent}"
                 }
             }
 

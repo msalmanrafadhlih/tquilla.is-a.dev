@@ -190,20 +190,22 @@
 
   .navbar__menu--open {
     @apply grid-rows-[1fr] bg-bg-main xl:bg-transparent border xl:border-0 border-fg-secondary
-      transition-[grid-template-rows];
+      transition-[grid-template-rows,background-color,border-color];
   }
 
   .navbar__menu--closed {
-    @apply grid-rows-[0fr] bg-transparent transition-all;
+    @apply grid-rows-[0fr] bg-transparent
+      transition-[grid-template-rows,background-color,border-color];
   }
 
   .navbar__status--open {
     @apply grid-rows-[1fr] border sm:border-0 border-fg-secondary bg-bg-main sm:bg-transparent
-      transition-[grid-template-rows];
+      transition-[grid-template-rows,background-color,border-color];
   }
 
   .navbar__status--closed {
-    @apply grid-rows-[0fr] bg-transparent transition-all;
+    @apply grid-rows-[0fr] bg-transparent
+      transition-[grid-template-rows,background-color,border-color];
   }
 
   .navbar__btn--relative {

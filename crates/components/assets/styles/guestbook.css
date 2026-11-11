@@ -17,8 +17,10 @@
     border-style: solid;
   }
 
+  /* relative + overflow-hidden: tombol tanda tangan (absolute, kanan bawah) dan
+     panelnya (`.side-panel`) menempel di jendela dan dipotong di tepinya. */
   .guestbook {
-    @apply flex h-full w-full flex-col bg-bg-secondary text-sm;
+    @apply relative flex h-full w-full flex-col overflow-hidden bg-bg-secondary text-sm;
   }
 
   .guestbook__bar {
@@ -40,8 +42,9 @@
     @apply m-0 flex-none px-2.5 pb-1 text-3xs text-signal-red;
   }
 
+  /* pb-14: entri terakhir bisa di-scroll melewati tombol tanda tangan yang melayang. */
   .guestbook__list {
-    @apply flex min-h-0 flex-1 flex-col overflow-y-scroll border-fg-secondary no-scrollbar;
+    @apply flex min-h-0 flex-1 flex-col overflow-y-scroll border-fg-secondary pb-14 no-scrollbar;
     border-block-width: 1px;
     border-block-style: solid;
   }
@@ -121,6 +124,42 @@
     @apply flex flex-none flex-col gap-2 bg-bg-secondary p-2.5;
   }
 
+  /* Tombol buka panel: pojok kanan bawah `.guestbook`. z-5 di bawah scrim (z-10)
+     dan panel (z-20), jadi panel yang terbuka menutupinya. */
+  .guestbook__sign-toggle {
+    @apply absolute right-3 bottom-3 z-[5] flex cursor-pointer items-center gap-1.5
+      border-fg-secondary bg-bg-secondary px-2.5 py-1.5 text-xs text-fg-main opacity-80
+      hover:border-fg-main hover:opacity-100;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .guestbook__sign-icon {
+    @apply h-4 w-4;
+  }
+
+  /* Panel tanda tangan: lebih lebar dari panel riwayat AI (ada dua kolom isian).
+     Bisa di-scroll bila jendela pendek. */
+  .guestbook__panel {
+    --side-panel-w: min(24rem, 90%);
+    @apply overflow-y-auto;
+  }
+
+  .guestbook__panel-head {
+    @apply flex flex-none items-center justify-between gap-2 border-b border-fg-secondary
+      px-2.5 py-2;
+  }
+
+  .guestbook__close-btn {
+    @apply flex h-6 w-6 cursor-pointer items-center justify-center bg-transparent opacity-70
+      hover:opacity-100;
+    border-width: 0px;
+  }
+
+  .guestbook__close-icon {
+    @apply h-3 w-3;
+  }
+
   .guestbook__row {
     @apply flex items-center gap-2.5;
   }
@@ -166,10 +205,6 @@
 
   .guestbook__form-error {
     @apply m-0 text-3xs text-signal-red;
-  }
-
-  .guestbook__form-ok {
-    @apply m-0 text-3xs text-signal-green;
   }
 
   .guestbook__footer {

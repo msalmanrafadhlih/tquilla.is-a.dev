@@ -98,6 +98,10 @@
     --tw-gradient-to;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-quad: cubic-bezier(0.4, 0, 1, 1);
+  /* Panel samping: masuk pelan-melambat, keluar lebih singkat dan dipercepat
+     (keluar yang lama terasa seperti lag). */
+  --dur-panel-in: 320ms;
+  --dur-panel-out: 200ms;
 
   /* Lapisan (z-index) paling atas: overlay noise + layar boot */
   --z-top: 9999;
@@ -188,6 +192,11 @@ body::before {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* Panel samping menunda `visibility` selama geser; tanpa geser tak perlu menunda. */
+  .side-panel,
+  .side-panel__scrim {
+    transition-delay: 0s !important;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -206,6 +215,61 @@ body::before {
 
   .visually-hidden {
     @apply sr-only;
+  }
+
+  /* Panel samping di dalam jendela (riwayat AI, tanda tangan Guestbook).
+     Induk harus `relative overflow-hidden`. Panel selalu ada di DOM; `--open`
+     yang menggeser masuk. Yang dianimasikan hanya `transform` dan `opacity`
+     (jalur compositor: tidak memicu layout/paint tiap frame). `visibility`
+     berubah SETELAH geser selesai (delay = durasi), sehingga panel tertutup
+     tak bisa difokus dan tak dibaca pembaca layar. Transition ada di state
+     tujuan: buka memakai kurva/durasi `-in`, tutup memakai `-out`. */
+  .side-panel__scrim {
+    @apply invisible absolute inset-0 z-10 bg-black/40 opacity-0 pointer-events-none;
+    transition:
+      opacity var(--dur-panel-out) var(--ease-in-quad),
+      visibility 0s linear var(--dur-panel-out);
+  }
+
+  .side-panel {
+    @apply invisible absolute inset-y-0 z-20 flex flex-col border-fg-secondary
+      bg-bg-secondary;
+    /* Lebar bawaan; UI pemakai menimpanya lewat `--side-panel-w`. */
+    width: var(--side-panel-w, min(18rem, 85%));
+    border-width: 0px;
+    border-style: solid;
+    will-change: transform;
+    transition:
+      transform var(--dur-panel-out) var(--ease-in-quad),
+      visibility 0s linear var(--dur-panel-out);
+  }
+
+  .side-panel--left {
+    @apply left-0;
+    border-right-width: 1px;
+    transform: translate3d(-100%, 0, 0);
+  }
+
+  .side-panel--right {
+    @apply right-0;
+    border-left-width: 1px;
+    transform: translate3d(100%, 0, 0);
+  }
+
+  /* Modifier terbuka: SETELAH sisi (spesifisitas sama, yang terakhir menang). */
+  .side-panel__scrim--open {
+    @apply visible opacity-100 pointer-events-auto;
+    transition:
+      opacity var(--dur-panel-in) var(--ease-out-expo),
+      visibility 0s;
+  }
+
+  .side-panel--open {
+    @apply visible;
+    transform: translate3d(0, 0, 0);
+    transition:
+      transform var(--dur-panel-in) var(--ease-out-expo),
+      visibility 0s;
   }
 
   .app-window__loading {
